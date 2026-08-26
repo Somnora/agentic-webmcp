@@ -35,6 +35,7 @@ The public repository history is the authoritative timestamped record. Update th
 | [`de31e91`](https://github.com/Somnora/agentic-webmcp/commit/de31e91) | August 25, 2026 | Public deployment and verification evidence |
 | [`75ddaac`](https://github.com/Somnora/agentic-webmcp/commit/75ddaac) | August 25, 2026 | Deployed submission-media captures and provenance |
 | [`4887e77`](https://github.com/Somnora/agentic-webmcp/commit/4887e77) | August 25, 2026 | Reproducible GitHub Actions verification workflow |
+| [`c5dfbb7`](https://github.com/Somnora/agentic-webmcp/commit/c5dfbb7) | August 25, 2026 | Definitive WebMCP-enabled Chrome evidence for all four registered tool paths |
 
 ## Deployed evidence
 

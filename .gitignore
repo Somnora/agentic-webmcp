@@ -7,3 +7,4 @@ coverage/
 worker-startup.cpuprofile
 .DS_Store
 .devpost-hackathon-state.json
+devpost-submission.md
