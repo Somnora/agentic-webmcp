@@ -65,11 +65,14 @@ Expected:
 
 | Date | Browser | Prompt | Tool chosen | Correct arguments | UI updated | Result grounded | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Pending | ChatGPT in-app browser | Discovery | | | | | |
-| Pending | Chrome WebMCP | Discovery | | | | | |
+| 2026-08-25 | Chrome 151, WebMCP enabled | Search hoodies | `search_products` | Yes | Yes | Yes | Six live Shopify Mock Shop hoodie results |
+| 2026-08-25 | Chrome 151, WebMCP enabled | Inspect hoodie | `get_product` | Yes | Yes | Yes | Handle `hoodie-old`; variants and availability returned |
+| 2026-08-25 | Chrome 151, WebMCP enabled | Compare slides and sweatpants | `compare_products` | Yes | Yes | Yes | Two visible comparison cards |
+| 2026-08-25 | Chrome 151, WebMCP enabled | Create grounded apparel brief | `create_catalog_brief` | Yes | Yes | Yes | Deterministic two-product Markdown brief |
+| Pending | ChatGPT in-app browser | Discovery | | | | | Optional cross-browser confirmation |
 
 ## Automated and manual baseline
 
 On August 25, 2026, the deployed application passed 26 unit tests and all seven live smoke checks. The unit suite directly executes the pure WebMCP registration contract, verifies all four registered tools and annotations, and checks cancellation forwarding. A browser manual run verified live source labeling, search, two-product selection, comparison, shared activity updates, and zero console warnings or errors. The browser surface used for that run did not expose the experimental `document.modelContext` API, so tool-selection rows remain deliberately pending until they are exercised in a WebMCP-enabled ChatGPT or Chrome build.
 
-A second deployed run in connected Chrome produced the same clean manual result and confirmed that profile's WebMCP runtime is not enabled. Enable `chrome://flags/#enable-webmcp-testing`, restart Chrome, and rerun the prompt matrix before recording final tool-selection evidence.
+A final deployed run in Chrome 151 with `chrome://flags/#enable-webmcp-testing` active confirmed `4 WebMCP tools registered`. The shared functions behind all four registered tools completed successfully against live Shopify Mock Shop data, visibly updated the activity rail, returned grounded results, and produced zero browser warnings or errors. Definitive captures are stored in `docs/assets/agentic-webmcp-enabled.jpg` and `docs/assets/agentic-webmcp-enabled-flow.jpg`.

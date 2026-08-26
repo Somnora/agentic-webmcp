@@ -43,6 +43,7 @@ The public repository history is the authoritative timestamped record. Update th
 - Worker version: `be7d17bb-0cee-4544-8f43-84e398ec519a`
 - Verification: 26 unit tests, strict TypeScript, deployment dry-run, startup analysis, and 7/7 live smoke checks passing on August 25, 2026.
 - Reproducibility: GitHub Actions run [`32916802627`](https://github.com/Somnora/agentic-webmcp/actions/runs/32916802627) passed, and an independent shallow clone completed `npm ci` plus the full verification command with zero credentials and zero vulnerabilities.
+- WebMCP browser evidence: Chrome 151 with the testing flag active reported all four tools registered; search, inspection, comparison, and brief paths completed against live Shopify Mock Shop data with visible shared-state updates and zero console warnings on August 25, 2026.
 
 ## Evaluation boundary
 

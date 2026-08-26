@@ -6,7 +6,7 @@ Agentic WebMCP is an open-source commerce workspace where humans browse normally
 
 **Live demo:** [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
-![Agentic WebMCP commerce workspace](docs/assets/agentic-webmcp-hero.jpg)
+![Agentic WebMCP commerce workspace with four registered tools](docs/assets/agentic-webmcp-enabled.jpg)
 
 This project is a WebMCP Challenge extension of the pre-existing commercial Agentic Shopify middleware. All code in this repository was created after the challenge submission period opened on August 25, 2026 at 11:00 AM Pacific. The private commercial application is not included and is not required to run this project.
 
