@@ -44,28 +44,31 @@ async def run_qa(base_url: str) -> None:
         page.on("pageerror", lambda error: page_errors.append(str(error)))
 
         await page.goto(base_url, wait_until="load")
-        await expect(page.locator("#origin-select")).to_have_value("review-shop", timeout=15000)
-        await expect(page.locator("#origin-meta")).to_contain_text("agentic-app-review-test.myshopify.com")
+        await expect(page.locator("#origin-select")).to_have_value("catalog-lab", timeout=15000)
+        await expect(page.locator("#origin-meta")).to_contain_text("agentic-webmcp-origin.somnora.workers.dev")
+        await expect(page.locator("#origin-meta")).to_contain_text("controlled demo")
         await expect(page.locator("#origin-health")).not_to_contain_text("Checking")
+        await expect(page.locator("#origin-health")).to_contain_text("page live")
         await capture(page, "01-origin")
 
         search = page.locator("#search-input")
-        await search.fill("wax")
+        await search.fill("notebook")
         await page.locator("#search-form button[type='submit']").click()
-        await expect(page.locator("#product-grid")).to_contain_text("Selling Plans Ski Wax", timeout=15000)
+        await expect(page.locator("#product-grid")).to_contain_text("Field Notebook", timeout=15000)
         await expect(page.locator("#activity-list")).to_contain_text("search_products")
         await capture(page, "02-search")
 
         interpolate = page.locator("#interpolate-path")
-        await interpolate.fill("/products/the-complete-snowboard")
+        await interpolate.fill("/products/field-notebook")
         await page.locator("#interpolate-form button[type='submit']").click()
         await expect(page.locator("#interpolate-canonical")).to_have_text(
-            "https://agentic-app-review-test.myshopify.com/products/the-complete-snowboard",
+            "https://agentic-webmcp-origin.somnora.workers.dev/products/field-notebook",
             timeout=15000,
         )
         await expect(page.locator("#activity-list")).to_contain_text("interpolate_page")
         await expect(page.locator("#interpolate-view")).to_contain_text("two agent-ready projections")
         await expect(page.locator("#interpolate-provenance")).to_contain_text("pricing:")
+        await expect(page.locator("#interpolate-page-status")).to_have_text("LIVE PAGE MARKDOWN")
         await capture(page, "03-interpolate")
 
         propose = page.locator("#product-grid .product-card").get_by_role("button", name="Propose")

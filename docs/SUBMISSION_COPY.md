@@ -6,7 +6,7 @@ Agentic WebMCP: Allowlisted Origin Tools for Commerce Agents
 
 ## One-line description
 
-A shared agent view that compiles an allowlisted live merchant origin into structured Offers, stripped Markdown, comparisons, and human-confirmed cart proposals.
+A shared agent view that compiles allowlisted product origins into structured Offers, stripped Markdown, comparisons, and human-confirmed cart proposals.
 
 ## Problem
 
@@ -35,7 +35,9 @@ The first seven tools are read-only and untrusted-content annotated. The proposa
 
 ## Origin interpolation
 
-The default Origin record is `review-shop` at `agentic-app-review-test.myshopify.com`. The Worker prefers optional read-only Storefront GraphQL, falls back to public `/products.json` and `/products/{handle}.js`, and finally uses a clearly labeled bundled snapshot. Page interpolation accepts only a product path declared in that Origin record. It strips navigation, footer, scripts, styles, frames, and forms, extracts Product JSON-LD when present, and returns the canonical URL as text rather than framing an external page.
+The default Origin record is `catalog-lab` at `agentic-webmcp-origin.somnora.workers.dev`. It is explicitly labeled `controlled-demo` and serves four original fixture products through public `/products.json`, `/products/{handle}.json`, and semantic product pages. The app fetches those HTTPS responses live but never calls them current merchant inventory. The secondary `review-shop` record preserves optional Storefront GraphQL, Shopify products JSON, and a clearly labeled bundled snapshot.
+
+Page interpolation accepts only a product path declared in the selected Origin record. It strips navigation, footer, scripts, styles, frames, and forms, extracts Product JSON-LD when present, and returns the canonical URL as text rather than framing an external page.
 
 Every adapter projects into the same `Offer` protocol with field-level provenance. The Worker rejects unknown origins, alternate hostnames, non-HTTPS targets, non-allowlisted paths, and redirects to unapproved paths. Upstream bodies and tool outputs are bounded. Stable error codes distinguish invalid input from retryable origin failures.
 
@@ -59,15 +61,15 @@ The public repository is the complete Challenge application. The pre-existing co
 Open the app in a WebMCP-capable browser after the current branch is deployed. No credentials are required.
 
 1. Confirm the header says `8 WebMCP tools registered`.
-2. Ask: `List the allowlisted origins and select review-shop.`
-3. Ask: `Search the selected origin for wax and return the stable handles.`
-4. Ask: `Interpolate /products/the-complete-snowboard into stripped Markdown and a structured Offer.`
-5. Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
-6. Ask: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard and wait for me.`
+2. Ask: `List the allowlisted origins and select catalog-lab.`
+3. Ask: `Search the selected origin for notebook and return the stable handles.`
+4. Ask: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
+5. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
+6. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook and wait for me.`
 7. Confirm the cart is still empty, then click `Confirm add to cart` and observe the `in_cart` receipt.
 
-The badge must say whether facts came from a live adapter or `bundled-snapshot`. The default storefront was password-protected during local verification on August 26, 2026, so a no-token run correctly used the labeled snapshot and reported that the HTML page was not publicly readable.
+The badge must say `LIVE DEMO | public-products-json`, origin health must report both catalog and page live, and interpolation must show the controlled origin canonical URL. The secondary Shopify development store remains password protected and is not used for the recording flow.
 
 ## Verification status
 
-Local strict TypeScript and 34 unit and route tests passed on August 26, 2026. The Worker dry run passed, all 11 production smoke checks passed, and Chrome reported exactly eight registered WebMCP tools. The public YouTube video remains the required submission artifact.
+Local strict TypeScript and 40 unit and route tests passed on August 26, 2026. Final production smoke and browser results must be recorded after both Workers are deployed from the final commit. The public YouTube video remains the required submission artifact.

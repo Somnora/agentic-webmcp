@@ -12,6 +12,7 @@ if (status) {
 const commit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const catalogShop = "agentic-app-review-test.myshopify.com";
 
+run("npx", ["wrangler", "deploy", "--config", "wrangler.origin.jsonc"]);
 run("npx", [
   "wrangler",
   "deploy",

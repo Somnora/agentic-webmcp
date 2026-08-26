@@ -12,6 +12,8 @@ The current demo still presents one catalog workspace. Swapping Shopify Mock Sho
 recognize generated Shopify sample products. The WebMCP Challenge scores Potential Impact
 and Creativity equally with Leverage. A hoodie/snowboard sandbox will not carry those.
 
+Current recording decision on August 26, 2026: the Shopify development store cannot disable password protection without a plan or transfer change. James approved a separately deployed, clearly labeled controlled demo origin with original fixture content. It preserves live HTTPS interpolation and Offer normalization without claiming real merchant inventory or using unrelated retailer trademarks.
+
 The page the agent visits must remain this origin (`agentic-webmcp.somnora.workers.dev`).
 WebMCP tools are registered on the top-level document (`tools=(self)`). You cannot inject
 tools into amazon.com. The honest architecture is: Agentic is the agent view of one or more

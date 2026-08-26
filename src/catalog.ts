@@ -188,7 +188,12 @@ function optionNames(product: Record<string, unknown>): string[] {
   });
 }
 
-function normalizeProductsJsonVariant(value: unknown, names: string[], currencyCode: string): Variant | null {
+function normalizeProductsJsonVariant(
+  value: unknown,
+  names: string[],
+  currencyCode: string,
+  adapter: "shopify-products-json" | "public-products-json",
+): Variant | null {
   const candidate = record(value);
   const rawId = typeof candidate.id === "number" || typeof candidate.id === "string" ? String(candidate.id) : "";
   const title = text(candidate.title, 120) || "Default Title";
@@ -198,7 +203,11 @@ function normalizeProductsJsonVariant(value: unknown, names: string[], currencyC
     return optionValue ? [{ name, value: optionValue }] : [];
   });
   return {
-    id: rawId.startsWith("gid://") ? rawId : `gid://shopify/ProductVariant/${rawId}`,
+    id: rawId.startsWith("gid://") || rawId.startsWith("urn:")
+      ? rawId
+      : adapter === "shopify-products-json"
+        ? `gid://shopify/ProductVariant/${rawId}`
+        : `urn:agentic-catalog-lab:variant:${rawId}`,
     title,
     available: candidate.available === true,
     quantityAvailable: null,
@@ -209,13 +218,14 @@ function normalizeProductsJsonVariant(value: unknown, names: string[], currencyC
 
 export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getOrigin(), fetchedAt = new Date().toISOString()): Offer | null {
   const candidate = record(value);
+  const adapter = origin.adapter === "public-products-json" ? "public-products-json" : "shopify-products-json";
   const handle = text(candidate.handle, 100).toLocaleLowerCase();
   const title = text(candidate.title, 160);
   if (!HANDLE_PATTERN.test(handle) || !title) return null;
   const names = optionNames(candidate);
   const variants = array(candidate.variants)
     .slice(0, 8)
-    .map((item) => normalizeProductsJsonVariant(item, names, origin.currencyCode))
+    .map((item) => normalizeProductsJsonVariant(item, names, origin.currencyCode, adapter))
     .filter((item): item is Variant => item !== null);
   const prices = variants.map((variant) => Number.parseFloat(variant.price.amount)).filter(Number.isFinite);
   const min = prices.length ? Math.min(...prices) : 0;
@@ -237,8 +247,8 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
     variants,
     constraints: { available: offerAvailable(variants) },
     ...(image ? { image } : {}),
-    source: { adapter: "shopify-products-json", live: true, fetchedAt, untrusted: true },
-    provenance: uniformProvenance("shopify-products-json"),
+    source: { adapter, live: true, fetchedAt, untrusted: true },
+    provenance: uniformProvenance(adapter),
   };
 }
 
@@ -330,7 +340,8 @@ async function productsJsonCatalog(origin: Origin, fetcher: Fetcher): Promise<Of
 }
 
 async function productsJsonProduct(origin: Origin, handle: string, fetcher: Fetcher): Promise<Offer[]> {
-  const response = await fetchOriginText(origin, `/products/${encodeURIComponent(handle)}.js`, {
+  const extension = origin.adapter === "public-products-json" ? "json" : "js";
+  const response = await fetchOriginText(origin, `/products/${encodeURIComponent(handle)}.${extension}`, {
     method: "GET",
     headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
   }, MAX_PRODUCTS_JSON_BYTES, fetcher);
@@ -403,6 +414,10 @@ export async function searchProducts(
   env: CatalogEnv = {},
 ): Promise<CatalogResult> {
   assertCatalogShop(origin, env.CATALOG_SHOP);
+  if (origin.adapter === "public-products-json") {
+    const offers = await productsJsonCatalog(origin, fetcher);
+    return result(origin, "public-products-json", true, offers.filter((item) => matchesQuery(item, query)).slice(0, limit));
+  }
   const token = text(env.CATALOG_STOREFRONT_TOKEN, 240);
   if (token) {
     try {
@@ -430,6 +445,9 @@ export async function getProduct(
 ): Promise<CatalogResult> {
   assertCatalogShop(origin, env.CATALOG_SHOP);
   const handle = validateHandle(handleInput);
+  if (origin.adapter === "public-products-json") {
+    return result(origin, "public-products-json", true, await productsJsonProduct(origin, handle, fetcher));
+  }
   const token = text(env.CATALOG_STOREFRONT_TOKEN, 240);
   if (token) {
     try {
@@ -457,7 +475,7 @@ export async function compareProducts(
   const offers = [...new Map(results.flatMap((item) => item.offers).map((offer) => [offer.handle, offer])).values()];
   const live = results.every((item) => item.live);
   const sources = new Set(results.map((item) => item.source));
-  const source = sources.size === 1 ? results[0]?.source ?? "bundled-snapshot" : live ? "shopify-products-json" : "bundled-snapshot";
+  const source = sources.size === 1 ? results[0]?.source ?? "bundled-snapshot" : live ? origin.adapter : "bundled-snapshot";
   return result(
     origin,
     source,

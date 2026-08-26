@@ -9,7 +9,7 @@ export function createAgenticTools(actions) {
   return [
     {
       name: "list_origins",
-      description: "List the exact HTTPS merchant origins this page is allowed to read and show their configured adapters in the shared interface.",
+      description: "List the exact HTTPS product origins this page is allowed to read and show their data mode and configured adapters in the shared interface.",
       inputSchema: { type: "object", properties: {} },
       annotations: READ_ONLY_ANNOTATIONS,
       execute: (args, { signal } = {}) => actions.listOrigins(args, signal),
@@ -27,11 +27,11 @@ export function createAgenticTools(actions) {
     },
     {
       name: "search_products",
-      description: "Search offers on the selected allowlisted merchant origin and show matching products in the shared page interface.",
+      description: "Search offers on the selected allowlisted product origin and show matching products in the shared page interface.",
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Product words to match, such as snowboard, Ice, or wax." },
+          query: { type: "string", description: "Product words to match, such as notebook, desk, or travel." },
           maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum number of results to return." },
         },
         required: ["query"],
@@ -68,7 +68,7 @@ export function createAgenticTools(actions) {
       description: "Read one allowlisted product path on the selected origin, remove page chrome, and show compact Markdown plus the normalized Offer and canonical origin URL.",
       inputSchema: {
         type: "object",
-        properties: { path: { type: "string", description: "Allowlisted product path only, such as /products/the-complete-snowboard." } },
+        properties: { path: { type: "string", description: "Allowlisted product path only, such as /products/field-notebook." } },
         required: ["path"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
@@ -95,7 +95,7 @@ export function createAgenticTools(actions) {
         type: "object",
         properties: {
           handle: { type: "string", description: "Product handle from search_products or get_product." },
-          variantTitle: { type: "string", description: "Optional variant title such as Ice, Dawn, or Powder." },
+          variantTitle: { type: "string", description: "Optional variant title such as Sand, Slate, or Compact." },
           quantity: { type: "integer", minimum: 1, maximum: 4, description: "Quantity to propose, from 1 to 4." },
         },
         required: ["handle"],

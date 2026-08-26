@@ -26,7 +26,7 @@
     <p>Cloudflare hosts the application and may process standard request, URL, security, log, and trace metadata needed to deliver, monitor, and protect the service. Application error records contain only the route path, stable error code, and retryability. There are no third-party analytics identifiers. Do not enter personal or confidential information into the public demo.</p>
 
     <h2>Catalog data</h2>
-    <p>The Worker reads only exact HTTPS hostnames and paths declared in its origin allowlist. The default origin is agentic-app-review-test.myshopify.com. It first uses a configured read-only Storefront API token when present, then public products JSON, then a clearly labeled bundled snapshot. Search terms do not include an Agentic visitor identity.</p>
+    <p>The Worker reads only exact HTTPS hostnames and paths declared in its origin allowlist. The default origin is agentic-webmcp-origin.somnora.workers.dev, a controlled public demo catalog with original fixture text and no external product images. Its JSON and HTML responses are fetched live but are not presented as merchant inventory. The secondary Shopify development store can use a read-only Storefront token, public products JSON, or a clearly labeled bundled snapshot. Search terms do not include an Agentic visitor identity.</p>
 
     <h2>Agent tools</h2>
     <p>Seven WebMCP tools read origins, offers, and stripped page content. propose_add_to_cart stages a quote but does not change the cart. Only the human confirmation button can create an in-page receipt. No tool exposes checkout, payment, account, order, customer, billing, or merchant mutation capability. Tool activity disappears when the page is closed or reloaded.</p>

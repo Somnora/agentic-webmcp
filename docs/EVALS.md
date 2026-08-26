@@ -9,45 +9,45 @@ Prompt: `List the allowlisted origins and show which adapter each origin uses.`
 Expected:
 
 - Agent selects `list_origins`.
-- Result contains only `review-shop` unless a new real hostname was intentionally added to `src/origins.ts`.
+- Result contains `catalog-lab` as the default controlled demo origin and `review-shop` as the secondary Shopify development store.
 - Hostname is exact and HTTPS canonical URL is present.
 - UI origin switcher is populated.
 
 ## Origin selection
 
-Prompt: `Select review-shop for the rest of this task.`
+Prompt: `Select catalog-lab for the rest of this task.`
 
 Expected:
 
-- Agent selects `select_origin` with `{ "originId": "review-shop" }`.
+- Agent selects `select_origin` with `{ "originId": "catalog-lab" }`.
 - Origin badge and switcher update.
 - No cookie or server session is created.
 
 ## Search
 
-Prompt: `Search the selected origin for wax and return the stable handles.`
+Prompt: `Search the selected origin for notebook and return the stable handles.`
 
 Expected:
 
 - Agent selects `search_products`.
-- Result includes `selling-plans-ski-wax` when the live adapter or bundled snapshot contains it.
-- Source badge distinguishes `live` from `fallback`.
+- Result includes `field-notebook` and `modular-desk-tray` from the live public JSON response.
+- Source badge says `LIVE DEMO | public-products-json`.
 - Compact result suggests valid next tools without automatically invoking them.
 - Offer cards and activity rail update.
 
 ## Product inspection
 
-Prompt: `Inspect the-complete-snowboard and show sampled variants and availability.`
+Prompt: `Inspect field-notebook and show sampled variants and availability.`
 
 Expected:
 
-- Agent selects `get_product` with handle `the-complete-snowboard`.
-- Result includes the `Ice` variant when present in the source.
+- Agent selects `get_product` with handle `field-notebook`.
+- Result includes the `Sand` and `Slate` variants.
 - UI narrows to one normalized Offer.
 
 ## Page interpolation
 
-Prompt: `Interpolate /products/the-complete-snowboard into stripped Markdown and a structured Offer.`
+Prompt: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
 
 Expected:
 
@@ -55,11 +55,12 @@ Expected:
 - UI shows the canonical origin URL as text.
 - UI shows separate page and Offer status plus field-level provenance.
 - Page navigation, footer, script, style, iframe, and form content are absent from the stripped projection.
-- If the origin redirects to `/password`, `pageLive` is false and the warning is visible.
+- Result reports `live: true` and `pageLive: true`.
+- The controlled origin navigation and footer labels are absent from stripped Markdown.
 
 ## Comparison
 
-Prompt: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
+Prompt: `Compare field-notebook and modular-desk-tray using only origin facts.`
 
 Expected:
 
@@ -69,7 +70,7 @@ Expected:
 
 ## Human-confirmed proposal
 
-Prompt: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard and wait for me.`
+Prompt: `Propose adding quantity 1 of the Sand variant of field-notebook and wait for me.`
 
 Expected:
 
@@ -113,10 +114,10 @@ Expected:
 | 2026-08-26 | Vitest | Cart proposal | proposal and commit routes | Yes | N/A | Yes | Proposal has no receipt; commit requires human header |
 | 2026-08-26 | Chrome local | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
 | 2026-08-26 | Chrome production | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
-| 2026-08-26 | Production smoke | API judge flow | routes | Yes | Yes | Yes | All 11 automated checks passed against the deployed Worker |
+| Pending final deployment | Production smoke | Controlled origin judge flow | routes | | | | Requires the final committed app and origin Workers |
 
 ## Automated baseline
 
-On August 26, 2026, strict TypeScript and 34 unit and route tests passed locally. The suite covers the eight-tool registration contract, compact tool metadata budgets, Storefront and products JSON normalization into one Offer graph, ProductGroup JSON-LD, field provenance, labeled fallback behavior, exact-origin mismatch rejection, interpolation stripping and allowlist rejection, password and off-origin redirect rejection, upstream byte limits, proposal without commit, human-header commit, structured errors, security headers, bounded JSON, and static asset routing.
+On August 26, 2026, strict TypeScript and 40 unit and route tests passed locally. The suite covers the eight-tool registration contract, compact tool metadata budgets, the controlled origin service and adapter labeling, Storefront and products JSON normalization into one Offer graph, ProductGroup JSON-LD, field provenance, labeled fallback behavior, exact-origin mismatch rejection, interpolation stripping and allowlist rejection, password and off-origin redirect rejection, upstream byte limits, proposal without commit, human-header commit, structured errors, security headers, bounded JSON, and static asset routing.
 
 The production browser pass verifies registration and visible state, not autonomous agent tool selection. Run the repetition protocol before claiming an agent success rate.

@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 
 const baseUrl = (process.env.AGENTIC_WEBMCP_URL || "https://agentic-webmcp.somnora.workers.dev").replace(/\/$/, "");
+const originUrl = "https://agentic-webmcp-origin.somnora.workers.dev";
 const expectedCommit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
 const expectedTools = [
@@ -20,7 +21,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/health`);
       const body = await response.json();
-      if (response.status !== 200 || body.status !== "ok" || body.defaultOriginId !== "review-shop") throw new Error(`unexpected response ${response.status}`);
+      if (response.status !== 200 || body.status !== "ok" || body.defaultOriginId !== "catalog-lab") throw new Error(`unexpected response ${response.status}`);
       if (body.deployment?.commit !== expectedCommit) throw new Error(`deployment commit mismatch: ${body.deployment?.commit || "missing"}`);
       if (!body.deployment?.versionId || !body.deployment?.deployedAt) throw new Error("deployment metadata missing");
       if (response.headers.get("Origin-Agent-Cluster") !== "?1") throw new Error("missing origin isolation");
@@ -29,12 +30,22 @@ const checks = [
     },
   },
   {
+    name: "controlled origin service",
+    run: async () => {
+      const response = await fetch(`${originUrl}/health`);
+      const body = await response.json();
+      if (response.status !== 200 || body.status !== "ok" || body.products !== 4) throw new Error("controlled origin unavailable");
+    },
+  },
+  {
     name: "origin adapter health",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/origins/health?originId=review-shop`);
+      const response = await fetch(`${baseUrl}/api/origins/health?originId=catalog-lab`);
       const body = await response.json();
-      if (response.status !== 200 || body.origin?.id !== "review-shop") throw new Error("origin health unavailable");
-      if (!body.catalog?.adapter || typeof body.page?.live !== "boolean" || !body.checkedAt) throw new Error("origin health incomplete");
+      if (response.status !== 200 || body.origin?.id !== "catalog-lab") throw new Error("origin health unavailable");
+      if (body.status !== "live" || body.catalog?.adapter !== "public-products-json" || body.catalog?.live !== true || body.page?.live !== true) {
+        throw new Error("controlled origin is not fully live");
+      }
     },
   },
   {
@@ -61,8 +72,9 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/api/origins`);
       const body = await response.json();
-      if (response.status !== 200 || body.origins?.length !== 1) throw new Error("unexpected origin list");
-      if (body.origins[0]?.id !== "review-shop" || body.origins[0]?.hostname !== "agentic-app-review-test.myshopify.com") throw new Error("default origin mismatch");
+      if (response.status !== 200 || body.origins?.length !== 2) throw new Error("unexpected origin list");
+      if (body.origins[0]?.id !== "catalog-lab" || body.origins[0]?.hostname !== "agentic-webmcp-origin.somnora.workers.dev") throw new Error("default origin mismatch");
+      if (body.origins[0]?.mode !== "controlled-demo") throw new Error("demo origin is not labeled");
     },
   },
   {
@@ -76,10 +88,10 @@ const checks = [
   {
     name: "catalog search",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/catalog?originId=review-shop&query=wax&limit=4`);
+      const response = await fetch(`${baseUrl}/api/catalog?originId=catalog-lab&query=notebook&limit=4`);
       const body = await response.json();
-      if (response.status !== 200 || !Array.isArray(body.offers) || !body.offers.some((offer) => offer.handle === "selling-plans-ski-wax")) {
-        throw new Error("catalog returned no wax offer");
+      if (response.status !== 200 || body.live !== true || body.source !== "public-products-json" || !body.offers?.some((offer) => offer.handle === "field-notebook")) {
+        throw new Error("catalog returned no live notebook offer");
       }
       if (!body.offers.every((offer) => offer.provenance?.pricing && offer.provenance?.availability)) throw new Error("offer provenance missing");
     },
@@ -87,28 +99,29 @@ const checks = [
   {
     name: "product details",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/products/the-complete-snowboard?originId=review-shop`);
+      const response = await fetch(`${baseUrl}/api/products/field-notebook?originId=catalog-lab`);
       const body = await response.json();
-      if (response.status !== 200 || body.offers?.[0]?.handle !== "the-complete-snowboard") throw new Error("complete snowboard unavailable");
+      if (response.status !== 200 || body.live !== true || body.offers?.[0]?.handle !== "field-notebook") throw new Error("field notebook unavailable");
     },
   },
   {
     name: "interpolation contract",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/interpolate?originId=review-shop&path=%2Fproducts%2Fthe-complete-snowboard`);
+      const response = await fetch(`${baseUrl}/api/interpolate?originId=catalog-lab&path=%2Fproducts%2Ffield-notebook`);
       const body = await response.json();
-      if (response.status !== 200 || body.offer?.handle !== "the-complete-snowboard") throw new Error("interpolation unavailable");
-      if (body.canonicalUrl !== "https://agentic-app-review-test.myshopify.com/products/the-complete-snowboard") throw new Error("canonical URL mismatch");
+      if (response.status !== 200 || body.offer?.handle !== "field-notebook" || body.live !== true || body.pageLive !== true) throw new Error("live interpolation unavailable");
+      if (body.canonicalUrl !== `${originUrl}/products/field-notebook`) throw new Error("canonical URL mismatch");
       if (typeof body.markdown !== "string" || !body.markdown.includes("Canonical origin")) throw new Error("stripped Markdown missing");
+      if (body.markdown.includes("Controlled WebMCP demonstration origin") || body.markdown.includes("Demonstration data only")) throw new Error("page chrome was not stripped");
     },
   },
   {
     name: "proposal does not commit",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/cart/propose?originId=review-shop`, {
+      const response = await fetch(`${baseUrl}/api/cart/propose?originId=catalog-lab`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ originId: "review-shop", handle: "the-complete-snowboard", variantTitle: "Ice", quantity: 1 }),
+        body: JSON.stringify({ originId: "catalog-lab", handle: "field-notebook", variantTitle: "Sand", quantity: 1 }),
       });
       const body = await response.json();
       if (response.status !== 200 || body.confirmation?.status !== "awaiting_human_confirmation" || body.receipt) {
@@ -119,7 +132,7 @@ const checks = [
   {
     name: "allowlist rejection",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/interpolate?originId=review-shop&path=%2Fcollections%2Fall`);
+      const response = await fetch(`${baseUrl}/api/interpolate?originId=catalog-lab&path=%2Fcollections%2Fall`);
       if (response.status !== 400) throw new Error(`expected 400, received ${response.status}`);
       const body = await response.json();
       if (body.code !== "PATH_NOT_ALLOWED" || body.retryable !== false) throw new Error("structured allowlist error missing");

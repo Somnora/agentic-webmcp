@@ -3,7 +3,7 @@
 ## Protected assets
 
 - Integrity of the shared human and agent workspace.
-- Correct attribution of live adapter data versus bundled fallback facts.
+- Correct attribution of controlled demo data, live adapter transport, and bundled fallback facts.
 - Exact scope of upstream network access.
 - Human control over the in-page cart receipt.
 - No leakage of private tokens, commercial application secrets, or merchant administration data.
@@ -33,7 +33,7 @@
 
 ## Data and UI controls
 
-- Storefront GraphQL, products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
+- Controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
 - Each Offer records field-level provenance for title, description, pricing, availability, and variants.
 - Descriptions, titles, vendor text, option text, and image URLs are normalized and truncated.
 - Tool JSON output is compacted to about 1.5K characters in the browser action layer.
@@ -41,6 +41,8 @@
 - Production interpolation uses Cloudflare HTMLRewriter to remove nav, footer, script, style, iframe, and form content before collecting compact semantic text. Deterministic Node tests use a bounded fallback projection.
 - Structured adapters remain the inventory authority when they succeed.
 - Fallback offers have `source.live: false` and the UI says `FALLBACK | bundled-snapshot`.
+- The controlled origin has `mode: controlled-demo`; successful reads say `LIVE DEMO`, not live merchant inventory.
+- The controlled origin contains original fixture text, no external images, no forms, and no checkout or payment routes.
 
 ## Cart controls
 
@@ -73,6 +75,7 @@
 | Oversized upstream body | Stream is cancelled and live data is not claimed |
 | Prompt injection in origin text | Shown as untrusted text and never executed |
 | Malformed JSON-LD | Ignored; richer structured or labeled fallback facts remain available |
+| Controlled origin mistaken for merchant inventory | Public origin metadata and the visible badge identify `controlled-demo` and `LIVE DEMO` |
 | Unknown origin id | HTTP 400 |
 | Query and body origin mismatch | HTTP 400 |
 | Proposal tool attempts to commit | Impossible because no commit tool is registered |
@@ -85,5 +88,6 @@
 - No checkout, payment, Admin API, order, customer, billing, or merchant mutation.
 - No accounts, authentication, cookies, persistent cart, database, or analytics identifiers.
 - No commercial application Worker, App Proxy, HMAC, storage, or secrets.
+- No unrelated retailer data, logos, product images, or third-party catalog scraping.
 
 Any future durable or merchant-side write requires authentication, CSRF protection, signed action-time confirmation, replay protection, and a separate security review.

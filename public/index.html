@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Agentic WebMCP gives browser agents explicit tools for allowlisted live merchant origins, structured offers, stripped pages, comparison, and human-confirmed cart proposals.">
-  <title>Agentic WebMCP - Allowlisted live origin tools</title>
+  <meta name="description" content="Agentic WebMCP gives browser agents explicit tools for allowlisted product origins, structured offers, stripped pages, comparison, and human-confirmed cart proposals.">
+  <title>Agentic WebMCP - Allowlisted product origin tools</title>
   <link rel="icon" href="/icon.webp" type="image/webp">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
@@ -25,7 +25,7 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="eyebrow">THE OPEN WEB, WITH AN EXPLICIT TOOL LAYER</div>
       <h1 id="hero-title">A structured agent view<br><span>over allowlisted live origins.</span></h1>
-      <p>Agentic compiles a real merchant origin into normalized Offers and stripped Markdown. Agents can read and propose. Only a human confirmation button can update the in-page cart.</p>
+      <p>Agentic compiles an allowlisted product origin into normalized Offers and stripped Markdown. The default is a clearly labeled controlled public demo. Agents can read and propose. Only a human confirmation button can update the in-page cart.</p>
       <div class="tool-strip" aria-label="Available tools">
         <code>list_origins</code>
         <code>select_origin</code>
@@ -43,13 +43,13 @@
         <div class="panel-heading">
           <div>
             <span class="kicker">HUMAN WORKSPACE</span>
-            <h2>Explore the live origin</h2>
+            <h2>Explore the allowlisted origin</h2>
           </div>
           <span id="source-badge" class="source-badge">Loading source...</span>
         </div>
 
         <div class="origin-control">
-          <label for="origin-select">Allowlisted merchant origin</label>
+          <label for="origin-select">Allowlisted product origin</label>
           <select id="origin-select" aria-describedby="origin-meta"></select>
           <p id="origin-meta">Loading allowlisted origin...</p>
           <p id="origin-health" class="origin-health">Checking adapter and page access...</p>
@@ -58,29 +58,29 @@
         <form id="search-form" class="search-form">
           <label for="search-input">Search product facts</label>
           <div class="search-row">
-            <input id="search-input" name="query" maxlength="80" placeholder="Try snowboard, ice, wax..." autocomplete="off">
+            <input id="search-input" name="query" maxlength="80" placeholder="Try notebook, desk, travel..." autocomplete="off">
             <button type="submit">Search</button>
           </div>
         </form>
 
         <div class="prompt-row" aria-label="Suggested agent prompts">
           <span>Try:</span>
-          <button type="button" data-query="snowboard">Find snowboards</button>
-          <button type="button" data-query="ice">Search Ice</button>
-          <button type="button" data-query="wax">Search wax</button>
+          <button type="button" data-query="notebook">Find notebook</button>
+          <button type="button" data-query="desk">Search desk</button>
+          <button type="button" data-query="travel">Search travel</button>
         </div>
 
         <form id="interpolate-form" class="interpolate-form">
           <label for="interpolate-path">Strip an allowlisted product page into Offer plus Markdown</label>
           <div class="search-row">
-            <input id="interpolate-path" maxlength="240" value="/products/the-complete-snowboard" autocomplete="off">
+            <input id="interpolate-path" maxlength="240" value="/products/field-notebook" autocomplete="off">
             <button type="submit">Interpolate page</button>
           </div>
         </form>
 
         <section id="interpolate-view" class="interpolate-view" hidden aria-live="polite" tabindex="-1">
           <span class="kicker">STRIPPED ORIGIN VIEW</span>
-          <h3>One real page, two agent-ready projections</h3>
+          <h3>One live page, two agent-ready projections</h3>
           <p>Canonical origin URL: <code id="interpolate-canonical"></code></p>
           <div class="projection-grid">
             <div><strong id="interpolate-page-status">PAGE STATUS</strong><pre id="interpolate-markdown"></pre></div>
@@ -103,7 +103,7 @@
         <form id="brief-form" class="brief-form">
           <label for="brief-goal">Create a catalog brief from selected products</label>
           <div class="search-row">
-            <input id="brief-goal" maxlength="160" value="Choose a snowboard with clear availability and a usable price range.">
+            <input id="brief-goal" maxlength="160" value="Choose an available workspace product with a clear price and variant.">
             <button type="submit" disabled id="brief-button">Create brief</button>
           </div>
         </form>
@@ -155,7 +155,7 @@
 
   <footer>
     <span>Agentic WebMCP Challenge build | <span id="deployment-id">Loading deployment identity...</span></span>
-    <span>Default origin: agentic-app-review-test.myshopify.com | Storefront API, products JSON, labeled snapshot fallback | <a href="/privacy.html">Privacy</a> | <a href="https://github.com/Somnora/agentic-webmcp">Source</a></span>
+    <span>Default origin: agentic-webmcp-origin.somnora.workers.dev | controlled public demo data | <a href="/privacy.html">Privacy</a> | <a href="https://github.com/Somnora/agentic-webmcp">Source</a></span>
   </footer>
 </body>
 </html>

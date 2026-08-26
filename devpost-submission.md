@@ -2,7 +2,7 @@
 
 ## Summary
 
-Agentic WebMCP is a shared agent view over explicitly allowlisted merchant websites. One Cloudflare Worker normalizes Storefront GraphQL, public products JSON, JSON-LD, Cloudflare HTMLRewriter page text, and a labeled snapshot fallback into a common Offer graph with field-level provenance. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
+Agentic WebMCP is a shared agent view over explicitly allowlisted product websites. The app Worker normalizes controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, Cloudflare HTMLRewriter page text, and labeled fallback facts into a common Offer graph with field-level provenance. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
 
 ## What it does
 
@@ -37,7 +37,7 @@ Top-level document
   -> shared manual and agent action functions
   -> same-origin Worker routes
   -> Origin record from src/origins.ts
-  -> Storefront GraphQL or public products JSON or labeled snapshot
+  -> controlled public product JSON or Shopify adapter chain
   -> allowlisted HTML and JSON-LD interpolation
   -> normalized Offer graph
   -> visible origin badge, grid, comparison, stripped view, activity, proposal, and cart receipt
@@ -50,14 +50,14 @@ The Worker accepts no arbitrary upstream URL. It enforces HTTPS, exact hostnames
 1. Open https://agentic-webmcp.somnora.workers.dev/ in a WebMCP-capable browser after deploying the current branch.
 2. No account or credentials are required.
 3. Confirm `8 WebMCP tools registered`.
-4. Ask: `List the allowlisted origins and select review-shop.`
-5. Ask: `Search the selected origin for wax and return the stable handles.`
-6. Ask: `Interpolate /products/the-complete-snowboard into stripped Markdown and a structured Offer.`
-7. Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
-8. Ask: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard and wait for me.`
+4. Ask: `List the allowlisted origins and select catalog-lab.`
+5. Ask: `Search the selected origin for notebook and return the stable handles.`
+6. Ask: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
+7. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
+8. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook and wait for me.`
 9. Verify the cart is unchanged until you click `Confirm add to cart`, then verify an `in_cart` receipt appears.
 
-If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a labeled demonstration snapshot, not current live inventory. On August 26, 2026, the default storefront redirected public catalog and product paths to `/password`.
+The default badge must say `LIVE DEMO | public-products-json`. This means the app fetched the controlled origin over HTTPS; it does not mean the fixture is merchant inventory. The secondary Shopify development store remains password protected and is not used in the recording flow.
 
 ## Public links
 
@@ -69,18 +69,17 @@ If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a la
 ## Verification
 
 - Strict TypeScript: passed locally on August 26, 2026.
-- Unit and route tests: 34 of 34 passed locally.
+- Unit and route tests: 40 of 40 passed locally.
 - Worker dry run: passed locally on August 26, 2026.
-- Updated production smoke check: 11 of 11 checks passed on August 26, 2026.
-- Updated Chrome WebMCP browser pass: exactly eight tools registered on August 26, 2026.
+- Updated production smoke check: pending final two-Worker deployment.
+- Updated Chrome WebMCP browser pass: pending final two-Worker deployment.
 - Public YouTube video: missing and required.
 
 ## Known limitations
 
-- Only one real public Origin record is configured.
-- The default storefront is currently password-protected for public catalog and HTML reads.
-- Live Storefront GraphQL depends on an optional read-only secret whose production presence was not inspected in this task.
-- A password-protected HTML page cannot be honestly shown as a live stripped page without changing origin access or adding another permitted real hostname.
+- The default recording origin is controlled demonstration data, not a real merchant catalog.
+- The secondary Shopify development store is password protected and its public access toggle is disabled without a plan or transfer change.
+- Live Storefront GraphQL for the secondary origin depends on an optional read-only secret whose production presence was not inspected.
 - Browser tool discovery requires a WebMCP-capable client. Manual controls remain available elsewhere.
 - The receipt is page-local and not a merchant cart.
 
@@ -90,7 +89,7 @@ If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a la
 - Live URL: updated and verified on August 26, 2026.
 - Privacy disclosure: updated and deployed.
 - Judge flow and prompt script: updated and deployed.
-- Automated local gate: strict TypeScript, 34 of 34 tests, and Worker dry run passed.
+- Automated local gate: strict TypeScript, 40 of 40 tests, and both Worker dry runs passed.
 - Public YouTube video: missing and required.
 
 Do not paste this file into Devpost until current screenshots are captured outside the repository and the public YouTube URL exists.

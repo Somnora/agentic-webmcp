@@ -5,8 +5,9 @@
 - App URL: https://agentic-webmcp.somnora.workers.dev/
 - Credentials: none
 - Current code expectation after deployment: `8 WebMCP tools registered`
-- Default origin: `review-shop`
-- Hostname: `agentic-app-review-test.myshopify.com`
+- Default origin: `catalog-lab`
+- Origin mode: `controlled-demo`
+- Hostname: `agentic-webmcp-origin.somnora.workers.dev`
 - Deployment identity: `/health` and the footer show the exact deployed commit.
 
 If the browser does not expose `document.modelContext`, the page reports that state and keeps the same manual controls available.
@@ -15,30 +16,30 @@ If the browser does not expose `document.modelContext`, the page reports that st
 
 1. Ask: `List the allowlisted origins and show which adapter each one uses.`
    - Expected tool: `list_origins`
-   - Expected result: one origin with id `review-shop`, exact hostname, primary Storefront adapter, and public products JSON fallback.
+   - Expected result: `catalog-lab` is the default controlled demo origin and `review-shop` is the secondary password-protected Shopify development store.
 
-2. Ask: `Select review-shop for the rest of this task.`
+2. Ask: `Select catalog-lab for the rest of this task.`
    - Expected tool: `select_origin`
-   - Expected visible change: the origin switcher and badge show the review shop. Selection is page-local and sessionless.
+   - Expected visible change: the origin switcher shows Agentic Catalog Lab and the badge says `LIVE DEMO | public-products-json`. Selection is page-local and sessionless.
    - The origin health line separately reports catalog adapter access and product page access.
 
-3. Ask: `Search the selected origin for wax and return the stable handles.`
+3. Ask: `Search the selected origin for notebook and return the stable handles.`
    - Expected tool: `search_products`
-   - Expected handle: `selling-plans-ski-wax`
+   - Expected handles include `field-notebook` and `modular-desk-tray`.
    - Expected visible change: the offer grid and activity rail update.
 
-4. Ask: `Interpolate /products/the-complete-snowboard into a stripped page view and show the canonical URL and structured Offer.`
+4. Ask: `Interpolate /products/field-notebook into a stripped page view and show the canonical URL and structured Offer.`
    - Expected tool: `interpolate_page`
-   - Expected handle: `the-complete-snowboard`
+   - Expected handle: `field-notebook`
    - Expected visible change: the stripped Markdown panel shows the canonical origin URL as text and the workspace shows the normalized Offer.
    - Expected provenance: title, description, pricing, availability, and variants identify their adapter.
-   - Current access note: if the merchant page redirects to `/password`, the result must say `pageLive: false` and identify the labeled fallback. It must never claim that blocked HTML was read.
+   - Expected status: `live: true` and `pageLive: true`. Navigation, footer, script, style, frame, and form content must not appear in the stripped projection.
 
-5. Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
+5. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
    - Expected tool: `compare_products`
    - Expected visible change: two comparison cards and a compact result.
 
-6. Ask: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard to the cart, then stop for my confirmation.`
+6. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook to the cart, then stop for my confirmation.`
    - Expected tool: `propose_add_to_cart`
    - Expected visible change: a banner says it is waiting for human confirmation and the cart remains empty.
    - Human action: click `Confirm add to cart`.
@@ -50,11 +51,11 @@ The activity rail can be exported with `Copy trace` to show tool names, validate
 
 ## Source labels
 
-The origin itself is a live merchant hostname. The data badge separately reports the adapter state:
+The default origin is a controlled public demo catalog, not merchant inventory. Its data badge reports:
 
-- `LIVE | shopify-storefront` when a valid read-only Storefront token succeeds.
-- `LIVE | shopify-products-json` when the public JSON endpoints succeed.
-- `FALLBACK | bundled-snapshot` when neither live catalog adapter is readable.
+- `LIVE DEMO | public-products-json` when the public JSON service succeeds.
+- `LIVE PAGE MARKDOWN` when the allowlisted HTML page is fetched and stripped.
+- `FALLBACK | bundled-snapshot` only when the secondary Shopify origin cannot use a live catalog adapter.
 
 Never interpret the fallback label as current live inventory.
 

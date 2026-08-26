@@ -1,7 +1,7 @@
 import { registerAgenticTools } from "./tools.js";
 
 const state = {
-  originId: "review-shop",
+  originId: "catalog-lab",
   origin: null,
   origins: [],
   selected: new Set(),
@@ -48,6 +48,7 @@ const elements = {
   cartPanel: document.querySelector("#cart-panel"),
   copyTrace: document.querySelector("#copy-trace"),
   deploymentId: document.querySelector("#deployment-id"),
+  promptButtons: [...document.querySelectorAll("[data-query]")],
 };
 
 function node(tag, className, text) {
@@ -87,6 +88,17 @@ function compactOffer(offer, withVariants = false) {
   return summary;
 }
 
+function compactOrigin(origin) {
+  return {
+    id: origin.id,
+    mode: origin.mode,
+    displayName: origin.displayName,
+    hostname: origin.hostname,
+    adapter: origin.adapter,
+    fallbackAdapters: origin.fallbackAdapters,
+  };
+}
+
 function boundedJson(value) {
   let output = JSON.stringify(value);
   if (output.length <= 1450) return output;
@@ -109,7 +121,7 @@ function boundedJson(value) {
 
 function compactCatalog(payload, withVariants = false) {
   return boundedJson({
-    origin: payload.origin,
+    origin: compactOrigin(payload.origin),
     source: payload.source,
     live: payload.live,
     offers: payload.offers.map((offer) => compactOffer(offer, withVariants)),
@@ -145,10 +157,22 @@ function updateOrigin(origin, live, source) {
   }
   if (!state.origin) return;
   const mode = live === undefined ? "status pending" : live ? "live" : "fallback";
+  const sourceMode = state.origin.mode === "controlled-demo" ? "controlled demo" : "merchant";
   const activeSource = source || state.origin.adapter;
-  elements.originMeta.textContent = `${state.origin.displayName} | ${state.origin.hostname} | ${state.origin.adapter} with ${state.origin.fallbackAdapters.join(", ")} fallback | ${mode}`;
-  elements.source.textContent = `${live === undefined ? "PENDING" : live ? "LIVE" : "FALLBACK"} | ${activeSource}`;
+  elements.originMeta.textContent = `${state.origin.displayName} | ${state.origin.hostname} | ${sourceMode} | ${state.origin.adapter} with ${state.origin.fallbackAdapters.join(", ")} fallback | ${mode}`;
+  elements.source.textContent = `${live === undefined ? "PENDING" : live ? state.origin.mode === "controlled-demo" ? "LIVE DEMO" : "LIVE" : "FALLBACK"} | ${activeSource}`;
   elements.source.classList.toggle("fallback", live === false);
+  if (origin?.demo) {
+    elements.promptButtons.forEach((button, index) => {
+      const query = origin.demo.queries[index];
+      if (!query) return;
+      button.dataset.query = query;
+      button.textContent = index === 0 ? `Find ${query}` : `Search ${query}`;
+    });
+    elements.searchInput.placeholder = `Try ${origin.demo.queries.join(", ")}...`;
+    elements.interpolatePath.value = origin.healthPath;
+    elements.briefGoal.value = origin.demo.briefGoal;
+  }
 }
 
 function updateSource(payload) {
@@ -284,7 +308,7 @@ function renderComparison(offers) {
 async function runListOrigins(_args = {}, actor = "agent", signal, record = true) {
   const payload = await api("/api/origins", { signal });
   state.origins = payload.origins;
-  state.originId = state.originId || payload.defaultOriginId;
+  state.originId = payload.origins.some((origin) => origin.id === state.originId) ? state.originId : payload.defaultOriginId;
   elements.originSelect.replaceChildren();
   for (const origin of payload.origins) {
     const option = node("option", "", `${origin.displayName} | ${origin.hostname}`);
@@ -292,7 +316,11 @@ async function runListOrigins(_args = {}, actor = "agent", signal, record = true
     elements.originSelect.append(option);
   }
   updateOrigin(payload.origins.find((origin) => origin.id === state.originId) || payload.origins[0]);
-  const output = boundedJson({ ...payload, suggestedNextActions: ["select_origin", "search_products"] });
+  const output = boundedJson({
+    defaultOriginId: payload.defaultOriginId,
+    origins: payload.origins.map(compactOrigin),
+    suggestedNextActions: ["select_origin", "search_products"],
+  });
   if (record) recordActivity("list_origins", {}, actor, output);
   return output;
 }

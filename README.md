@@ -2,7 +2,7 @@
 
 [![Verify](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml/badge.svg)](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml)
 
-Agentic WebMCP is an open-source agent view over explicitly allowlisted merchant websites. One Worker compiles Storefront GraphQL, public products JSON, JSON-LD, stripped page text, and a labeled snapshot fallback into the shared `Offer` protocol. Tool calls update the visible workspace so the human sees the same origin, facts, proposal, and result as the agent.
+Agentic WebMCP is an open-source agent view over explicitly allowlisted product websites. The app Worker compiles public product JSON, Storefront GraphQL, JSON-LD, stripped page text, and labeled fallback facts into the shared `Offer` protocol. Tool calls update the visible workspace so the human sees the same origin, facts, proposal, and result as the agent.
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
@@ -25,21 +25,24 @@ The first seven tools are read-only and untrusted-content annotated. `propose_ad
 
 ## Default origin and adapter chain
 
-`src/origins.ts` contains one public origin record:
+`src/origins.ts` contains two public origin records. The default recording origin is:
 
-- id: `review-shop`
-- hostname: `agentic-app-review-test.myshopify.com`
+- id: `catalog-lab`
+- mode: `controlled-demo`
+- hostname: `agentic-webmcp-origin.somnora.workers.dev`
 - vertical: `retail`
-- primary adapter: `shopify-storefront`
-- catalog fallback: `shopify-products-json`
+- primary adapter: `public-products-json`
+- catalog content: four original fixture products with no external images
 - page projection: `html-markdown` with JSON-LD extraction when present
-- final data fallback: a clearly labeled bundled snapshot from that origin
+- mutations: none
+
+The origin is a separate public Worker with real HTTPS JSON and semantic HTML responses. The interface labels it `controlled-demo` and `LIVE DEMO`; it is not presented as current merchant inventory. The secondary `review-shop` record preserves the Shopify adapter and labeled snapshot fallback but remains password protected because it is a Shopify development store.
 
 Every Offer includes field-level provenance for title, description, pricing, availability, and variants. The origin health endpoint reports the active catalog adapter and whether the representative product page is publicly readable.
 
-`CATALOG_STOREFRONT_TOKEN` is optional and must be stored as a Wrangler secret or in an ignored `.dev.vars` file. If the token is absent or rejected, the Worker requests only `/products.json` and `/products/{handle}.js` on the exact allowlisted host. If those public endpoints are unavailable, the UI and API say `bundled-snapshot` and `live: false`.
+`CATALOG_STOREFRONT_TOKEN` is optional and applies only to the secondary Shopify origin. It must be stored as a Wrangler secret or in an ignored `.dev.vars` file. The controlled origin requires no credentials and serves `/products.json`, `/products/{handle}.json`, and `/products/{handle}`.
 
-As verified on August 26, 2026, the default storefront currently redirects public catalog and product paths to `/password`. Local no-credential runs therefore use the labeled snapshot. A deployed read-only Storefront token can restore live structured data, but it does not make a password-protected HTML page publicly readable.
+As verified on August 26, 2026, the secondary Shopify storefront redirects public catalog and product paths to `/password`. Selecting that origin without a token uses the labeled snapshot. A deployed read-only Storefront token can restore live structured data, but it does not make a password-protected HTML page publicly readable.
 
 ## Security boundary
 
@@ -66,7 +69,7 @@ npm install
 npm run dev
 ```
 
-No credentials are required. Without a Storefront token, expect live public products JSON when the origin is open and the labeled snapshot when it is protected.
+No credentials are required. The default controlled origin returns live public product JSON and live product HTML. The Shopify origin retains the labeled snapshot behavior while it is protected.
 
 For WebMCP discovery, use a client that exposes the Imperative API. Other browsers retain the complete manual preview and accurately report that WebMCP is not detected.
 
@@ -78,7 +81,7 @@ npm test
 npm run verify
 ```
 
-`npm run verify` runs strict TypeScript, the Vitest suite, and a Wrangler deployment dry run. It does not deploy.
+`npm run verify` runs strict TypeScript, the Vitest suite, and Wrangler deployment dry runs for both Workers. It does not deploy.
 
 After James explicitly deploys this branch, the separate live smoke command is:
 
@@ -86,7 +89,7 @@ After James explicitly deploys this branch, the separate live smoke command is:
 AGENTIC_WEBMCP_URL=https://agentic-webmcp.somnora.workers.dev npm run verify:live
 ```
 
-`npm run deploy` refuses a dirty worktree, deploys the exact current commit, records that commit in `/health`, and runs the live smoke suite. A separate manually triggered GitHub workflow can repeat the public smoke check.
+`npm run deploy` refuses a dirty worktree, deploys the controlled origin and app Workers, records the exact app commit in `/health`, and runs the live smoke suite. A separate manually triggered GitHub workflow can repeat the public smoke check.
 
 ## Architecture
 
@@ -96,7 +99,7 @@ Top-level browser document
   -> shared manual and WebMCP actions
   -> same-origin Worker API
   -> selected Origin record from src/origins.ts
-  -> Storefront GraphQL, then products JSON, then labeled snapshot
+  -> controlled public product JSON or Shopify adapter chain
   -> optional allowlisted HTML and JSON-LD interpolation
   -> one normalized Offer graph
   -> visible provenance, origin health, grid, comparison, stripped view, proposal, cart, and exportable activity rail

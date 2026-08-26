@@ -11,7 +11,7 @@ The current origin interpolation change stays entirely inside `agentic-webmcp`. 
 - Standalone top-level WebMCP workspace.
 - Eight imperative `document.modelContext.registerTool(...)` tools.
 - Origin records stored as data in `src/origins.ts`.
-- One Offer protocol used by Storefront GraphQL, public products JSON, JSON-LD, HTML interpolation, and the bundled snapshot projection.
+- One Offer protocol used by controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot projection.
 - Exact-host and path allowlists, redirect restrictions, and bounded upstream bodies.
 - Shared origin badge, offer grid, comparison, stripped Markdown, activity, proposal, and in-page cart receipt.
 - Human-confirmed proposal protocol with no registered commit or checkout tool.
@@ -32,9 +32,9 @@ The older screenshots and four-tool browser evidence do not represent the curren
 
 ## Current verification boundary
 
-On August 26, 2026, local strict TypeScript, 34 unit and route tests, and the Worker deployment dry run passed for the origin interpolation implementation and hardening work. A visible 1280 x 720 local QA pass also completed for origin labeling, health, search, dual-projection interpolation, proposal, human confirmation, and the in-page receipt. QA screenshots were written only to a temporary directory and were not added to the repository.
+On August 26, 2026, local strict TypeScript and 40 unit and route tests passed after adding the controlled origin. Final two-Worker dry-run, browser, and production evidence is recorded only after the final deployment. No QA screenshots are added to the repository.
 
-The exact-commit deployment helper published the hardened Worker on August 26, 2026. All 11 production smoke checks passed, including deployment identity, origin health, provenance, proposal isolation, and allowlist rejection. Chrome reported exactly eight registered WebMCP tools on the production URL. No screenshot capture or YouTube recording was performed during this task. The live commit identity remains available from `/health` and in the page footer.
+Before the controlled origin change, the exact-commit deployment helper published the hardened Worker on August 26, 2026. All 11 production smoke checks passed, including deployment identity, origin health, provenance, proposal isolation, and allowlist rejection. Chrome reported exactly eight registered WebMCP tools on the production URL. The final controlled-origin production results supersede this baseline after deployment. No screenshot capture or YouTube recording was performed during this task. The live commit identity remains available from `/health` and in the page footer.
 
 ## Current origin access evidence
 
@@ -45,3 +45,5 @@ On August 26, 2026, unauthenticated checks against `agentic-app-review-test.mysh
 - Tokenless Storefront GraphQL reported that the Online Store channel was locked.
 
 The implementation therefore labels no-token local catalog results as `bundled-snapshot` and marks the blocked page projection as not live. This access state can change and should be checked again before deployment and recording.
+
+The Shopify admin also identified the shop as a development store and disabled its public-access control. James approved the controlled fallback. `agentic-webmcp-origin.somnora.workers.dev` serves four original fixture products over public HTTPS JSON and semantic HTML, has no external product images, and has no checkout, payment, accounts, cookies, or analytics. The app labels this origin `controlled-demo` and `LIVE DEMO`.

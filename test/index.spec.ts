@@ -50,8 +50,8 @@ function mockUpstream(): void {
   vi.stubGlobal("fetch", vi.fn(async (input: URL | RequestInfo) => {
     const url = new URL(String(input));
     if (url.pathname === "/products.json") return json({ products: [rawProduct, secondProduct] });
-    if (url.pathname.endsWith(".js")) {
-      const handle = url.pathname.split("/").pop()?.replace(/\.js$/, "") ?? rawProduct.handle;
+    if (url.pathname.endsWith(".js") || url.pathname.endsWith(".json")) {
+      const handle = url.pathname.split("/").pop()?.replace(/\.(?:js|json)$/, "") ?? rawProduct.handle;
       return json(productForHandle(handle));
     }
     if (url.pathname.startsWith("/products/")) {
@@ -94,8 +94,11 @@ describe("Worker routes", () => {
   it("lists and selects the default allowlisted origin", async () => {
     const listed = await handleRequest(new Request("https://example.test/api/origins"), env);
     const listBody = await listed.json() as { defaultOriginId: string; origins: Array<{ id: string; hostname: string }> };
-    expect(listBody.defaultOriginId).toBe("review-shop");
-    expect(listBody.origins).toEqual([expect.objectContaining({ id: "review-shop", hostname: "agentic-app-review-test.myshopify.com" })]);
+    expect(listBody.defaultOriginId).toBe("catalog-lab");
+    expect(listBody.origins).toEqual([
+      expect.objectContaining({ id: "catalog-lab", hostname: "agentic-webmcp-origin.somnora.workers.dev", mode: "controlled-demo" }),
+      expect.objectContaining({ id: "review-shop", hostname: "agentic-app-review-test.myshopify.com", mode: "live-merchant" }),
+    ]);
 
     const selected = await handleRequest(jsonRequest("https://example.test/api/origins/select", { originId: "review-shop" }), env);
     expect(selected.status).toBe(200);
@@ -110,6 +113,17 @@ describe("Worker routes", () => {
       status: "live",
       catalog: { live: true, adapter: "shopify-products-json" },
       page: { live: true, path: "/products/the-complete-snowboard" },
+    });
+  });
+
+  it("reports the controlled default origin as fully live", async () => {
+    mockUpstream();
+    const response = await handleRequest(new Request("https://example.test/api/origins/health?originId=catalog-lab"), env);
+    expect(await response.json()).toMatchObject({
+      status: "live",
+      origin: { id: "catalog-lab", mode: "controlled-demo" },
+      catalog: { live: true, adapter: "public-products-json" },
+      page: { live: true, path: "/products/field-notebook" },
     });
   });
 

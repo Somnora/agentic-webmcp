@@ -14,6 +14,7 @@ import {
 import { getOrigin } from "../src/origins";
 
 const origin = getOrigin("review-shop");
+const controlledOrigin = getOrigin("catalog-lab");
 
 const rawStorefrontProduct = {
   handle: "the-complete-snowboard",
@@ -105,6 +106,14 @@ describe("catalog adapter chain", () => {
     expect(result.live).toBe(true);
     expect(result.source).toBe("shopify-products-json");
     expect(result.offers[0]?.handle).toBe("selling-plans-ski-wax");
+  });
+
+  it("labels the controlled origin public JSON without Shopify identifiers", async () => {
+    const fetcher = vi.fn(async () => response({ products: [rawProductsJsonProduct] })) as typeof fetch;
+    const result = await searchProducts("wax", 6, controlledOrigin, fetcher, { CATALOG_SHOP: origin.hostname });
+    expect(result).toMatchObject({ live: true, source: "public-products-json", origin: { mode: "controlled-demo" } });
+    expect(result.offers[0]?.source.adapter).toBe("public-products-json");
+    expect(result.offers[0]?.variants[0]?.id).toBe("urn:agentic-catalog-lab:variant:2");
   });
 
   it("uses a clearly labeled bundled snapshot when both live adapters fail", async () => {
