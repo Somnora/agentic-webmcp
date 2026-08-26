@@ -45,3 +45,10 @@ Narration: “The Worker enforces the same limits as the schemas, applies origin
 - Keep the video under three minutes.
 - Confirm tool names, spoken claims, and deployed behavior match.
 - Upload publicly to YouTube and test the link logged out.
+
+## Ready-to-use media
+
+- `docs/assets/agentic-webmcp-hero.jpg` — 1280 × 720 opening/title frame.
+- `docs/assets/agentic-webmcp-comparison.jpg` — 1280 × 720 comparison and shared activity frame.
+
+Both captures come from the deployed Worker and contain no account details, tokens, bookmarks, or unrelated tabs.
