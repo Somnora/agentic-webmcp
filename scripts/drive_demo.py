@@ -22,9 +22,10 @@ BRIEF_GOAL = "Choose comfortable everyday apparel with clear availability."
 
 
 GUIDE_CSS = r"""
+html.agentic-demo-recording, html.agentic-demo-recording * { cursor: none !important; }
 #agentic-demo-guide { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
 #agentic-demo-spotlight { position: fixed; z-index: 1; left: -200px; top: -200px; width: 20px; height: 20px; border: 2px solid #ff9d42; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0,11,12,.42), 0 0 30px rgba(255,126,38,.72); transition: left .58s cubic-bezier(.16,1,.3,1), top .58s cubic-bezier(.16,1,.3,1), width .58s cubic-bezier(.16,1,.3,1), height .58s cubic-bezier(.16,1,.3,1), border-color .18s, opacity .22s; opacity: 0; }
-#agentic-demo-cursor { position: fixed; z-index: 3; left: 0; top: 0; width: 26px; height: 32px; transform: translate3d(-80px,-80px,0); transition: transform .68s cubic-bezier(.16,1,.3,1), opacity .18s; filter: drop-shadow(0 2px 3px rgba(0,0,0,.92)) drop-shadow(0 0 4px rgba(255,126,38,.68)); opacity: 0; will-change: transform; }
+#agentic-demo-cursor { position: fixed; z-index: 3; left: 0; top: 0; width: 26px; height: 32px; transform: translate3d(-80px,-80px,0); transition: transform .68s cubic-bezier(.16,1,.3,1), opacity .18s; filter: drop-shadow(0 2px 3px rgba(0,0,0,.92)) drop-shadow(0 0 5px rgba(255,126,38,.75)); opacity: 0; will-change: transform; }
 #agentic-demo-cursor svg { width: 26px; height: 32px; display: block; overflow: visible; }
 #agentic-demo-panel { position: fixed; z-index: 4; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(10px); width: min(720px, calc(100vw - 48px)); color: #f8fafc; background: linear-gradient(135deg, rgba(2,20,20,.98), rgba(3,35,34,.96)); border: 1px solid rgba(255,157,66,.62); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.66), inset 0 1px rgba(255,255,255,.06); padding: 15px 18px 14px; opacity: 0; transition: opacity .22s, transform .32s cubic-bezier(.16,1,.3,1); }
 #agentic-demo-panel.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -42,14 +43,14 @@ GUIDE_CSS = r"""
 GUIDE_SCRIPT = r"""
 () => {
   if (window.agenticDemoGuide) return;
+  document.documentElement.classList.add('agentic-demo-recording');
   const root = document.createElement('div');
   root.id = 'agentic-demo-guide';
   root.innerHTML = `
     <div id="agentic-demo-spotlight"></div>
     <div id="agentic-demo-cursor" aria-hidden="true">
       <svg viewBox="0 0 26 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2 1.5L23.5 20.2H14.2L10.4 30.2L5.6 28.3L9.3 18.5H2V1.5Z" fill="#FFFFFF" stroke="#111827" stroke-width="3.2" stroke-linejoin="round"/>
-        <path d="M2 1.5L23.5 20.2H14.2L10.4 30.2L5.6 28.3L9.3 18.5H2V1.5Z" stroke="#FF7A1A" stroke-width="1.15" stroke-linejoin="round"/>
+        <path d="M2.5 2L2.5 25.5L8.7 19.5L13.1 29.8L17.8 27.8L13.4 17.7L22.4 17.7L2.5 2Z" fill="#FFFFFF" stroke="#111827" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
     <div id="agentic-demo-panel">
