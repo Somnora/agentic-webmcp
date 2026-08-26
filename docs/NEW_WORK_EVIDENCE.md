@@ -32,9 +32,9 @@ The older screenshots and four-tool browser evidence do not represent the curren
 
 ## Current verification boundary
 
-On August 26, 2026, local strict TypeScript and 40 unit and route tests passed after adding the controlled origin. Final two-Worker dry-run, browser, and production evidence is recorded only after the final deployment. No QA screenshots are added to the repository.
+On August 26, 2026, local strict TypeScript and 40 unit and route tests passed after adding the controlled origin. Both Worker dry-runs passed. All 12 production checks passed against the app and controlled origin Workers, including exact deployment identity, controlled origin health, catalog and page liveness, provenance, proposal isolation, and allowlist rejection.
 
-Before the controlled origin change, the exact-commit deployment helper published the hardened Worker on August 26, 2026. All 11 production smoke checks passed, including deployment identity, origin health, provenance, proposal isolation, and allowlist rejection. Chrome reported exactly eight registered WebMCP tools on the production URL. The final controlled-origin production results supersede this baseline after deployment. No screenshot capture or YouTube recording was performed during this task. The live commit identity remains available from `/health` and in the page footer.
+At 1280 by 720, Chrome loaded the production workspace with exactly eight registered WebMCP tools, the `LIVE DEMO | public-products-json` badge, live catalog and page health, four controlled offers, and the deployed commit. The complete interactive interpolation, comparison, proposal, human confirmation, and receipt flow passed in the local 1280 by 720 browser pass. No QA screenshots were added to the repository, and no YouTube recording was performed during this task. The live commit identity remains available from `/health` and in the page footer.
 
 ## Current origin access evidence
 

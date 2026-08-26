@@ -114,7 +114,7 @@ Expected:
 | 2026-08-26 | Vitest | Cart proposal | proposal and commit routes | Yes | N/A | Yes | Proposal has no receipt; commit requires human header |
 | 2026-08-26 | Chrome local | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
 | 2026-08-26 | Chrome production | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
-| Pending final deployment | Production smoke | Controlled origin judge flow | routes | | | | Requires the final committed app and origin Workers |
+| 2026-08-26 | Production smoke | Controlled origin judge flow | 12 route and contract checks | Yes | Yes | Yes | 12 of 12 passed against the app and controlled origin Workers |
 
 ## Automated baseline
 

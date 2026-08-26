@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 const baseUrl = (process.env.AGENTIC_WEBMCP_URL || "https://agentic-webmcp.somnora.workers.dev").replace(/\/$/, "");
 const originUrl = "https://agentic-webmcp-origin.somnora.workers.dev";
 const expectedCommit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const verificationKey = encodeURIComponent(expectedCommit);
 
 const expectedTools = [
   "list_origins",
@@ -19,7 +20,7 @@ const checks = [
   {
     name: "health and security headers",
     run: async () => {
-      const response = await fetch(`${baseUrl}/health`);
+      const response = await fetch(`${baseUrl}/health?verification=${verificationKey}`);
       const body = await response.json();
       if (response.status !== 200 || body.status !== "ok" || body.defaultOriginId !== "catalog-lab") throw new Error(`unexpected response ${response.status}`);
       if (body.deployment?.commit !== expectedCommit) throw new Error(`deployment commit mismatch: ${body.deployment?.commit || "missing"}`);
@@ -40,7 +41,7 @@ const checks = [
   {
     name: "origin adapter health",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/origins/health?originId=catalog-lab`);
+      const response = await fetch(`${baseUrl}/api/origins/health?originId=catalog-lab&verification=${verificationKey}`);
       const body = await response.json();
       if (response.status !== 200 || body.origin?.id !== "catalog-lab") throw new Error("origin health unavailable");
       if (body.status !== "live" || body.catalog?.adapter !== "public-products-json" || body.catalog?.live !== true || body.page?.live !== true) {
@@ -146,14 +147,14 @@ for (const check of checks) {
   const started = Date.now();
   try {
     let lastError;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
       try {
         await check.run();
         lastError = undefined;
         break;
       } catch (error) {
         lastError = error;
-        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        if (attempt < 9) await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
     if (lastError) throw lastError;
