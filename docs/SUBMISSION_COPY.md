@@ -34,6 +34,7 @@ Commercial Agentic existed before the Challenge as private Shopify middleware pu
 
 - Live project: https://agentic-webmcp.somnora.workers.dev/
 - Public source: https://github.com/Somnora/agentic-webmcp
+- Privacy disclosure: https://agentic-webmcp.somnora.workers.dev/privacy.html
 - Demo video: `TBD after recording and YouTube upload`
 
 ## Suggested tags

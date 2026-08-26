@@ -70,6 +70,6 @@ Expected:
 
 ## Automated and manual baseline
 
-On August 25, 2026, the deployed application passed 22 unit tests and all six live smoke checks. A browser manual run verified live source labeling, search, two-product selection, comparison, shared activity updates, and zero console warnings or errors. The browser surface used for that run did not expose the experimental `document.modelContext` API, so tool-selection rows remain deliberately pending until they are exercised in a WebMCP-enabled ChatGPT or Chrome build.
+On August 25, 2026, the deployed application passed 22 unit tests and all seven live smoke checks. A browser manual run verified live source labeling, search, two-product selection, comparison, shared activity updates, and zero console warnings or errors. The browser surface used for that run did not expose the experimental `document.modelContext` API, so tool-selection rows remain deliberately pending until they are exercised in a WebMCP-enabled ChatGPT or Chrome build.
 
 A second deployed run in connected Chrome produced the same clean manual result and confirmed that profile's WebMCP runtime is not enabled. Enable `chrome://flags/#enable-webmcp-testing`, restart Chrome, and rerun the prompt matrix before recording final tool-selection evidence.

@@ -50,7 +50,7 @@ After deployment:
 AGENTIC_WEBMCP_URL=https://your-worker.example npm run verify:live
 ```
 
-The current Cloudflare deployment is version `07a7ba9c-42bb-4808-b6be-58bf2cbfbf60`. Its six live smoke checks cover health, workspace delivery, client registration code, catalog search, product detail, and invalid-input rejection.
+The current Cloudflare deployment is version `bf588059-89f6-4c34-8c15-93bb63b13a22`. Its seven live smoke checks cover health, workspace delivery, client registration code, privacy disclosure, catalog search, product detail, and invalid-input rejection.
 
 The repository is also verified from a clean public clone in CI; no environment variables or private packages are required.
 
@@ -68,6 +68,10 @@ Top-level browser document
 Static assets and API requests pass through one Cloudflare Worker security boundary. Responses set a restrictive CSP, `Origin-Agent-Cluster: ?1`, a self-only `tools` permissions policy, framing denial, MIME-sniffing protection, and no-referrer behavior. Inputs are validated again in Worker code rather than trusting JSON Schema enforcement.
 
 See [Threat model](docs/THREAT_MODEL.md), [new-work evidence](docs/NEW_WORK_EVIDENCE.md), [evaluation prompts](docs/EVALS.md), and [submission draft](docs/SUBMISSION_COPY.md).
+
+## Privacy and security
+
+The public demo is stateless: it has no accounts, cookies, application database, payment flow, or mutation tools. Its plain-language [privacy disclosure](https://agentic-webmcp.somnora.workers.dev/privacy.html), [security reporting policy](SECURITY.md), and detailed [threat model](docs/THREAT_MODEL.md) are public.
 
 ## Relationship to commercial Agentic
 

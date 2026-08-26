@@ -40,8 +40,8 @@ The public repository history is the authoritative timestamped record. Update th
 
 - Public repository: https://github.com/Somnora/agentic-webmcp
 - Cloudflare Worker: https://agentic-webmcp.somnora.workers.dev/
-- Worker version: `07a7ba9c-42bb-4808-b6be-58bf2cbfbf60`
-- Verification: 22 unit tests, strict TypeScript, deployment dry-run, startup analysis, and 6/6 live smoke checks passing on August 25, 2026.
+- Worker version: `bf588059-89f6-4c34-8c15-93bb63b13a22`
+- Verification: 22 unit tests, strict TypeScript, deployment dry-run, startup analysis, and 7/7 live smoke checks passing on August 25, 2026.
 - Reproducibility: GitHub Actions run [`32916802627`](https://github.com/Somnora/agentic-webmcp/actions/runs/32916802627) passed, and an independent shallow clone completed `npm ci` plus the full verification command with zero credentials and zero vulnerabilities.
 
 ## Evaluation boundary

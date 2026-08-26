@@ -30,6 +30,14 @@ const checks = [
     },
   },
   {
+    name: "privacy disclosure",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/privacy.html`);
+      const html = await response.text();
+      if (response.status !== 200 || !html.includes("Privacy for the public demo")) throw new Error("privacy disclosure unavailable");
+    },
+  },
+  {
     name: "catalog search",
     run: async () => {
       const response = await fetch(`${baseUrl}/api/catalog?query=hoodie&limit=4`);

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Privacy disclosure for the public Agentic WebMCP Challenge demo.">
+  <title>Privacy — Agentic WebMCP</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Agentic WebMCP home">
+      <img src="/icon.webp" alt="" width="42" height="42">
+      <span><strong>Agentic</strong><small>WebMCP Commerce Tools</small></span>
+    </a>
+  </header>
+
+  <main class="policy-page">
+    <span class="eyebrow">PUBLIC CHALLENGE DEMO</span>
+    <h1>Privacy for the public demo</h1>
+    <p class="effective">Effective August 25, 2026</p>
+    <p>Agentic WebMCP is a stateless, read-only demonstration. It does not create user accounts, set cookies, request payment information, or store catalog searches, selected products, or generated briefs in an application database.</p>
+
+    <h2>Infrastructure data</h2>
+    <p>Cloudflare hosts the application and may process standard request and security metadata needed to deliver and protect the service. The application has Cloudflare Worker observability enabled for operational reliability. Do not enter personal or confidential information into the public demo.</p>
+
+    <h2>Catalog data</h2>
+    <p>The Worker retrieves public demonstration products from Shopify Mock Shop. Search terms stay within the Agentic Worker; the upstream request fetches a fixed public catalog sample and does not include an Agentic visitor identity. If Mock Shop is unavailable, the page clearly labels its bundled fallback snapshot.</p>
+
+    <h2>Agent tools</h2>
+    <p>The four WebMCP tools are read-only. They expose no account, cart, checkout, order, customer, billing, or product-mutation capability. Tool activity exists only in the open browser page and disappears when that page is closed or reloaded.</p>
+
+    <h2>Contact and source</h2>
+    <p>Questions may be sent to <a href="mailto:support@somnora.app">support@somnora.app</a>. The complete public implementation is available on <a href="https://github.com/Somnora/agentic-webmcp">GitHub</a>.</p>
+  </main>
+
+  <footer>
+    <span>Agentic WebMCP Challenge build</span>
+    <a href="/">Return to the workspace</a>
+  </footer>
+</body>
+</html>
