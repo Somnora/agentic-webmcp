@@ -32,8 +32,8 @@ Commercial Agentic existed before the Challenge as private Shopify middleware pu
 
 ## Required links
 
-- Live project: `TBD after Cloudflare deployment`
-- Public source: `TBD after repository publication`
+- Live project: https://agentic-webmcp.somnora.workers.dev/
+- Public source: https://github.com/Somnora/agentic-webmcp
 - Demo video: `TBD after recording and YouTube upload`
 
 ## Suggested tags

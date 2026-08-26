@@ -67,3 +67,7 @@ Expected:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Pending | ChatGPT in-app browser | Discovery | | | | | |
 | Pending | Chrome WebMCP | Discovery | | | | | |
+
+## Automated and manual baseline
+
+On August 25, 2026, the deployed application passed 22 unit tests and all six live smoke checks. A browser manual run verified live source labeling, search, two-product selection, comparison, shared activity updates, and zero console warnings or errors. The browser surface used for that run did not expose the experimental `document.modelContext` API, so tool-selection rows remain deliberately pending until they are exercised in a WebMCP-enabled ChatGPT or Chrome build.

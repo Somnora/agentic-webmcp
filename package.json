@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Open-source WebMCP commerce tools for human-agent catalog collaboration.",
+  "homepage": "https://agentic-webmcp.somnora.workers.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Somnora/agentic-webmcp.git"
+  },
   "license": "MIT",
   "scripts": {
     "dev": "wrangler dev",

@@ -2,6 +2,8 @@
 
 Agentic WebMCP is an open-source commerce workspace where humans browse normally while browser agents discover explicit, read-only catalog tools. Tool calls update the visible interface so the human and agent remain oriented to the same products and results.
 
+**Live demo:** [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
+
 This project is a WebMCP Challenge extension of the pre-existing commercial Agentic Shopify middleware. All code in this repository was created after the challenge submission period opened on August 25, 2026 at 11:00 AM Pacific. The private commercial application is not included and is not required to run this project.
 
 ## Registered tools
@@ -43,6 +45,8 @@ After deployment:
 ```bash
 AGENTIC_WEBMCP_URL=https://your-worker.example npm run verify:live
 ```
+
+The current Cloudflare deployment is version `07a7ba9c-42bb-4808-b6be-58bf2cbfbf60`. Its six live smoke checks cover health, workspace delivery, client registration code, catalog search, product detail, and invalid-input rejection.
 
 ## Architecture
 

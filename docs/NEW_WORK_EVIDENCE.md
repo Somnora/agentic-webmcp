@@ -31,7 +31,14 @@ The public repository history is the authoritative timestamped record. Update th
 
 | Commit | Time | New WebMCP work |
 | --- | --- | --- |
-| Pending initial commit | After August 25, 11:00 AM PT | Standalone workspace, tool API, Worker, tests, and documentation |
+| [`75f0392`](https://github.com/Somnora/agentic-webmcp/commit/75f03928eb491fecc5a2266b9a148ea4eeb56737) | August 25, 2026 at 5:41:53 PM Pacific | Standalone workspace, tool API, Worker, tests, and documentation |
+
+## Deployed evidence
+
+- Public repository: https://github.com/Somnora/agentic-webmcp
+- Cloudflare Worker: https://agentic-webmcp.somnora.workers.dev/
+- Worker version: `07a7ba9c-42bb-4808-b6be-58bf2cbfbf60`
+- Verification: 22 unit tests, strict TypeScript, deployment dry-run, startup analysis, and 6/6 live smoke checks passing on August 25, 2026.
 
 ## Evaluation boundary
 
