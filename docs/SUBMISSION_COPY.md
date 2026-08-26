@@ -72,4 +72,4 @@ The badge must say `LIVE DEMO | public-products-json`, origin health must report
 
 ## Verification status
 
-Local strict TypeScript and 40 unit and route tests passed on August 26, 2026. All 12 production checks passed against the app and controlled origin Workers. A 1280 by 720 Chrome production pass showed eight registered tools, the controlled origin badge, live catalog and page health, four offers, and the deployed commit. The full interactive judge flow also passed locally at 1280 by 720. The public YouTube video remains the required submission artifact.
+Local strict TypeScript and 43 unit and route tests passed on August 26, 2026. All 13 production checks passed against the app and controlled origin Workers, including the presenter asset. A 1280 by 720 browser pass completed the nine-phase presenter flow through interpolation, comparison, proposal, required human confirmation, and receipt with no console warnings. A prior Chrome production pass showed eight registered tools; the presenter release did not change the tool registration client. The public YouTube video remains the required submission artifact.

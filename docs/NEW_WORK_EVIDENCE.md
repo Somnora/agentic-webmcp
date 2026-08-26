@@ -36,6 +36,8 @@ On August 26, 2026, local strict TypeScript and 40 unit and route tests passed a
 
 At 1280 by 720, Chrome loaded the production workspace with exactly eight registered WebMCP tools, the `LIVE DEMO | public-products-json` badge, live catalog and page health, four controlled offers, and the deployed commit. The complete interactive interpolation, comparison, proposal, human confirmation, and receipt flow passed in the local 1280 by 720 browser pass. No QA screenshots were added to the repository, and no YouTube recording was performed during this task. The live commit identity remains available from `/health` and in the page footer.
 
+The presenter release added a nine-phase 2 minute 28 second rehearsal, one smoothly morphing focus frame, a bounded SVG cursor, live tool inputs, and implementation captions. The local 1280 by 720 pass verified edge-safe cursor placement, `AGENT` and `HUMAN` pointer roles, side-switching overlay placement, the required confirmation interruption, a clean rehearsal reset, and no console warnings. All 13 production checks passed after deployment, including the new presenter asset.
+
 ## Current origin access evidence
 
 On August 26, 2026, unauthenticated checks against `agentic-app-review-test.myshopify.com` observed:

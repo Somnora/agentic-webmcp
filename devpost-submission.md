@@ -73,8 +73,9 @@ The default badge must say `LIVE DEMO | public-products-json`. This means the ap
 - Strict TypeScript: passed locally on August 26, 2026.
 - Unit and route tests: 43 of 43 passed locally.
 - Worker dry run: passed locally on August 26, 2026.
-- Updated production smoke check: 12 of 12 checks passed against both Workers on August 26, 2026.
-- Updated Chrome WebMCP browser pass: the 1280 by 720 production workspace reported eight registered tools, the controlled origin badge, live catalog and page health, four offers, and the deployed commit.
+- Updated production smoke check: 13 of 13 checks passed against both Workers on August 26, 2026, including the presenter asset.
+- Updated browser pass: the 1280 by 720 presenter rehearsal completed interpolation, comparison, proposal, required human confirmation, and receipt with no console warnings. The production workspace reported the controlled origin badge, live catalog and page health, four offers, and the deployed commit.
+- WebMCP discovery evidence: connected Chrome reported eight registered tools on the prior production commit. The final presenter change did not alter `public/tools.js`; the current Chrome extension connection was unavailable for a redundant post-deploy pass.
 - Public YouTube video: missing and required.
 
 ## Known limitations
