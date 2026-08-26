@@ -1,3 +1,5 @@
+import { registerAgenticTools } from "./tools.js";
+
 const state = {
   selected: new Set(),
   products: [],
@@ -207,62 +209,12 @@ async function registerWebMcpTools() {
     elements.status.textContent = "Manual preview ready · WebMCP API not detected";
     return;
   }
-  const readOnlyAnnotations = { readOnlyHint: true, untrustedContentHint: true };
-  const tools = [
-    {
-      name: "search_products",
-      description: "Search the commerce catalog by natural-language product terms and show matching products in the shared page interface.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "Product words to match, such as hoodie, cotton, or slides." },
-          maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum number of results to return." },
-        },
-        required: ["query"],
-      },
-      annotations: readOnlyAnnotations,
-      execute: (args, { signal } = {}) => runSearch(args, "agent via WebMCP", signal),
-    },
-    {
-      name: "get_product",
-      description: "Get current catalog facts and sampled variants for one product handle, then show that product in the shared interface.",
-      inputSchema: {
-        type: "object",
-        properties: { handle: { type: "string", description: "Stable lowercase product handle returned by search_products." } },
-        required: ["handle"],
-      },
-      annotations: readOnlyAnnotations,
-      execute: (args, { signal } = {}) => runGetProduct(args, "agent via WebMCP", signal),
-    },
-    {
-      name: "compare_products",
-      description: "Compare catalog facts for two to four product handles and display a transparent side-by-side view for the human.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          handles: { type: "array", minItems: 2, maxItems: 4, items: { type: "string" }, description: "Two to four unique handles from search results." },
-        },
-        required: ["handles"],
-      },
-      annotations: readOnlyAnnotations,
-      execute: (args, { signal } = {}) => runCompare(args, "agent via WebMCP", signal),
-    },
-    {
-      name: "create_catalog_brief",
-      description: "Create a compact Markdown brief grounded in one to four selected catalog products and show the source selection to the human.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          goal: { type: "string", description: "The shopper or catalog-research goal to ground the brief." },
-          handles: { type: "array", minItems: 1, maxItems: 4, items: { type: "string" }, description: "One to four unique product handles." },
-        },
-        required: ["goal", "handles"],
-      },
-      annotations: readOnlyAnnotations,
-      execute: (args, { signal } = {}) => runBrief(args, "agent via WebMCP", signal),
-    },
-  ];
-  await Promise.all(tools.map((tool) => document.modelContext.registerTool(tool)));
+  const tools = await registerAgenticTools(document.modelContext, {
+    search: (args, signal) => runSearch(args, "agent via WebMCP", signal),
+    get: (args, signal) => runGetProduct(args, "agent via WebMCP", signal),
+    compare: (args, signal) => runCompare(args, "agent via WebMCP", signal),
+    brief: (args, signal) => runBrief(args, "agent via WebMCP", signal),
+  });
   elements.status.textContent = `${tools.length} WebMCP tools registered`;
   elements.statusCluster.classList.add("ready");
 }

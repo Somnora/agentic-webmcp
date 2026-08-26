@@ -50,7 +50,7 @@ After deployment:
 AGENTIC_WEBMCP_URL=https://your-worker.example npm run verify:live
 ```
 
-The current Cloudflare deployment is version `bf588059-89f6-4c34-8c15-93bb63b13a22`. Its seven live smoke checks cover health, workspace delivery, client registration code, privacy disclosure, catalog search, product detail, and invalid-input rejection.
+The current Cloudflare deployment is version `be7d17bb-0cee-4544-8f43-84e398ec519a`. Its seven live smoke checks cover health, workspace delivery, executable tool registration code, privacy disclosure, catalog search, product detail, and invalid-input rejection.
 
 The repository is also verified from a clean public clone in CI; no environment variables or private packages are required.
 

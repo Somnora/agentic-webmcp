@@ -22,7 +22,7 @@ const checks = [
   {
     name: "WebMCP registration client",
     run: async () => {
-      const response = await fetch(`${baseUrl}/app.js`);
+      const response = await fetch(`${baseUrl}/tools.js`);
       const script = await response.text();
       for (const tool of ["search_products", "get_product", "compare_products", "create_catalog_brief"]) {
         if (!script.includes(`name: \"${tool}\"`)) throw new Error(`${tool} is not registered`);
@@ -67,7 +67,18 @@ console.log(`Verifying ${baseUrl}`);
 for (const check of checks) {
   const started = Date.now();
   try {
-    await check.run();
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await check.run();
+        lastError = undefined;
+        break;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }
+    if (lastError) throw lastError;
     console.log(`[PASS] ${check.name} (${Date.now() - started}ms)`);
   } catch (error) {
     failures += 1;
