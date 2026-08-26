@@ -2,7 +2,7 @@
 
 [![Verify](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml/badge.svg)](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml)
 
-Agentic WebMCP is an open-source agent view over explicitly allowlisted product websites. The app Worker compiles public product JSON, Storefront GraphQL, JSON-LD, stripped page text, and labeled fallback facts into the shared `Offer` protocol. Tool calls update the visible workspace so the human sees the same origin, facts, proposal, and result as the agent.
+Agentic WebMCP is an open-source webpage converter and shared agent view over explicitly allowlisted product websites. The app Worker compiles public product JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallback facts into the shared `Offer` protocol. Tool calls update the visible workspace so the human sees the same origin, facts, proposal, and result as the agent.
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
@@ -72,6 +72,18 @@ npm run dev
 No credentials are required. The default controlled origin returns live public product JSON and live product HTML. The Shopify origin retains the labeled snapshot behavior while it is protected.
 
 For WebMCP discovery, use a client that exposes the Imperative API. Other browsers retain the complete manual preview and accurately report that WebMCP is not detected.
+
+## Presenter mode
+
+Click `Presenter mode` in the header or add `?present=1` to the app URL. At 1280 by 720, presenter mode removes the landing-page sections and gives the workspace the full recording viewport. It adds:
+
+- One focus frame that smoothly changes position, size, and corner radius between affected workspace regions.
+- A precise SVG pointer that follows actual mouse input and moves to the result of a WebMCP call.
+- A tool overlay with validated input, narration copy, and a concise under-the-hood explanation.
+- A 2 minute 28 second rehearsal with pause and next controls.
+- A required stop at the cart proposal. The rehearsal cannot advance past that boundary until the visible human confirmation button is clicked.
+
+Presenter mode observes the existing action functions. It does not register another tool, fabricate a commit tool, or weaken the human confirmation boundary. Use the timed rehearsal to practice narration. For the final recording, leave presenter mode open and invoke the real WebMCP tools from the browser agent.
 
 ## Verify
 

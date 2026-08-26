@@ -54,7 +54,17 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/`);
       const html = await response.text();
-      if (response.status !== 200 || !html.includes("A structured agent view") || !html.includes("interpolate-form")) throw new Error("workspace unavailable");
+      if (response.status !== 200 || !html.includes("A structured agent view") || !html.includes("interpolate-form") || !html.includes("presenter-toggle")) throw new Error("workspace unavailable");
+    },
+  },
+  {
+    name: "recording presenter client",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/presenter.js`);
+      const script = await response.text();
+      if (response.status !== 200 || !script.includes("REHEARSAL_STEPS") || !script.includes("human_confirm_add_to_cart") || !script.includes("2:28 target sequence")) {
+        throw new Error("recording presenter unavailable");
+      }
     },
   },
   {

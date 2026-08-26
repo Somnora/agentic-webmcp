@@ -15,9 +15,12 @@
       <img src="/icon.webp" alt="" width="42" height="42">
       <span><strong>Agentic</strong><small>WebMCP Commerce Tools</small></span>
     </a>
-    <div class="status-cluster" aria-live="polite">
-      <span class="status-dot"></span>
-      <span id="webmcp-status">Detecting WebMCP...</span>
+    <div class="header-actions">
+      <button id="presenter-toggle" class="presenter-toggle" type="button" aria-pressed="false">Presenter mode</button>
+      <div class="status-cluster" aria-live="polite">
+        <span class="status-dot"></span>
+        <span id="webmcp-status">Detecting WebMCP...</span>
+      </div>
     </div>
   </header>
 
@@ -152,6 +155,39 @@
       <article><span>03</span><h3>Bounded trust</h3><p>Small read-only tools, strict validation, source labels, and compact outputs reduce ambiguity.</p></article>
     </section>
   </main>
+
+  <div id="presenter-layer" class="presenter-layer" hidden>
+    <div id="presenter-focus" class="presenter-focus" aria-hidden="true"></div>
+    <div id="presenter-cursor" class="presenter-cursor" aria-hidden="true">
+      <svg viewBox="0 0 28 34" width="28" height="34" focusable="false" aria-hidden="true">
+        <path d="M2 2.5v25.2l6.7-6.2 4.6 10.1 5.1-2.4-4.7-9.8 9.8-.8L2 2.5Z"></path>
+      </svg>
+      <span id="presenter-cursor-label">AGENT</span>
+    </div>
+    <section id="presenter-hud" class="presenter-hud" aria-label="Demo presenter">
+      <header>
+        <span id="presenter-phase">PRESENTER READY</span>
+        <time id="presenter-time">2:28 TARGET</time>
+      </header>
+      <code id="presenter-tool">WebMCP converter</code>
+      <p id="presenter-caption" aria-live="polite">Use a timed rehearsal or leave presenter mode open while an agent invokes the real tools.</p>
+      <div class="presenter-call">
+        <span>TOOL INPUT</span>
+        <pre id="presenter-args">{"mode":"waiting"}</pre>
+      </div>
+      <div class="presenter-underhood">
+        <span>UNDER THE HOOD</span>
+        <p id="presenter-underhood">One smoothly moving frame connects each agent capability to the visible workspace it changes.</p>
+      </div>
+      <div class="presenter-progress" aria-hidden="true"><i id="presenter-progress"></i></div>
+      <footer>
+        <button id="presenter-rehearse" type="button">Start 2:28 rehearsal</button>
+        <button id="presenter-pause" type="button" class="ghost" disabled>Pause</button>
+        <button id="presenter-next" type="button" class="ghost" disabled>Next</button>
+        <button id="presenter-exit" type="button" class="ghost">Exit</button>
+      </footer>
+    </section>
+  </div>
 
   <footer>
     <span>Agentic WebMCP Challenge build | <span id="deployment-id">Loading deployment identity...</span></span>

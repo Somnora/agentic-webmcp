@@ -2,7 +2,7 @@
 
 ## Summary
 
-Agentic WebMCP is a shared agent view over explicitly allowlisted product websites. The app Worker normalizes controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, Cloudflare HTMLRewriter page text, and labeled fallback facts into a common Offer graph with field-level provenance. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
+Agentic WebMCP is a webpage converter and shared agent view over explicitly allowlisted product websites. The app Worker normalizes controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, stripped Markdown, and labeled fallback facts into a common Offer graph with field-level provenance. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
 
 ## What it does
 
@@ -15,6 +15,7 @@ Agentic WebMCP is a shared agent view over explicitly allowlisted product websit
 - Stages a cart quote and waits for a visible human confirmation.
 - Creates only an in-page `in_cart` receipt after the human clicks the button.
 - Reports origin health, stable error codes, exact deployment identity, and an exportable shared activity trace.
+- Includes a 1280 by 720 presenter mode whose focus frame, precise cursor, tool inputs, and implementation captions react to the same actions as real WebMCP calls.
 
 ## Registered tools
 
@@ -41,13 +42,14 @@ Top-level document
   -> allowlisted HTML and JSON-LD interpolation
   -> normalized Offer graph
   -> visible origin badge, grid, comparison, stripped view, activity, proposal, and cart receipt
+  -> optional presenter observes the same actions without registering another tool
 ```
 
 The Worker accepts no arbitrary upstream URL. It enforces HTTPS, exact hostnames, declared paths, redirect restrictions, response byte limits, request bounds, strict handles, and origin consistency. It preserves CSP, self-only tools permission, origin agent clustering, framing denial, no-referrer behavior, and Worker-side validation.
 
 ## Testing instructions
 
-1. Open https://agentic-webmcp.somnora.workers.dev/ in a WebMCP-capable browser after deploying the current branch.
+1. Open https://agentic-webmcp.somnora.workers.dev/?present=1 in a WebMCP-capable browser after deploying the current branch.
 2. No account or credentials are required.
 3. Confirm `8 WebMCP tools registered`.
 4. Ask: `List the allowlisted origins and select catalog-lab.`
@@ -69,7 +71,7 @@ The default badge must say `LIVE DEMO | public-products-json`. This means the ap
 ## Verification
 
 - Strict TypeScript: passed locally on August 26, 2026.
-- Unit and route tests: 40 of 40 passed locally.
+- Unit and route tests: 43 of 43 passed locally.
 - Worker dry run: passed locally on August 26, 2026.
 - Updated production smoke check: 12 of 12 checks passed against both Workers on August 26, 2026.
 - Updated Chrome WebMCP browser pass: the 1280 by 720 production workspace reported eight registered tools, the controlled origin badge, live catalog and page health, four offers, and the deployed commit.
@@ -89,7 +91,7 @@ The default badge must say `LIVE DEMO | public-products-json`. This means the ap
 - Live URL: updated and verified on August 26, 2026.
 - Privacy disclosure: updated and deployed.
 - Judge flow and prompt script: updated and deployed.
-- Automated local gate: strict TypeScript, 40 of 40 tests, and both Worker dry runs passed.
+- Automated local gate: strict TypeScript, 43 of 43 tests, and both Worker dry runs passed.
 - Public YouTube video: missing and required.
 
 Do not paste this file into Devpost until current screenshots are captured outside the repository and the public YouTube URL exists.

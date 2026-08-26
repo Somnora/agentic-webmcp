@@ -39,6 +39,9 @@ button { cursor: pointer; }
 .brand strong { font-size: 1.12rem; }
 .brand small { color: var(--muted); letter-spacing: 0.035em; }
 .status-cluster { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 0.86rem; }
+.header-actions { display: flex; align-items: center; gap: 14px; }
+.presenter-toggle { padding: 7px 10px; color: var(--cream); border-color: var(--line); background: transparent; font-size: 0.68rem; }
+.presenter-toggle[aria-pressed="true"] { color: #1c1104; border-color: transparent; background: linear-gradient(135deg, var(--amber), var(--orange)); }
 .status-dot { width: 8px; height: 8px; border-radius: 99px; background: var(--amber); box-shadow: 0 0 12px var(--amber); }
 .status-cluster.ready .status-dot { background: var(--green); box-shadow: 0 0 12px var(--green); }
 
@@ -141,6 +144,82 @@ button.ghost { color: var(--cream); border-color: var(--line); background: trans
 footer { display: flex; justify-content: space-between; gap: 20px; max-width: 1480px; margin: 0 auto; padding: 30px 36px 44px; color: #71827f; border-top: 1px solid var(--line); font-size: 0.7rem; }
 footer a, .policy-page a { color: var(--cream); }
 
+.presenter-layer { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+.presenter-focus {
+  position: fixed;
+  z-index: 51;
+  opacity: 0;
+  border: 2px solid rgba(255, 189, 56, 0.92);
+  background: rgba(255, 189, 56, 0.025);
+  box-shadow: 0 0 0 9999px rgba(1, 7, 8, 0.44), 0 0 0 6px rgba(255, 122, 26, 0.1), 0 14px 46px rgba(0, 0, 0, 0.34);
+  transition: left 620ms cubic-bezier(0.22, 1, 0.36, 1), top 620ms cubic-bezier(0.22, 1, 0.36, 1), width 620ms cubic-bezier(0.22, 1, 0.36, 1), height 620ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 620ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+.presenter-focus.visible { opacity: 1; }
+.presenter-focus.immediate { transition: none; }
+.presenter-cursor {
+  position: fixed;
+  left: -2px;
+  top: -2px;
+  z-index: 53;
+  display: grid;
+  grid-template-columns: 28px auto;
+  align-items: start;
+  gap: 5px;
+  color: #071013;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  transform: translate3d(72vw, 18vh, 0);
+  transform-origin: 2px 2px;
+  transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.presenter-cursor svg { overflow: visible; }
+.presenter-cursor path { fill: var(--amber); stroke: #fff4d8; stroke-width: 1.5; stroke-linejoin: round; }
+.presenter-cursor span { margin-top: 18px; padding: 4px 7px; border: 1px solid rgba(255, 239, 210, 0.7); border-radius: 999px; color: var(--cream); background: rgba(5, 15, 17, 0.94); font-size: 0.58rem; font-weight: 850; letter-spacing: 0.12em; }
+.presenter-cursor.clicking { animation: presenter-click 220ms ease-out; }
+@keyframes presenter-click { 50% { scale: 0.82; filter: drop-shadow(0 0 12px rgba(255, 189, 56, 0.9)); } }
+
+.presenter-hud {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 52;
+  width: min(416px, calc(100vw - 36px));
+  padding: 15px;
+  pointer-events: auto;
+  border: 1px solid rgba(255, 189, 56, 0.45);
+  border-radius: 17px;
+  background: linear-gradient(150deg, rgba(10, 26, 29, 0.98), rgba(4, 12, 14, 0.98));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(18px);
+  transition: top 420ms ease, bottom 420ms ease;
+}
+.presenter-hud.hud-top { top: 18px; bottom: auto; }
+.presenter-hud.hud-left { right: auto; left: 18px; }
+.presenter-hud > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--amber); font-size: 0.62rem; font-weight: 850; letter-spacing: 0.12em; }
+.presenter-hud > code { display: block; margin-top: 9px; color: var(--cream); font-size: 1rem; font-weight: 750; overflow-wrap: anywhere; }
+.presenter-hud > p { margin: 8px 0 10px; color: var(--text); font-size: 0.78rem; line-height: 1.48; }
+.presenter-call, .presenter-underhood { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.025); }
+.presenter-underhood { margin-top: 7px; }
+.presenter-call > span, .presenter-underhood > span { display: block; margin-bottom: 4px; color: var(--green); font-size: 0.56rem; font-weight: 850; letter-spacing: 0.12em; }
+.presenter-call pre, .presenter-underhood p { margin: 0; color: var(--muted); font-size: 0.67rem; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.presenter-progress { height: 3px; margin-top: 11px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.08); }
+.presenter-progress i { display: block; width: 100%; height: 100%; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--green), var(--amber), var(--orange)); }
+.presenter-hud > footer { display: flex; justify-content: flex-end; gap: 6px; max-width: none; margin: 10px 0 0; padding: 0; border: 0; }
+.presenter-hud > footer button { padding: 7px 9px; font-size: 0.63rem; }
+.presenter-hud > footer button:first-child { margin-right: auto; }
+
+body.presenter-active { overflow: hidden; }
+body.presenter-active .hero, body.presenter-active .why-grid, body.presenter-active > footer { display: none; }
+body.presenter-active .site-header { height: 56px; max-width: none; padding-inline: 18px; }
+body.presenter-active main { max-width: none; height: calc(100vh - 56px); padding: 12px 18px 18px; }
+body.presenter-active .workspace { height: 100%; border-radius: 18px; grid-template-columns: minmax(0, 1.62fr) minmax(350px, 0.78fr); }
+body.presenter-active .catalog-panel, body.presenter-active .agent-panel { min-height: 0; padding: 18px; overflow: auto; scroll-behavior: smooth; }
+body.presenter-active .panel-heading { margin-bottom: 12px; }
+body.presenter-active .panel-heading h2 { font-size: 1.25rem; }
+body.presenter-active .product-grid { min-height: 250px; }
+body.presenter-active, body.presenter-active * { cursor: none !important; }
+body.presenter-waiting .presenter-focus { border-color: var(--green); }
+body.presenter-waiting .presenter-cursor path { fill: var(--green); }
+
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -166,6 +245,7 @@ footer a, .policy-page a { color: var(--cream); }
   .site-header { height: 70px; }
   .brand small { display: none; }
   .status-cluster { max-width: 150px; text-align: right; font-size: 0.68rem; }
+  .presenter-toggle { display: none; }
   .hero { padding: 62px 0 38px; }
   .hero h1 br { display: none; }
   .workspace { border-radius: 18px; }

@@ -1,4 +1,5 @@
 import { registerAgenticTools } from "./tools.js";
+import { createPresenter } from "./presenter.js";
 
 const state = {
   originId: "catalog-lab",
@@ -11,6 +12,8 @@ const state = {
   receipts: [],
   returnFocus: null,
 };
+
+let presenter;
 
 const elements = {
   status: document.querySelector("#webmcp-status"),
@@ -221,6 +224,7 @@ function recordActivity(tool, args, actor, resultText) {
     elements.activity.append(row);
   }
   elements.result.replaceChildren(node("span", "kicker", "LATEST RESULT"), node("pre", "", resultText));
+  presenter?.toolEvent(tool, args, actor);
 }
 
 function updateSelection() {
@@ -482,6 +486,7 @@ async function confirmCart() {
   renderCart();
   recordActivity("human_confirm_add_to_cart", { quoteId: quote.quoteId }, "human button", boundedJson(payload.receipt));
   elements.cartPanel.focus();
+  presenter?.humanConfirmed();
 }
 
 function dismissCart() {
@@ -571,6 +576,30 @@ function showError(error) {
   elements.message.textContent = `${code}: ${message}${retry}`;
   recordActivity("tool_error", {}, "system", JSON.stringify({ code, message, retryable: error?.retryable === true }));
 }
+
+function resetWorkspaceForRehearsal() {
+  state.selected.clear();
+  state.activity = [];
+  state.proposal = null;
+  state.receipts = [];
+  state.returnFocus = null;
+  elements.activity.replaceChildren();
+  elements.confirmPanel.hidden = true;
+  elements.result.replaceChildren(node("span", "kicker", "LATEST RESULT"), node("p", "", "The timed rehearsal is ready for its first tool call."));
+  renderCart();
+  updateSelection();
+  hideInterpolate();
+}
+
+presenter = createPresenter({
+  reset: resetWorkspaceForRehearsal,
+  listOrigins: () => runListOrigins({}, "guided rehearsal"),
+  selectOrigin: (args) => runSelectOrigin(args, "guided rehearsal"),
+  search: (args) => runSearch(args, "guided rehearsal"),
+  interpolate: (args) => runInterpolate(args, "guided rehearsal"),
+  compare: (args) => runCompare(args, "guided rehearsal"),
+  propose: (args) => runProposeCart(args, "guided rehearsal"),
+});
 
 await runListOrigins({}, "page initialization", undefined, false).catch(showError);
 await Promise.all([loadOriginHealth(), loadDeploymentIdentity()]);
