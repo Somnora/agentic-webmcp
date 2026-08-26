@@ -1,6 +1,39 @@
 # Agentic WebMCP demo script
 
-Target: 2 minutes 20 seconds, public YouTube, 1920 x 1080, spoken audio.
+Target: under 3 minutes, public YouTube, 1920 x 1080, spoken audio. The
+interactive driver below targets 1 minute 55 seconds; the longer narration
+outline remains available for a manually edited cut.
+
+## Interactive recording driver
+
+The repository includes a deterministic visible-browser driver with a smooth cursor,
+click rings, element spotlights, scene captions, and confirmed-result callouts. It
+operates the live deployed interface and stops if the recording Chrome instance does
+not expose the WebMCP API.
+
+One-time setup:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/requirements-demo.txt
+```
+
+Record the production demo:
+
+```bash
+cd /Users/jamesmcshane/APP_PROJECTS/Agentic/agentic-webmcp
+.venv/bin/python scripts/drive_demo.py
+```
+
+Start a 1500 × 950 or larger QuickTime screen recording when prompted. For a fast
+automated QA pass with retained screenshots:
+
+```bash
+AGENTIC_DEMO_QA_DIR=docs/demo-qa .venv/bin/python scripts/drive_demo.py --fast
+```
+
+Chrome 149+ must have `chrome://flags/#enable-webmcp-testing` enabled for the final
+take. The driver also requests the corresponding Blink testing feature on launch.
 
 ## 0:00–0:20 — Problem
 
