@@ -32,6 +32,9 @@ The public repository history is the authoritative timestamped record. Update th
 | Commit | Time | New WebMCP work |
 | --- | --- | --- |
 | [`75f0392`](https://github.com/Somnora/agentic-webmcp/commit/75f03928eb491fecc5a2266b9a148ea4eeb56737) | August 25, 2026 at 5:41:53 PM Pacific | Standalone workspace, tool API, Worker, tests, and documentation |
+| [`de31e91`](https://github.com/Somnora/agentic-webmcp/commit/de31e91) | August 25, 2026 | Public deployment and verification evidence |
+| [`75ddaac`](https://github.com/Somnora/agentic-webmcp/commit/75ddaac) | August 25, 2026 | Deployed submission-media captures and provenance |
+| [`4887e77`](https://github.com/Somnora/agentic-webmcp/commit/4887e77) | August 25, 2026 | Reproducible GitHub Actions verification workflow |
 
 ## Deployed evidence
 
@@ -39,6 +42,7 @@ The public repository history is the authoritative timestamped record. Update th
 - Cloudflare Worker: https://agentic-webmcp.somnora.workers.dev/
 - Worker version: `07a7ba9c-42bb-4808-b6be-58bf2cbfbf60`
 - Verification: 22 unit tests, strict TypeScript, deployment dry-run, startup analysis, and 6/6 live smoke checks passing on August 25, 2026.
+- Reproducibility: GitHub Actions run [`32916802627`](https://github.com/Somnora/agentic-webmcp/actions/runs/32916802627) passed, and an independent shallow clone completed `npm ci` plus the full verification command with zero credentials and zero vulnerabilities.
 
 ## Evaluation boundary
 

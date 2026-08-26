@@ -1,5 +1,7 @@
 # Agentic WebMCP
 
+[![Verify](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml/badge.svg)](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml)
+
 Agentic WebMCP is an open-source commerce workspace where humans browse normally while browser agents discover explicit, read-only catalog tools. Tool calls update the visible interface so the human and agent remain oriented to the same products and results.
 
 **Live demo:** [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
@@ -49,6 +51,8 @@ AGENTIC_WEBMCP_URL=https://your-worker.example npm run verify:live
 ```
 
 The current Cloudflare deployment is version `07a7ba9c-42bb-4808-b6be-58bf2cbfbf60`. Its six live smoke checks cover health, workspace delivery, client registration code, catalog search, product detail, and invalid-input rejection.
+
+The repository is also verified from a clean public clone in CI; no environment variables or private packages are required.
 
 ## Architecture
 
