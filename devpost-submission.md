@@ -118,7 +118,7 @@ Planned 2:28 flow:
 
 ## Screenshot Shot List
 
-Capture outside the repository at 1280 by 720 or larger:
+Six candidate screenshots were captured outside the repository at 1280 by 720:
 
 1. Origin badge, health labels, and eight registered tools.
 2. Search results for `notebook` with the activity rail visible.
@@ -128,6 +128,8 @@ Capture outside the repository at 1280 by 720 or larger:
 6. Final page-local `in_cart` receipt after the human click.
 
 Do not include browser extensions, account details, credentials, unrelated tabs, or third-party trademarks in the screenshots.
+
+Frames 2 through 6 are visually reviewed and ready for selection. Frame 1 is rehearsal evidence only because the in-app browser truthfully reports that its WebMCP API is not detected. Replace that opening frame with a connected Chrome or ChatGPT capture that visibly confirms all eight registered tools before uploading it to Devpost.
 
 ## Submission Readiness Notes
 
@@ -140,7 +142,7 @@ Do not include browser extensions, account details, credentials, unrelated tabs,
 - Browser rehearsal: completed interpolation, comparison, proposal, required human confirmation, and receipt at 1280 by 720 with no console warnings.
 - WebMCP discovery: connected Chrome reported all eight registered tools on the prior production commit. The final presenter-only change did not modify `public/tools.js`; the Chrome extension connection was unavailable for a redundant final discovery pass.
 - Required public YouTube video: missing.
-- Final screenshots: missing.
+- Candidate screenshots: six captured outside the repository and visually reviewed. One connected WebMCP registration frame still needs replacement.
 
 ## Judging Criteria Alignment
 
