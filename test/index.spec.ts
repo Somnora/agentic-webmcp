@@ -29,8 +29,15 @@ const assetFetcher: Fetcher = {
     throw new Error("Asset socket connections are not used in tests.");
   },
 };
+const demoOriginFetcher: Fetcher = {
+  fetch: (input, init) => fetch(input, init),
+  connect: () => {
+    throw new Error("Demo origin socket connections are not used in tests.");
+  },
+};
 const env: Env = {
   ASSETS: assetFetcher,
+  DEMO_ORIGIN: demoOriginFetcher,
   CATALOG_SHOP: "agentic-app-review-test.myshopify.com",
   APP_COMMIT: "local",
   VERSION_METADATA: { id: "test-version", tag: "", timestamp: "2026-08-26T00:00:00.000Z" },

@@ -16,6 +16,9 @@
     "traces": { "enabled": true, "head_sampling_rate": 0.05 }
   },
   "version_metadata": { "binding": "VERSION_METADATA" },
+  "services": [
+    { "binding": "DEMO_ORIGIN", "service": "agentic-webmcp-origin" }
+  ],
   "vars": {
     "CATALOG_SHOP": "agentic-app-review-test.myshopify.com",
     "APP_COMMIT": "local"

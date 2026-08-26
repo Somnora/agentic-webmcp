@@ -13,6 +13,7 @@ import { commitCartAdd, proposeCartAdd, type CartInput } from "./cart";
 import { classifyError, fixedError, type ErrorCode } from "./errors";
 import { interpolatePage } from "./interpolate";
 import { DEFAULT_ORIGIN_ID, ORIGINS, getOrigin, publicOrigin, type Origin } from "./origins";
+import type { Fetcher } from "./upstream";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const MAX_JSON_BODY_BYTES = 4096;
@@ -159,6 +160,14 @@ function selectedOrigin(url: URL): Origin {
   return getOrigin(url.searchParams.get("originId"));
 }
 
+function fetcherForOrigin(env: Env, origin: Origin): Fetcher {
+  if (origin.id !== DEFAULT_ORIGIN_ID) return fetch;
+  const binding = Reflect.get(env, "DEMO_ORIGIN");
+  const boundFetch = binding && typeof binding === "object" ? Reflect.get(binding, "fetch") : undefined;
+  if (typeof boundFetch !== "function") return fetch;
+  return ((input, init) => Reflect.apply(boundFetch, binding, [input, init]) as Promise<Response>) as Fetcher;
+}
+
 function bodyOrigin(url: URL, body: Record<string, unknown>): Origin {
   const queryId = url.searchParams.get("originId")?.trim().toLocaleLowerCase();
   const bodyValue = optionalString(body, "originId");
@@ -217,8 +226,9 @@ export async function handleRequest(request: Request, env: Env, ctx?: ExecutionC
     if (url.pathname === "/api/origins/health") {
       if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin);
       return await cachedJson(request, ctx, async () => {
-        const projection = await interpolatePage(origin, origin.healthPath, fetch, runtimeCatalogEnv);
+        const projection = await interpolatePage(origin, origin.healthPath, originFetcher, runtimeCatalogEnv);
         const status = projection.pageLive ? "live" : projection.live ? "catalog-live-page-unavailable" : "fallback";
         return {
           origin: projection.origin,
@@ -242,16 +252,18 @@ export async function handleRequest(request: Request, env: Env, ctx?: ExecutionC
     if (url.pathname === "/api/catalog") {
       if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin);
       const query = validateQuery(url.searchParams.get("query"));
       const limit = validateLimit(url.searchParams.get("limit"));
-      return await cachedJson(request, ctx, () => searchProducts(query, limit, origin, fetch, runtimeCatalogEnv));
+      return await cachedJson(request, ctx, () => searchProducts(query, limit, origin, originFetcher, runtimeCatalogEnv));
     }
 
     if (url.pathname.startsWith("/api/products/")) {
       if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin);
       return await cachedJson(request, ctx, async () => {
-        const result = await getProduct(decodedHandle(url.pathname), origin, fetch, runtimeCatalogEnv);
+        const result = await getProduct(decodedHandle(url.pathname), origin, originFetcher, runtimeCatalogEnv);
         if (!result.offers.length) throw new RangeError("Product not found.");
         return result;
       });
@@ -260,22 +272,25 @@ export async function handleRequest(request: Request, env: Env, ctx?: ExecutionC
     if (url.pathname === "/api/compare") {
       if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin);
       const handles = validateHandles(url.searchParams.get("handles"));
-      return await cachedJson(request, ctx, () => compareProducts(handles, origin, fetch, runtimeCatalogEnv));
+      return await cachedJson(request, ctx, () => compareProducts(handles, origin, originFetcher, runtimeCatalogEnv));
     }
 
     if (url.pathname === "/api/interpolate") {
       if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin);
       const path = url.searchParams.get("path");
       if (path === null) throw new RangeError("path must be supplied.");
-      return await cachedJson(request, ctx, () => interpolatePage(origin, path, fetch, runtimeCatalogEnv));
+      return await cachedJson(request, ctx, () => interpolatePage(origin, path, originFetcher, runtimeCatalogEnv));
     }
 
     if (url.pathname === "/api/brief") {
       if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const body = await readBoundedJson(request);
       const origin = bodyOrigin(url, body);
+      const originFetcher = fetcherForOrigin(env, origin);
       const goal = stringField(body, "goal");
       const rawHandles = body.handles;
       if (!Array.isArray(rawHandles) || rawHandles.some((item) => typeof item !== "string")) {
@@ -286,8 +301,8 @@ export async function handleRequest(request: Request, env: Env, ctx?: ExecutionC
         throw new RangeError("Choose between 1 and 4 unique product handles.");
       }
       const catalog = handles.length === 1
-        ? await getProduct(handles[0]!, origin, fetch, runtimeCatalogEnv)
-        : await compareProducts(handles, origin, fetch, runtimeCatalogEnv);
+        ? await getProduct(handles[0]!, origin, originFetcher, runtimeCatalogEnv)
+        : await compareProducts(handles, origin, originFetcher, runtimeCatalogEnv);
       return jsonResponse({ ...catalog, brief: createCatalogBrief(goal, catalog.offers) });
     }
 
@@ -295,16 +310,17 @@ export async function handleRequest(request: Request, env: Env, ctx?: ExecutionC
       if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const body = await readBoundedJson(request);
       const origin = bodyOrigin(url, body);
+      const originFetcher = fetcherForOrigin(env, origin);
       const payload = cartInput(body, origin);
       if (url.pathname.endsWith("/propose")) {
-        return jsonResponse(await proposeCartAdd(payload, origin, fetch, runtimeCatalogEnv));
+        return jsonResponse(await proposeCartAdd(payload, origin, originFetcher, runtimeCatalogEnv));
       }
       if (request.headers.get("X-Agentic-Human-Confirm") !== "true") {
         throw new RangeError("Cart commit requires the human confirmation button.");
       }
       const quoteId = stringField(body, "quoteId");
       const expiresAt = stringField(body, "expiresAt");
-      return jsonResponse(await commitCartAdd({ ...payload, quoteId, expiresAt }, origin, fetch, runtimeCatalogEnv));
+      return jsonResponse(await commitCartAdd({ ...payload, quoteId, expiresAt }, origin, originFetcher, runtimeCatalogEnv));
     }
 
     if (url.pathname.startsWith("/api/")) return fixedErrorResponse("Not found.", "ROUTE_NOT_FOUND", 404);
