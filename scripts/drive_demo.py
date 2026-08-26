@@ -23,9 +23,9 @@ BRIEF_GOAL = "Choose comfortable everyday apparel with clear availability."
 
 GUIDE_CSS = r"""
 #agentic-demo-guide { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-#agentic-demo-spotlight { position: fixed; z-index: 1; left: -200px; top: -200px; width: 20px; height: 20px; border: 2px solid #ff9d42; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0,11,12,.42), 0 0 30px rgba(255,126,38,.72); transition: left .58s cubic-bezier(.16,1,.3,1), top .58s cubic-bezier(.16,1,.3,1), width .58s cubic-bezier(.16,1,.3,1), height .58s cubic-bezier(.16,1,.3,1), opacity .22s; opacity: 0; }
-#agentic-demo-cursor { position: fixed; z-index: 3; left: 0; top: 0; width: 34px; height: 42px; transform: translate3d(-80px,-80px,0); transition: transform .68s cubic-bezier(.16,1,.3,1), opacity .18s; filter: drop-shadow(0 3px 6px rgba(0,0,0,.9)) drop-shadow(0 0 7px rgba(255,126,38,.85)); opacity: 0; will-change: transform; }
-#agentic-demo-cursor svg { width: 34px; height: 42px; display: block; }
+#agentic-demo-spotlight { position: fixed; z-index: 1; left: -200px; top: -200px; width: 20px; height: 20px; border: 2px solid #ff9d42; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0,11,12,.42), 0 0 30px rgba(255,126,38,.72); transition: left .58s cubic-bezier(.16,1,.3,1), top .58s cubic-bezier(.16,1,.3,1), width .58s cubic-bezier(.16,1,.3,1), height .58s cubic-bezier(.16,1,.3,1), border-color .18s, opacity .22s; opacity: 0; }
+#agentic-demo-cursor { position: fixed; z-index: 3; left: 0; top: 0; width: 26px; height: 32px; transform: translate3d(-80px,-80px,0); transition: transform .68s cubic-bezier(.16,1,.3,1), opacity .18s; filter: drop-shadow(0 2px 3px rgba(0,0,0,.92)) drop-shadow(0 0 4px rgba(255,126,38,.68)); opacity: 0; will-change: transform; }
+#agentic-demo-cursor svg { width: 26px; height: 32px; display: block; overflow: visible; }
 #agentic-demo-panel { position: fixed; z-index: 4; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(10px); width: min(720px, calc(100vw - 48px)); color: #f8fafc; background: linear-gradient(135deg, rgba(2,20,20,.98), rgba(3,35,34,.96)); border: 1px solid rgba(255,157,66,.62); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.66), inset 0 1px rgba(255,255,255,.06); padding: 15px 18px 14px; opacity: 0; transition: opacity .22s, transform .32s cubic-bezier(.16,1,.3,1); }
 #agentic-demo-panel.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 #agentic-demo-kicker { display: flex; align-items: center; gap: 9px; color: #ffb469; font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
@@ -47,8 +47,9 @@ GUIDE_SCRIPT = r"""
   root.innerHTML = `
     <div id="agentic-demo-spotlight"></div>
     <div id="agentic-demo-cursor" aria-hidden="true">
-      <svg viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 2L29 24H17L12 39L5 36L10 22H3V2Z" fill="#F8FAFC" stroke="#E75F15" stroke-width="2.3" stroke-linejoin="round"/>
+      <svg viewBox="0 0 26 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 1.5L23.5 20.2H14.2L10.4 30.2L5.6 28.3L9.3 18.5H2V1.5Z" fill="#FFFFFF" stroke="#111827" stroke-width="3.2" stroke-linejoin="round"/>
+        <path d="M2 1.5L23.5 20.2H14.2L10.4 30.2L5.6 28.3L9.3 18.5H2V1.5Z" stroke="#FF7A1A" stroke-width="1.15" stroke-linejoin="round"/>
       </svg>
     </div>
     <div id="agentic-demo-panel">
@@ -90,17 +91,20 @@ GUIDE_SCRIPT = r"""
       spotlight.style.top = `${top}px`;
       spotlight.style.width = `${width}px`;
       spotlight.style.height = `${height}px`;
+      // A bordered spotlight can visibly cut through a pointer on compact
+      // controls. Keep the dimming/glow, but hide that border for short rows.
+      spotlight.style.borderColor = height < 72 ? 'transparent' : '#ff9d42';
       spotlight.style.opacity = '1';
-      cursorX = Math.min(innerWidth - 34, Math.max(14, box.x + box.width * .72));
-      cursorY = Math.min(innerHeight - 44, Math.max(14, box.y + box.height * .55));
+      cursorX = Math.min(innerWidth - 28, Math.max(14, box.x + box.width * .72));
+      cursorY = Math.min(innerHeight - 34, Math.max(14, box.y + box.height * .5));
       cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
       cursor.style.opacity = '1';
     },
     pulse() {
       const pulse = document.createElement('div');
       pulse.className = 'agentic-demo-pulse';
-      pulse.style.left = `${cursorX + 5}px`;
-      pulse.style.top = `${cursorY + 5}px`;
+      pulse.style.left = `${cursorX + 2}px`;
+      pulse.style.top = `${cursorY + 2}px`;
       root.appendChild(pulse);
       setTimeout(() => pulse.remove(), 760);
     },
