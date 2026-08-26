@@ -6,7 +6,7 @@ Agentic WebMCP is an open-source agent view over explicitly allowlisted merchant
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
-The current branch is the source of truth until it is deployed. A prior deployment can show the earlier tool surface.
+The `/health` response and page footer expose the deployed Git commit and Cloudflare Worker version so judges can match the live app to this repository.
 
 ## Registered WebMCP tools
 
@@ -35,6 +35,8 @@ The first seven tools are read-only and untrusted-content annotated. `propose_ad
 - page projection: `html-markdown` with JSON-LD extraction when present
 - final data fallback: a clearly labeled bundled snapshot from that origin
 
+Every Offer includes field-level provenance for title, description, pricing, availability, and variants. The origin health endpoint reports the active catalog adapter and whether the representative product page is publicly readable.
+
 `CATALOG_STOREFRONT_TOKEN` is optional and must be stored as a Wrangler secret or in an ignored `.dev.vars` file. If the token is absent or rejected, the Worker requests only `/products.json` and `/products/{handle}.js` on the exact allowlisted host. If those public endpoints are unavailable, the UI and API say `bundled-snapshot` and `live: false`.
 
 As verified on August 26, 2026, the default storefront currently redirects public catalog and product paths to `/password`. Local no-credential runs therefore use the labeled snapshot. A deployed read-only Storefront token can restore live structured data, but it does not make a password-protected HTML page publicly readable.
@@ -50,6 +52,8 @@ The Worker never accepts an arbitrary upstream URL. Every upstream request must 
 - Bounded request bodies and bounded upstream response bytes.
 - Strict handles, limits, origin ids, and comparison counts.
 - Untrusted origin strings rendered with `textContent`.
+- Short Cache API entries keyed only by the validated same-origin request URL.
+- Structured API errors with stable codes and retry guidance.
 
 Responses preserve a restrictive CSP, `Permissions-Policy: tools=(self)`, `Origin-Agent-Cluster: ?1`, framing denial, MIME-sniffing protection, and no-referrer behavior. The build has no checkout, payment, Admin API, accounts, cookies, analytics identifiers, or commercial application integration.
 
@@ -82,6 +86,8 @@ After James explicitly deploys this branch, the separate live smoke command is:
 AGENTIC_WEBMCP_URL=https://agentic-webmcp.somnora.workers.dev npm run verify:live
 ```
 
+`npm run deploy` refuses a dirty worktree, deploys the exact current commit, records that commit in `/health`, and runs the live smoke suite. A separate manually triggered GitHub workflow can repeat the public smoke check.
+
 ## Architecture
 
 ```text
@@ -93,7 +99,7 @@ Top-level browser document
   -> Storefront GraphQL, then products JSON, then labeled snapshot
   -> optional allowlisted HTML and JSON-LD interpolation
   -> one normalized Offer graph
-  -> visible grid, comparison, stripped view, proposal, cart, and activity rail
+  -> visible provenance, origin health, grid, comparison, stripped view, proposal, cart, and exportable activity rail
 ```
 
 See the [judge guide](docs/JUDGE_GUIDE.md), [demo script](docs/DEMO_SCRIPT.md), [evaluation plan](docs/EVALS.md), [threat model](docs/THREAT_MODEL.md), [offer protocol](docs/OFFER_PROTOCOL.md), and [submission draft](docs/SUBMISSION_COPY.md).

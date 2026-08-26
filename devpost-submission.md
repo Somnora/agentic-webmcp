@@ -2,7 +2,7 @@
 
 ## Summary
 
-Agentic WebMCP is a shared agent view over explicitly allowlisted merchant websites. One Cloudflare Worker normalizes Storefront GraphQL, public products JSON, JSON-LD, stripped HTML text, and a labeled snapshot fallback into a common Offer graph. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
+Agentic WebMCP is a shared agent view over explicitly allowlisted merchant websites. One Cloudflare Worker normalizes Storefront GraphQL, public products JSON, JSON-LD, Cloudflare HTMLRewriter page text, and a labeled snapshot fallback into a common Offer graph with field-level provenance. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
 
 ## What it does
 
@@ -14,6 +14,7 @@ Agentic WebMCP is a shared agent view over explicitly allowlisted merchant websi
 - Creates deterministic, source-only catalog briefs.
 - Stages a cart quote and waits for a visible human confirmation.
 - Creates only an in-page `in_cart` receipt after the human clicks the button.
+- Reports origin health, stable error codes, exact deployment identity, and an exportable shared activity trace.
 
 ## Registered tools
 
@@ -68,7 +69,7 @@ If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a la
 ## Verification
 
 - Strict TypeScript: passed locally on August 26, 2026.
-- Unit and route tests: 27 of 27 passed locally.
+- Unit and route tests: 34 of 34 passed locally.
 - Worker dry run: passed locally on August 26, 2026.
 - Updated production smoke check: pending deployment by James.
 - Updated WebMCP browser pass: pending deployment by James.
@@ -89,7 +90,7 @@ If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a la
 - Live URL: present but not updated by this task.
 - Privacy disclosure: updated in source.
 - Judge flow and prompt script: updated in source.
-- Automated local gate: strict TypeScript, 27 of 27 tests, and Worker dry run passed.
+- Automated local gate: strict TypeScript, 34 of 34 tests, and Worker dry run passed.
 - Public YouTube video: missing and required.
 
 Do not paste this file into Devpost until the current branch is deployed, the live judge flow is verified, current screenshots are captured outside the repository, and the public YouTube URL exists.

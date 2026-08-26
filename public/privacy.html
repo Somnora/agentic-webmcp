@@ -23,7 +23,7 @@
     <p>Agentic WebMCP is a stateless demonstration. It does not create user accounts, set cookies, request payment information, or store origin selections, catalog searches, cart proposals, in-page cart receipts, or generated briefs in an application database.</p>
 
     <h2>Infrastructure data</h2>
-    <p>Cloudflare hosts the application and may process standard request and security metadata needed to deliver and protect the service. The application has Cloudflare Worker observability enabled for operational reliability. Do not enter personal or confidential information into the public demo.</p>
+    <p>Cloudflare hosts the application and may process standard request, URL, security, log, and trace metadata needed to deliver, monitor, and protect the service. Application error records contain only the route path, stable error code, and retryability. There are no third-party analytics identifiers. Do not enter personal or confidential information into the public demo.</p>
 
     <h2>Catalog data</h2>
     <p>The Worker reads only exact HTTPS hostnames and paths declared in its origin allowlist. The default origin is agentic-app-review-test.myshopify.com. It first uses a configured read-only Storefront API token when present, then public products JSON, then a clearly labeled bundled snapshot. Search terms do not include an Agentic visitor identity.</p>

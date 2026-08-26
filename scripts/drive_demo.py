@@ -46,6 +46,7 @@ async def run_qa(base_url: str) -> None:
         await page.goto(base_url, wait_until="load")
         await expect(page.locator("#origin-select")).to_have_value("review-shop", timeout=15000)
         await expect(page.locator("#origin-meta")).to_contain_text("agentic-app-review-test.myshopify.com")
+        await expect(page.locator("#origin-health")).not_to_contain_text("Checking")
         await capture(page, "01-origin")
 
         search = page.locator("#search-input")
@@ -63,16 +64,20 @@ async def run_qa(base_url: str) -> None:
             timeout=15000,
         )
         await expect(page.locator("#activity-list")).to_contain_text("interpolate_page")
+        await expect(page.locator("#interpolate-view")).to_contain_text("two agent-ready projections")
+        await expect(page.locator("#interpolate-provenance")).to_contain_text("pricing:")
         await capture(page, "03-interpolate")
 
         propose = page.locator("#product-grid .product-card").get_by_role("button", name="Propose")
         await propose.click()
         await expect(page.locator("#confirm-panel")).to_be_visible(timeout=15000)
+        await expect(page.locator("#confirm-panel")).to_be_focused()
         await expect(page.locator("#cart-empty")).to_be_visible()
         await capture(page, "04-proposal")
 
         await page.locator("#confirm-cart").click()
         await expect(page.locator("#cart-list")).to_contain_text("in_cart", timeout=15000)
+        await expect(page.locator("#cart-panel")).to_be_focused()
         await capture(page, "05-confirmed")
 
         status = (await page.locator("#webmcp-status").inner_text()).strip()

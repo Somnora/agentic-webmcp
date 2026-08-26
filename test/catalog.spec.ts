@@ -115,6 +115,8 @@ describe("catalog adapter chain", () => {
     expect(result.warning).toContain("clearly labeled bundled snapshot");
     expect(result.offers[0]?.handle).toBe("selling-plans-ski-wax");
     expect(result.offers[0]?.source.live).toBe(false);
+    expect(result.offers[0]?.source.adapter).toBe("bundled-snapshot");
+    expect(result.offers[0]?.provenance).toMatchObject({ pricing: "bundled-snapshot", variants: "bundled-snapshot" });
   });
 
   it("returns an exact product through the products JSON adapter", async () => {

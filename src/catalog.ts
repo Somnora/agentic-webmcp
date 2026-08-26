@@ -1,5 +1,5 @@
 import { FALLBACK_PRODUCTS, type SnapshotProduct } from "./demo-catalog";
-import { money, offerAvailable, priceLabel, type Money, type Offer, type Variant } from "./offers";
+import { money, offerAvailable, priceLabel, uniformProvenance, type Money, type Offer, type Variant } from "./offers";
 import { assertCatalogShop, getOrigin, publicOrigin, type Adapter, type Origin, type PublicOrigin } from "./origins";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
@@ -177,6 +177,7 @@ export function normalizeStorefrontOffer(value: unknown, origin: Origin = getOri
     constraints: { available: offerAvailable(variants) },
     ...(image ? { image } : {}),
     source: { adapter: "shopify-storefront", live: true, fetchedAt, untrusted: true },
+    provenance: uniformProvenance("shopify-storefront"),
   };
 }
 
@@ -237,6 +238,7 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
     constraints: { available: offerAvailable(variants) },
     ...(image ? { image } : {}),
     source: { adapter: "shopify-products-json", live: true, fetchedAt, untrusted: true },
+    provenance: uniformProvenance("shopify-products-json"),
   };
 }
 
@@ -265,7 +267,8 @@ function normalizeSnapshotOffer(product: SnapshotProduct, origin: Origin, fetche
     variants,
     constraints: { available: offerAvailable(variants) },
     ...(product.featuredImage ? { image: { ...product.featuredImage } } : {}),
-    source: { adapter: "shopify-products-json", live: false, fetchedAt, untrusted: true },
+    source: { adapter: "bundled-snapshot", live: false, fetchedAt, untrusted: true },
+    provenance: uniformProvenance("bundled-snapshot"),
   };
 }
 

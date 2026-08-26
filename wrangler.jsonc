@@ -12,9 +12,12 @@
   },
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
   },
+  "version_metadata": { "binding": "VERSION_METADATA" },
   "vars": {
-    "CATALOG_SHOP": "agentic-app-review-test.myshopify.com"
+    "CATALOG_SHOP": "agentic-app-review-test.myshopify.com",
+    "APP_COMMIT": "local"
   }
 }

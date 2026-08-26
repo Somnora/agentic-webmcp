@@ -1,5 +1,5 @@
 import { getProduct, type CatalogEnv, type CatalogSource } from "./catalog";
-import { money, type Offer, type Variant } from "./offers";
+import { money, uniformProvenance, type Offer, type Variant } from "./offers";
 import { publicOrigin, validateInterpolatePath, type Origin, type PublicOrigin } from "./origins";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
@@ -51,8 +51,8 @@ function findProductNode(value: unknown): Record<string, unknown> | null {
   }
   const candidate = record(value);
   const types = array(candidate["@type"]).map((item) => text(item, 40).toLocaleLowerCase());
-  if (types.includes("product")) return candidate;
-  for (const key of ["@graph", "mainEntity", "itemListElement"]) {
+  if (types.includes("product") || types.includes("productgroup")) return candidate;
+  for (const key of ["@graph", "mainEntity", "itemListElement", "hasVariant"]) {
     const found = findProductNode(candidate[key]);
     if (found) return found;
   }
@@ -87,23 +87,37 @@ function jsonLdImage(value: unknown): { url: string; altText: string | null } | 
   return { url: rawUrl.slice(0, 500), altText: null };
 }
 
-function normalizeJsonLdOffer(product: Record<string, unknown>, origin: Origin, handle: string): Offer | null {
+export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: Origin, handle: string): Offer | null {
   const title = text(product.name, 160);
   if (!title) return null;
-  const offerNode = record(array(product.offers)[0]);
-  const currencyCode = text(offerNode.priceCurrency, 8) || origin.currencyCode;
-  const low = offerNode.lowPrice ?? offerNode.price;
-  const high = offerNode.highPrice ?? offerNode.price ?? low;
-  const availability = text(offerNode.availability, 200).toLocaleLowerCase();
-  const available = availability.includes("instock") || availability.includes("limitedavailability");
-  const variant: Variant = {
-    id: text(offerNode.sku, 180) || `${origin.canonicalUrl}/products/${handle}#offer`,
-    title: "Default offer",
-    available,
-    quantityAvailable: null,
-    price: money(offerNode.price ?? low, currencyCode),
-    options: [],
-  };
+  const rootOffers = array(product.offers).map(record);
+  const aggregate = rootOffers.find((item) => array(item["@type"]).some((type) => text(type, 40).toLocaleLowerCase() === "aggregateoffer"));
+  const leafOffers = rootOffers.flatMap((item) => {
+    const nested = array(item.offers).map(record);
+    return nested.length ? nested : [item];
+  }).slice(0, 8);
+  const currencyCode = text(leafOffers[0]?.priceCurrency ?? aggregate?.priceCurrency, 8) || origin.currencyCode;
+  const numericPrices = leafOffers
+    .map((item) => Number.parseFloat(text(record(item.priceSpecification).price ?? item.price, 24)))
+    .filter(Number.isFinite);
+  const aggregateLow = aggregate?.lowPrice ?? aggregate?.price;
+  const aggregateHigh = aggregate?.highPrice ?? aggregate?.price;
+  const low = aggregateLow ?? (numericPrices.length ? Math.min(...numericPrices) : 0);
+  const high = aggregateHigh ?? (numericPrices.length ? Math.max(...numericPrices) : low);
+  const variants: Variant[] = (leafOffers.length ? leafOffers : [aggregate ?? {}]).map((offerNode, index) => {
+    const availability = text(offerNode.availability, 200).toLocaleLowerCase();
+    const available = availability.includes("instock") || availability.includes("limitedavailability");
+    const priceNode = record(offerNode.priceSpecification);
+    return {
+      id: text(offerNode.sku ?? product.sku, 180) || `${origin.canonicalUrl}/products/${handle}#offer-${index + 1}`,
+      title: text(offerNode.name, 120) || (leafOffers.length > 1 ? `Offer ${index + 1}` : "Default offer"),
+      available,
+      quantityAvailable: null,
+      price: money(priceNode.price ?? offerNode.price ?? low, text(offerNode.priceCurrency, 8) || currencyCode),
+      options: [],
+    };
+  });
+  const available = variants.some((variant) => variant.available);
   const vendorNode = record(product.brand);
   const vendor = text(vendorNode.name ?? product.brand, 100);
   const image = jsonLdImage(product.image);
@@ -116,7 +130,7 @@ function normalizeJsonLdOffer(product: Record<string, unknown>, origin: Origin, 
     ...(vendor ? { vendor } : {}),
     vertical: origin.vertical,
     priceRange: { min: money(low, currencyCode), max: money(high, currencyCode) },
-    variants: [variant],
+    variants,
     constraints: { available },
     ...(image ? { image } : {}),
     source: {
@@ -125,10 +139,11 @@ function normalizeJsonLdOffer(product: Record<string, unknown>, origin: Origin, 
       fetchedAt: new Date().toISOString(),
       untrusted: true,
     },
+    provenance: uniformProvenance("json-ld"),
   };
 }
 
-function strippedPageText(html: string): string {
+function strippedPageTextFallback(html: string): string {
   const withoutChrome = html
     .replace(/<(script|style|nav|footer|iframe|form)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
     .replace(/<!--([\s\S]*?)-->/g, " ")
@@ -142,6 +157,29 @@ function strippedPageText(html: string): string {
     .slice(0, 16)
     .join("\n")
     .slice(0, 700);
+}
+
+async function strippedPageText(html: string): Promise<string> {
+  if (typeof HTMLRewriter === "undefined") return strippedPageTextFallback(html);
+  const lines: string[] = [];
+  let rewriter = new HTMLRewriter();
+  for (const tag of ["nav", "footer", "script", "style", "iframe", "form"]) {
+    rewriter = rewriter.on(tag, {
+      element(element) {
+        element.remove();
+      },
+    });
+  }
+  for (const tag of ["h1", "h2", "h3", "p", "li"]) {
+    rewriter = rewriter.on(tag, {
+      text(chunk) {
+        const value = chunk.text.replace(/\s+/g, " ").trim();
+        if (value && lines.join(" ").length < 900) lines.push(value);
+      },
+    });
+  }
+  await rewriter.transform(new Response(html, { headers: { "Content-Type": "text/html" } })).arrayBuffer();
+  return lines.join("\n").slice(0, 700);
 }
 
 function offerFacts(offer: Offer): string {
@@ -188,7 +226,7 @@ export async function interpolatePage(
     pageLive = true;
     const jsonLd = extractJsonLd(response.text);
     jsonLdOffer = jsonLd ? normalizeJsonLdOffer(jsonLd, origin, handle) : null;
-    pageText = strippedPageText(response.text);
+    pageText = await strippedPageText(response.text);
   } catch (error) {
     pageWarning = error instanceof Error ? error.message : "Allowlisted page could not be read.";
   }

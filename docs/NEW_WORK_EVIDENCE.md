@@ -32,7 +32,7 @@ The older screenshots and four-tool browser evidence do not represent the curren
 
 ## Current verification boundary
 
-On August 26, 2026, local strict TypeScript, 27 unit and route tests, and the Worker deployment dry run passed for the origin interpolation implementation. A visible 1280 x 720 local QA pass also completed for origin labeling, search, interpolation, proposal, human confirmation, and the in-page receipt. QA screenshots were written only to a temporary directory and were not added to the repository.
+On August 26, 2026, local strict TypeScript, 34 unit and route tests, and the Worker deployment dry run passed for the origin interpolation implementation and hardening work. A visible 1280 x 720 local QA pass also completed for origin labeling, health, search, dual-projection interpolation, proposal, human confirmation, and the in-page receipt. QA screenshots were written only to a temporary directory and were not added to the repository.
 
 No deployment, updated production smoke run, updated WebMCP browser pass, screenshot capture, or YouTube recording was performed during this task. The final commit hash should be added after commit.
 

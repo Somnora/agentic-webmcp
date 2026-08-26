@@ -27,16 +27,18 @@
 - Fetch uses `redirect: manual`.
 - Off-origin redirects are rejected.
 - Same-origin redirects are also rejected when the destination path is not explicitly allowlisted.
+- Password redirects are classified explicitly and never followed.
 - Catalog and HTML responses are read through byte-bounded streams.
 - Product HTML interpolation accepts only product paths declared on the selected Origin.
 
 ## Data and UI controls
 
 - Storefront GraphQL, products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
+- Each Offer records field-level provenance for title, description, pricing, availability, and variants.
 - Descriptions, titles, vendor text, option text, and image URLs are normalized and truncated.
 - Tool JSON output is compacted to about 1.5K characters in the browser action layer.
 - The UI creates nodes and uses `textContent`; origin content is never inserted as HTML.
-- Interpolation removes nav, footer, script, style, iframe, form, and comments before rendering text.
+- Production interpolation uses Cloudflare HTMLRewriter to remove nav, footer, script, style, iframe, and form content before collecting compact semantic text. Deterministic Node tests use a bounded fallback projection.
 - Structured adapters remain the inventory authority when they succeed.
 - Fallback offers have `source.live: false` and the UI says `FALLBACK | bundled-snapshot`.
 
@@ -57,6 +59,8 @@
 - Framing is denied by CSP and `X-Frame-Options: DENY`.
 - MIME sniffing is disabled and referrers are suppressed.
 - Request bodies, query length, result count, handles, comparison size, brief goals, quantities, and quote ids are bounded in Worker code.
+- Validated read responses use short Cloudflare Cache API entries. Cache keys remain same-origin and include the selected origin and bounded query parameters.
+- Errors expose stable codes and retry guidance while operational error logs include only route path, code, and retryability.
 
 ## Considered attacks
 
@@ -65,7 +69,7 @@
 | Arbitrary URL or alternate hostname | HTTP 400 before fetch |
 | Encoded path traversal | HTTP 400 |
 | Off-host redirect | Fetch stops and live data is not claimed |
-| Redirect to `/password` | Fetch stops because the path is not allowlisted; fallback is labeled |
+| Redirect to `/password` | Fetch stops with an explicit password-protected warning; fallback is labeled |
 | Oversized upstream body | Stream is cancelled and live data is not claimed |
 | Prompt injection in origin text | Shown as untrusted text and never executed |
 | Malformed JSON-LD | Ignored; richer structured or labeled fallback facts remain available |

@@ -10,6 +10,7 @@ import {
   type CatalogEnv,
 } from "./catalog";
 import { commitCartAdd, proposeCartAdd, type CartInput } from "./cart";
+import { classifyError, fixedError, type ErrorCode } from "./errors";
 import { interpolatePage } from "./interpolate";
 import { DEFAULT_ORIGIN_ID, ORIGINS, getOrigin, publicOrigin, type Origin } from "./origins";
 
@@ -36,10 +37,49 @@ function jsonResponse(payload: unknown, status = 200, cache = false): Response {
   return new Response(JSON.stringify(payload), { status, headers });
 }
 
-function errorResponse(error: unknown): Response {
-  if (error instanceof UnsupportedMediaTypeError) return jsonResponse({ error: error.message }, 415);
-  const known = error instanceof RangeError;
-  return jsonResponse({ error: known ? error.message : "The allowlisted origin request could not be completed." }, known ? 400 : 502);
+function errorResponse(error: unknown, pathname: string): Response {
+  const classified = error instanceof UnsupportedMediaTypeError
+    ? fixedError(error.message, "UNSUPPORTED_MEDIA_TYPE", 415)
+    : classifyError(error);
+  console.error(JSON.stringify({
+    event: "request_error",
+    path: pathname,
+    code: classified.payload.code,
+    retryable: classified.payload.retryable,
+  }));
+  return jsonResponse(classified.payload, classified.status);
+}
+
+function fixedErrorResponse(error: string, code: ErrorCode, status: number): Response {
+  const classified = fixedError(error, code, status);
+  return jsonResponse(classified.payload, classified.status);
+}
+
+async function cachedJson(
+  request: Request,
+  ctx: ExecutionContext | undefined,
+  producer: () => Promise<unknown>,
+): Promise<Response> {
+  const cacheCandidate = typeof caches === "undefined" ? undefined : Reflect.get(caches, "default");
+  const workerCache = cacheCandidate
+    && typeof cacheCandidate === "object"
+    && typeof Reflect.get(cacheCandidate, "match") === "function"
+    && typeof Reflect.get(cacheCandidate, "put") === "function"
+    ? cacheCandidate as Cache
+    : undefined;
+  const key = new Request(request.url, { method: "GET" });
+  if (workerCache) {
+    const cached = await workerCache.match(key);
+    if (cached) {
+      const headers = new Headers(cached.headers);
+      headers.set("X-Agentic-Cache", "HIT");
+      return new Response(cached.body, { status: cached.status, headers });
+    }
+  }
+  const response = jsonResponse(await producer(), 200, true);
+  response.headers.set("X-Agentic-Cache", "MISS");
+  if (workerCache && ctx) ctx.waitUntil(workerCache.put(key, response.clone()));
+  return response;
 }
 
 async function readBoundedJson(request: Request): Promise<Record<string, unknown>> {
@@ -95,6 +135,17 @@ function bindingString(env: Env, name: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function deploymentMetadata(env: Env): WorkerVersionMetadata | undefined {
+  const value = Reflect.get(env, "VERSION_METADATA");
+  if (!value || typeof value !== "object") return undefined;
+  const id = Reflect.get(value, "id");
+  const tag = Reflect.get(value, "tag");
+  const timestamp = Reflect.get(value, "timestamp");
+  return typeof id === "string" && typeof tag === "string" && typeof timestamp === "string"
+    ? { id, tag, timestamp }
+    : undefined;
+}
+
 function catalogEnv(env: Env): CatalogEnv {
   const shop = bindingString(env, "CATALOG_SHOP");
   const token = bindingString(env, "CATALOG_STOREFRONT_TOKEN");
@@ -138,59 +189,91 @@ function decodedHandle(pathname: string): string {
   }
 }
 
-export async function handleRequest(request: Request, env: Env): Promise<Response> {
+export async function handleRequest(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
   const runtimeCatalogEnv = catalogEnv(env);
   try {
     if (url.pathname === "/health") {
-      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed." }, 405);
-      return jsonResponse({ status: "ok", service: "agentic-webmcp", webmcp: "imperative-api", defaultOriginId: DEFAULT_ORIGIN_ID });
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const deployment = deploymentMetadata(env);
+      return jsonResponse({
+        status: "ok",
+        service: "agentic-webmcp",
+        webmcp: "imperative-api",
+        defaultOriginId: DEFAULT_ORIGIN_ID,
+        deployment: {
+          commit: bindingString(env, "APP_COMMIT") ?? "unknown",
+          versionId: deployment?.id ?? "local",
+          deployedAt: deployment?.timestamp ?? null,
+        },
+      });
     }
 
     if (url.pathname === "/api/origins") {
-      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       return jsonResponse({ defaultOriginId: DEFAULT_ORIGIN_ID, origins: ORIGINS.map(publicOrigin) }, 200, true);
     }
 
+    if (url.pathname === "/api/origins/health") {
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const origin = selectedOrigin(url);
+      return await cachedJson(request, ctx, async () => {
+        const projection = await interpolatePage(origin, origin.healthPath, fetch, runtimeCatalogEnv);
+        const status = projection.pageLive ? "live" : projection.live ? "catalog-live-page-unavailable" : "fallback";
+        return {
+          origin: projection.origin,
+          status,
+          checkedAt: new Date().toISOString(),
+          catalog: { live: projection.live, adapter: projection.source },
+          page: { live: projection.pageLive, path: origin.healthPath },
+          warning: projection.warning,
+          retryable: !projection.pageLive,
+        };
+      });
+    }
+
     if (url.pathname === "/api/origins/select") {
-      if (request.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const body = await readBoundedJson(request);
       const origin = getOrigin(stringField(body, "originId"));
       return jsonResponse({ selected: publicOrigin(origin), sessionless: true });
     }
 
     if (url.pathname === "/api/catalog") {
-      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
       const query = validateQuery(url.searchParams.get("query"));
       const limit = validateLimit(url.searchParams.get("limit"));
-      return jsonResponse(await searchProducts(query, limit, origin, fetch, runtimeCatalogEnv), 200, true);
+      return await cachedJson(request, ctx, () => searchProducts(query, limit, origin, fetch, runtimeCatalogEnv));
     }
 
     if (url.pathname.startsWith("/api/products/")) {
-      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
-      const result = await getProduct(decodedHandle(url.pathname), origin, fetch, runtimeCatalogEnv);
-      return result.offers.length ? jsonResponse(result, 200, true) : jsonResponse({ error: "Product not found." }, 404);
+      return await cachedJson(request, ctx, async () => {
+        const result = await getProduct(decodedHandle(url.pathname), origin, fetch, runtimeCatalogEnv);
+        if (!result.offers.length) throw new RangeError("Product not found.");
+        return result;
+      });
     }
 
     if (url.pathname === "/api/compare") {
-      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
       const handles = validateHandles(url.searchParams.get("handles"));
-      return jsonResponse(await compareProducts(handles, origin, fetch, runtimeCatalogEnv), 200, true);
+      return await cachedJson(request, ctx, () => compareProducts(handles, origin, fetch, runtimeCatalogEnv));
     }
 
     if (url.pathname === "/api/interpolate") {
-      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const origin = selectedOrigin(url);
       const path = url.searchParams.get("path");
       if (path === null) throw new RangeError("path must be supplied.");
-      return jsonResponse(await interpolatePage(origin, path, fetch, runtimeCatalogEnv));
+      return await cachedJson(request, ctx, () => interpolatePage(origin, path, fetch, runtimeCatalogEnv));
     }
 
     if (url.pathname === "/api/brief") {
-      if (request.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const body = await readBoundedJson(request);
       const origin = bodyOrigin(url, body);
       const goal = stringField(body, "goal");
@@ -209,7 +292,7 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     }
 
     if (url.pathname === "/api/cart/propose" || url.pathname === "/api/cart/commit") {
-      if (request.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405);
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
       const body = await readBoundedJson(request);
       const origin = bodyOrigin(url, body);
       const payload = cartInput(body, origin);
@@ -224,8 +307,8 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
       return jsonResponse(await commitCartAdd({ ...payload, quoteId, expiresAt }, origin, fetch, runtimeCatalogEnv));
     }
 
-    if (url.pathname.startsWith("/api/")) return jsonResponse({ error: "Not found." }, 404);
-    if (request.method !== "GET" && request.method !== "HEAD") return jsonResponse({ error: "Method not allowed." }, 405);
+    if (url.pathname.startsWith("/api/")) return fixedErrorResponse("Not found.", "ROUTE_NOT_FOUND", 404);
+    if (request.method !== "GET" && request.method !== "HEAD") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
 
     const asset = await env.ASSETS.fetch(request);
     return new Response(asset.body, {
@@ -234,12 +317,12 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
       headers: securityHeaders(new Headers(asset.headers)),
     });
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(error, url.pathname);
   }
 }
 
 export default {
-  fetch(request: Request, env: Env): Promise<Response> {
-    return handleRequest(request, env);
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return handleRequest(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;

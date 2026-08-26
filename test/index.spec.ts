@@ -29,7 +29,12 @@ const assetFetcher: Fetcher = {
     throw new Error("Asset socket connections are not used in tests.");
   },
 };
-const env: Env = { ASSETS: assetFetcher, CATALOG_SHOP: "agentic-app-review-test.myshopify.com" };
+const env: Env = {
+  ASSETS: assetFetcher,
+  CATALOG_SHOP: "agentic-app-review-test.myshopify.com",
+  APP_COMMIT: "local",
+  VERSION_METADATA: { id: "test-version", tag: "", timestamp: "2026-08-26T00:00:00.000Z" },
+};
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -73,6 +78,7 @@ describe("Worker routes", () => {
   it("serves health with the required WebMCP security headers", async () => {
     const response = await handleRequest(new Request("https://example.test/health"), env);
     expect(response.status).toBe(200);
+    expect(await response.clone().json()).toMatchObject({ deployment: { commit: "local", versionId: "test-version" } });
     expect(response.headers.get("Origin-Agent-Cluster")).toBe("?1");
     expect(response.headers.get("Permissions-Policy")).toContain("tools=(self)");
     expect(response.headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
@@ -96,6 +102,17 @@ describe("Worker routes", () => {
     expect(await selected.json()).toMatchObject({ selected: { id: "review-shop" }, sessionless: true });
   });
 
+  it("reports the active catalog adapter and page health", async () => {
+    mockUpstream();
+    const response = await handleRequest(new Request("https://example.test/api/origins/health?originId=review-shop"), env);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      status: "live",
+      catalog: { live: true, adapter: "shopify-products-json" },
+      page: { live: true, path: "/products/the-complete-snowboard" },
+    });
+  });
+
   it("returns live products JSON catalog offers", async () => {
     mockUpstream();
     const response = await handleRequest(new Request("https://example.test/api/catalog?query=complete&limit=4&originId=review-shop"), env);
@@ -111,10 +128,11 @@ describe("Worker routes", () => {
     expect(unknown.status).toBe(400);
 
     mockUpstream();
-    const mismatchedEnv: Env = Object.assign({}, env, { CATALOG_SHOP: "different-shop.myshopify.com" });
+    const mismatchedEnv: Env = Object.assign({}, env);
+    Reflect.set(mismatchedEnv, "CATALOG_SHOP", "different-shop.myshopify.com");
     const mismatch = await handleRequest(new Request("https://example.test/api/catalog?originId=review-shop"), mismatchedEnv);
     expect(mismatch.status).toBe(400);
-    expect(await mismatch.json()).toMatchObject({ error: expect.stringContaining("does not match") });
+    expect(await mismatch.json()).toMatchObject({ error: expect.stringContaining("does not match"), code: "ORIGIN_MISMATCH", retryable: false });
   });
 
   it("returns a product by validated handle", async () => {
@@ -147,6 +165,7 @@ describe("Worker routes", () => {
   it("rejects interpolation outside the origin path allowlist", async () => {
     const collection = await handleRequest(new Request("https://example.test/api/interpolate?originId=review-shop&path=%2Fcollections%2Fall"), env);
     expect(collection.status).toBe(400);
+    expect(await collection.json()).toMatchObject({ code: "PATH_NOT_ALLOWED", retryable: false });
     const external = await handleRequest(new Request("https://example.test/api/interpolate?originId=review-shop&path=https%3A%2F%2Fevil.example%2Fproducts%2Fx"), env);
     expect(external.status).toBe(400);
   });

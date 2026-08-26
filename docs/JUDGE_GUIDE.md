@@ -7,6 +7,7 @@
 - Current code expectation after deployment: `8 WebMCP tools registered`
 - Default origin: `review-shop`
 - Hostname: `agentic-app-review-test.myshopify.com`
+- Deployment identity: `/health` and the footer show the exact deployed commit.
 
 If the browser does not expose `document.modelContext`, the page reports that state and keeps the same manual controls available.
 
@@ -19,6 +20,7 @@ If the browser does not expose `document.modelContext`, the page reports that st
 2. Ask: `Select review-shop for the rest of this task.`
    - Expected tool: `select_origin`
    - Expected visible change: the origin switcher and badge show the review shop. Selection is page-local and sessionless.
+   - The origin health line separately reports catalog adapter access and product page access.
 
 3. Ask: `Search the selected origin for wax and return the stable handles.`
    - Expected tool: `search_products`
@@ -29,6 +31,7 @@ If the browser does not expose `document.modelContext`, the page reports that st
    - Expected tool: `interpolate_page`
    - Expected handle: `the-complete-snowboard`
    - Expected visible change: the stripped Markdown panel shows the canonical origin URL as text and the workspace shows the normalized Offer.
+   - Expected provenance: title, description, pricing, availability, and variants identify their adapter.
    - Current access note: if the merchant page redirects to `/password`, the result must say `pageLive: false` and identify the labeled fallback. It must never claim that blocked HTML was read.
 
 5. Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
@@ -43,6 +46,8 @@ If the browser does not expose `document.modelContext`, the page reports that st
 
 No agent tool can confirm, commit, checkout, or pay.
 
+The activity rail can be exported with `Copy trace` to show tool names, validated arguments, actors, source origin, and compact results.
+
 ## Source labels
 
 The origin itself is a live merchant hostname. The data badge separately reports the adapter state:
@@ -55,11 +60,12 @@ Never interpret the fallback label as current live inventory.
 
 ## Security spot checks
 
-- Try `originId=unknown-shop`: expected HTTP 400.
-- Try interpolating `/collections/all`: expected HTTP 400.
+- Try `originId=unknown-shop`: expected HTTP 400 with `ORIGIN_NOT_ALLOWED`.
+- Try interpolating `/collections/all`: expected HTTP 400 with `PATH_NOT_ALLOWED`.
 - Try an absolute URL on another host: expected HTTP 400.
 - Call `/api/cart/commit` without the human confirmation header: expected HTTP 400.
 - Inspect response headers for CSP, `tools=(self)`, origin agent clustering, and framing denial.
+- Inspect `X-Agentic-Cache` on repeated validated GET requests for `MISS` or `HIT`.
 
 ## Reproduction
 

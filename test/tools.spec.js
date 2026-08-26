@@ -41,6 +41,17 @@ describe("WebMCP tool contract", () => {
     expect(tools[7].description.length).toBeLessThanOrEqual(500);
   });
 
+  it("keeps tool and parameter metadata within compact browser budgets", () => {
+    for (const tool of createAgenticTools(actions())) {
+      expect(tool.name.length).toBeLessThanOrEqual(64);
+      expect(tool.description.length).toBeLessThanOrEqual(500);
+      for (const [name, schema] of Object.entries(tool.inputSchema.properties ?? {})) {
+        expect(name.length).toBeLessThanOrEqual(64);
+        expect(schema.description?.length ?? 0).toBeLessThanOrEqual(150);
+      }
+    }
+  });
+
   it("registers every tool and forwards cancellation", async () => {
     const handlers = actions();
     const registerTool = vi.fn(async () => undefined);

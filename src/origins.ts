@@ -18,6 +18,7 @@ export type Origin = {
   interpolatePathPatterns: readonly string[];
   currencyCode: string;
   notes: string;
+  healthPath: string;
 };
 
 export type PublicOrigin = Pick<
@@ -42,6 +43,7 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
     ] as const,
     currencyCode: "USD",
     notes: "Live merchant origin. Public access can fall back to a clearly labeled bundled snapshot.",
+    healthPath: "/products/the-complete-snowboard",
   }),
 ]);
 

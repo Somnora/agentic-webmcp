@@ -32,6 +32,7 @@ Expected:
 - Agent selects `search_products`.
 - Result includes `selling-plans-ski-wax` when the live adapter or bundled snapshot contains it.
 - Source badge distinguishes `live` from `fallback`.
+- Compact result suggests valid next tools without automatically invoking them.
 - Offer cards and activity rail update.
 
 ## Product inspection
@@ -52,6 +53,7 @@ Expected:
 
 - Agent selects `interpolate_page` with a path, not a free-form URL.
 - UI shows the canonical origin URL as text.
+- UI shows separate page and Offer status plus field-level provenance.
 - Page navigation, footer, script, style, iframe, and form content are absent from the stripped projection.
 - If the origin redirects to `/password`, `pageLive` is false and the warning is visible.
 
@@ -82,11 +84,15 @@ Expected:
 | Input | Expected result |
 | --- | --- |
 | `Compare one product.` | Explain that two to four unique handles are required. |
-| Interpolate `/collections/all`. | HTTP 400 because the path is not allowlisted. |
+| Interpolate `/collections/all`. | HTTP 400 with `PATH_NOT_ALLOWED`. |
 | Interpolate `https://evil.example/products/x`. | HTTP 400 because the input is not an allowlisted path. |
-| Select `unknown-shop`. | HTTP 400 because the origin is not allowlisted. |
+| Select `unknown-shop`. | HTTP 400 with `ORIGIN_NOT_ALLOWED`. |
 | Commit without the human confirmation header. | HTTP 400 and no receipt. |
 | Oversized JSON body. | HTTP 400 before catalog work. |
+
+## Repetition protocol
+
+For the final client record, run each core prompt 10 times in ChatGPT's in-app browser and Chrome with WebMCP enabled. Record tool selection, exact arguments, completion, visible UI update, source honesty, and any mid-chain failure. Do not convert local route tests into a claimed agent success rate.
 
 ## Injection resistance
 
@@ -105,10 +111,11 @@ Expected:
 | 2026-08-26 | Vitest | Tool contract | all eight | Yes | N/A | N/A | Registration names, annotations, and no commit tool verified |
 | 2026-08-26 | Vitest | Allowlisted interpolation | route | Yes | N/A | Yes | Stripped page and off-allowlist rejection verified |
 | 2026-08-26 | Vitest | Cart proposal | proposal and commit routes | Yes | N/A | Yes | Proposal has no receipt; commit requires human header |
+| 2026-08-26 | Chrome local | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
 | Pending | WebMCP browser after deploy | Full judge flow | | | | | Current branch has not been deployed in this task |
 
 ## Automated baseline
 
-On August 26, 2026, strict TypeScript and 27 unit and route tests passed locally. The suite covers the eight-tool registration contract, Storefront and products JSON normalization into one Offer graph, labeled fallback behavior, exact-origin mismatch rejection, interpolation stripping and allowlist rejection, proposal without commit, human-header commit, security headers, bounded JSON, and static asset routing.
+On August 26, 2026, strict TypeScript and 34 unit and route tests passed locally. The suite covers the eight-tool registration contract, compact tool metadata budgets, Storefront and products JSON normalization into one Offer graph, ProductGroup JSON-LD, field provenance, labeled fallback behavior, exact-origin mismatch rejection, interpolation stripping and allowlist rejection, password and off-origin redirect rejection, upstream byte limits, proposal without commit, human-header commit, structured errors, security headers, bounded JSON, and static asset routing.
 
 No updated WebMCP browser run or production smoke result is claimed until James deploys this branch.

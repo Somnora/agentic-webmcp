@@ -37,11 +37,11 @@ The first seven tools are read-only and untrusted-content annotated. The proposa
 
 The default Origin record is `review-shop` at `agentic-app-review-test.myshopify.com`. The Worker prefers optional read-only Storefront GraphQL, falls back to public `/products.json` and `/products/{handle}.js`, and finally uses a clearly labeled bundled snapshot. Page interpolation accepts only a product path declared in that Origin record. It strips navigation, footer, scripts, styles, frames, and forms, extracts Product JSON-LD when present, and returns the canonical URL as text rather than framing an external page.
 
-Every adapter projects into the same `Offer` protocol. The Worker rejects unknown origins, alternate hostnames, non-HTTPS targets, non-allowlisted paths, and redirects to unapproved paths. Upstream bodies and tool outputs are bounded.
+Every adapter projects into the same `Offer` protocol with field-level provenance. The Worker rejects unknown origins, alternate hostnames, non-HTTPS targets, non-allowlisted paths, and redirects to unapproved paths. Upstream bodies and tool outputs are bounded. Stable error codes distinguish invalid input from retryable origin failures.
 
 ## Human experience
 
-The visible workspace includes an origin switcher, adapter and live/fallback badge, stable suggested prompts, offer grid, comparison cards, interpolation panel, activity rail, compact result panel, confirmation banner, and in-page cart. Manual controls call the same actions as WebMCP tools.
+The visible workspace includes an origin switcher, adapter health, live/fallback badge, stable suggested prompts, offer grid, comparison cards, dual-projection interpolation panel, exportable activity rail, compact result panel, confirmation banner, and in-page cart. Manual controls call the same actions as WebMCP tools.
 
 ## Project boundary
 
@@ -70,4 +70,4 @@ The badge must say whether facts came from a live adapter or `bundled-snapshot`.
 
 ## Verification status
 
-Local strict TypeScript, 27 unit and route tests, the Worker dry run, and a visible 1280 x 720 local QA pass completed on August 26, 2026. The current branch was not deployed during this task, so updated production and WebMCP browser checks remain pending. The public YouTube video remains the required submission artifact.
+Local strict TypeScript and 34 unit and route tests passed on August 26, 2026. The Worker dry run, production smoke result, and WebMCP client record must be refreshed after the final deployment. The public YouTube video remains the required submission artifact.

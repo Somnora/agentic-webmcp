@@ -69,6 +69,9 @@ export async function fetchOriginText(
       if (redirect.protocol !== "https:" || redirect.hostname.toLocaleLowerCase() !== origin.hostname) {
         throw new Error("Upstream attempted an off-origin redirect.");
       }
+      if (redirect.pathname === "/password") {
+        throw new Error("Origin storefront is password protected.");
+      }
     }
     throw new Error("Upstream redirect was not followed because the destination path is not allowlisted.");
   }

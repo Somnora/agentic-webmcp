@@ -1,0 +1,31 @@
+name: Verify live deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Public Worker URL
+        required: false
+        default: https://agentic-webmcp.somnora.workers.dev
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify public deployment
+        env:
+          AGENTIC_WEBMCP_URL: ${{ inputs.url }}
+        run: npm run verify:live

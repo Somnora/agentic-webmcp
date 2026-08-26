@@ -1,5 +1,15 @@
 import type { Adapter, Vertical } from "./origins";
 
+export type OfferSourceAdapter = Adapter | "bundled-snapshot";
+
+export type OfferProvenance = {
+  title: OfferSourceAdapter;
+  description: OfferSourceAdapter;
+  pricing: OfferSourceAdapter;
+  availability: OfferSourceAdapter;
+  variants: OfferSourceAdapter;
+};
+
 export type Money = { amount: string; currencyCode: string };
 
 export type Variant = {
@@ -36,12 +46,23 @@ export type Offer = {
   constraints: Constraints;
   image?: { url: string; altText: string | null };
   source: {
-    adapter: Adapter;
+    adapter: OfferSourceAdapter;
     live: boolean;
     fetchedAt: string;
     untrusted: true;
   };
+  provenance: OfferProvenance;
 };
+
+export function uniformProvenance(adapter: OfferSourceAdapter): OfferProvenance {
+  return {
+    title: adapter,
+    description: adapter,
+    pricing: adapter,
+    availability: adapter,
+    variants: adapter,
+  };
+}
 
 export function money(value: unknown, currencyCode = "USD"): Money {
   const raw = typeof value === "string" || typeof value === "number" ? String(value).trim().slice(0, 24) : "";

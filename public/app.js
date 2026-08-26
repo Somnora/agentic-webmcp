@@ -9,6 +9,7 @@ const state = {
   activity: [],
   proposal: null,
   receipts: [],
+  returnFocus: null,
 };
 
 const elements = {
@@ -28,17 +29,25 @@ const elements = {
   briefButton: document.querySelector("#brief-button"),
   originSelect: document.querySelector("#origin-select"),
   originMeta: document.querySelector("#origin-meta"),
+  originHealth: document.querySelector("#origin-health"),
   interpolateForm: document.querySelector("#interpolate-form"),
   interpolatePath: document.querySelector("#interpolate-path"),
   interpolateView: document.querySelector("#interpolate-view"),
   interpolateCanonical: document.querySelector("#interpolate-canonical"),
   interpolateMarkdown: document.querySelector("#interpolate-markdown"),
+  interpolateOffer: document.querySelector("#interpolate-offer"),
+  interpolatePageStatus: document.querySelector("#interpolate-page-status"),
+  interpolateOfferStatus: document.querySelector("#interpolate-offer-status"),
+  interpolateProvenance: document.querySelector("#interpolate-provenance"),
   confirmPanel: document.querySelector("#confirm-panel"),
   confirmCopy: document.querySelector("#confirm-copy"),
   confirmCart: document.querySelector("#confirm-cart"),
   dismissCart: document.querySelector("#dismiss-cart"),
   cartEmpty: document.querySelector("#cart-empty"),
   cartList: document.querySelector("#cart-list"),
+  cartPanel: document.querySelector("#cart-panel"),
+  copyTrace: document.querySelector("#copy-trace"),
+  deploymentId: document.querySelector("#deployment-id"),
 };
 
 function node(tag, className, text) {
@@ -66,6 +75,7 @@ function compactOffer(offer, withVariants = false) {
     available: offer.constraints.available,
     adapter: offer.source.adapter,
     live: offer.source.live,
+    provenance: offer.provenance,
   };
   if (withVariants) {
     summary.variants = offer.variants.slice(0, 5).map((variant) => ({
@@ -103,6 +113,7 @@ function compactCatalog(payload, withVariants = false) {
     source: payload.source,
     live: payload.live,
     offers: payload.offers.map((offer) => compactOffer(offer, withVariants)),
+    suggestedNextActions: payload.suggestedNextActions,
     ...(payload.warning ? { warning: payload.warning.slice(0, 180) } : {}),
   });
 }
@@ -113,7 +124,12 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || `Request failed with HTTP ${response.status}.`);
+  if (!response.ok) {
+    const error = new Error(payload.error || `Request failed with HTTP ${response.status}.`);
+    error.code = payload.code;
+    error.retryable = payload.retryable === true;
+    throw error;
+  }
   return payload;
 }
 
@@ -141,8 +157,33 @@ function updateSource(payload) {
   elements.message.textContent = payload.warning || `${count} offer result${count === 1 ? "" : "s"}. External origin content is treated as untrusted.`;
 }
 
+async function loadOriginHealth(signal) {
+  elements.originHealth.textContent = "Checking adapter and page access...";
+  elements.originHealth.className = "origin-health";
+  try {
+    const health = await api(`/api/origins/health?${originQuery()}`, { signal });
+    const page = health.page.live ? "page live" : "page unavailable";
+    elements.originHealth.textContent = `${health.status} | catalog ${health.catalog.adapter} | ${page} | checked ${new Date(health.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    elements.originHealth.classList.add(health.status === "live" ? "live" : "fallback");
+  } catch (error) {
+    elements.originHealth.textContent = `health check unavailable | ${error instanceof Error ? error.message : "unknown error"}`;
+    elements.originHealth.classList.add("fallback");
+  }
+}
+
+async function loadDeploymentIdentity() {
+  try {
+    const health = await api("/health");
+    const commit = health.deployment.commit === "local" ? "local" : health.deployment.commit.slice(0, 8);
+    const deployedAt = health.deployment.deployedAt ? new Date(health.deployment.deployedAt).toLocaleString() : "local runtime";
+    elements.deploymentId.textContent = `commit ${commit} | deployed ${deployedAt}`;
+  } catch {
+    elements.deploymentId.textContent = "deployment identity unavailable";
+  }
+}
+
 function recordActivity(tool, args, actor, resultText) {
-  state.activity.unshift({ tool, args, actor, originId: state.originId, time: new Date() });
+  state.activity.unshift({ tool, args, actor, originId: state.originId, time: new Date(), result: resultText });
   state.activity = state.activity.slice(0, 7);
   elements.activity.replaceChildren();
   for (const item of state.activity) {
@@ -167,6 +208,13 @@ function updateSelection() {
 
 function hideInterpolate() {
   elements.interpolateView.hidden = true;
+}
+
+function provenanceLabel(offer) {
+  const entries = Object.entries(offer.provenance || {});
+  return entries.length
+    ? entries.map(([field, adapter]) => `${field}: ${adapter}`).join(" | ")
+    : `all facts: ${offer.source.adapter}`;
 }
 
 function renderOffers(offers) {
@@ -205,7 +253,13 @@ function renderOffers(offers) {
     propose.disabled = !offer.constraints.available;
     propose.addEventListener("click", () => runProposeCart({ handle: offer.handle, quantity: 1 }, "human preview").catch(showError));
     actions.append(label, inspect, propose);
-    card.append(node("h3", "", offer.title), meta, node("p", "", offer.description || "No origin description supplied."), actions);
+    card.append(
+      node("h3", "", offer.title),
+      meta,
+      node("p", "", offer.description || "No origin description supplied."),
+      node("p", "provenance-line", provenanceLabel(offer)),
+      actions,
+    );
     elements.grid.append(card);
   }
   updateSelection();
@@ -221,6 +275,7 @@ function renderComparison(offers) {
       node("h3", "", offer.title),
       node("div", "product-meta", price(offer)),
       node("p", "", `${available} of ${offer.variants.length} sampled variants available. ${offer.description}`),
+      node("p", "provenance-line", provenanceLabel(offer)),
     );
     elements.grid.append(card);
   }
@@ -237,7 +292,7 @@ async function runListOrigins(_args = {}, actor = "agent", signal, record = true
     elements.originSelect.append(option);
   }
   updateOrigin(payload.origins.find((origin) => origin.id === state.originId) || payload.origins[0]);
-  const output = boundedJson(payload);
+  const output = boundedJson({ ...payload, suggestedNextActions: ["select_origin", "search_products"] });
   if (record) recordActivity("list_origins", {}, actor, output);
   return output;
 }
@@ -248,7 +303,8 @@ async function runSelectOrigin({ originId }, actor = "agent", signal) {
   updateOrigin(payload.selected);
   updateSelection();
   hideInterpolate();
-  const output = boundedJson(payload);
+  await loadOriginHealth(signal);
+  const output = boundedJson({ ...payload, suggestedNextActions: ["search_products", "interpolate_page"] });
   recordActivity("select_origin", { originId }, actor, output);
   return output;
 }
@@ -258,6 +314,7 @@ async function runSearch({ query = "", maxResults = 6 }, actor = "agent", signal
   updateSource(payload);
   hideInterpolate();
   renderOffers(payload.offers);
+  payload.suggestedNextActions = ["get_product", "compare_products", "propose_add_to_cart"];
   const output = compactCatalog(payload);
   recordActivity("search_products", { query, maxResults }, actor, output);
   return output;
@@ -268,6 +325,7 @@ async function runGetProduct({ handle }, actor = "agent", signal) {
   updateSource(payload);
   hideInterpolate();
   renderOffers(payload.offers);
+  payload.suggestedNextActions = ["interpolate_page", "compare_products", "propose_add_to_cart"];
   const output = compactCatalog(payload, true);
   recordActivity("get_product", { handle }, actor, output);
   return output;
@@ -279,6 +337,7 @@ async function runCompare({ handles }, actor = "agent", signal) {
   updateSource(payload);
   hideInterpolate();
   renderComparison(payload.offers);
+  payload.suggestedNextActions = ["create_catalog_brief", "propose_add_to_cart"];
   const output = compactCatalog(payload);
   recordActivity("compare_products", { handles: normalized }, actor, output);
   return output;
@@ -301,8 +360,13 @@ async function runInterpolate({ path }, actor = "agent", signal) {
   renderOffers([payload.offer]);
   elements.interpolateCanonical.textContent = payload.canonicalUrl;
   elements.interpolateMarkdown.textContent = payload.markdown;
+  elements.interpolateOffer.textContent = JSON.stringify(compactOffer(payload.offer, true), null, 2);
+  elements.interpolatePageStatus.textContent = payload.pageLive ? "LIVE PAGE MARKDOWN" : "PAGE UNAVAILABLE";
+  elements.interpolateOfferStatus.textContent = payload.live ? "LIVE STRUCTURED OFFER" : "LABELED FALLBACK OFFER";
+  elements.interpolateProvenance.textContent = provenanceLabel(payload.offer);
   elements.interpolateView.hidden = false;
   elements.interpolateView.scrollIntoView({ block: "center" });
+  elements.interpolateView.focus({ preventScroll: true });
   const output = boundedJson({
     originId: payload.origin.id,
     canonicalUrl: payload.canonicalUrl,
@@ -310,6 +374,7 @@ async function runInterpolate({ path }, actor = "agent", signal) {
     pageLive: payload.pageLive,
     offer: compactOffer(payload.offer, true),
     markdown: payload.markdown.slice(0, 520),
+    suggestedNextActions: ["compare_products", "propose_add_to_cart"],
     ...(payload.warning ? { warning: payload.warning.slice(0, 180) } : {}),
   });
   recordActivity("interpolate_page", { path: normalizedPath }, actor, output);
@@ -326,11 +391,13 @@ async function runBrief({ goal, handles }, actor = "agent", signal) {
   updateSource(payload);
   hideInterpolate();
   renderComparison(payload.offers);
-  recordActivity("create_catalog_brief", { goal, handles: normalized }, actor, payload.brief);
-  return payload.brief;
+  const output = boundedJson({ brief: payload.brief.slice(0, 1100), suggestedNextActions: ["propose_add_to_cart"] });
+  recordActivity("create_catalog_brief", { goal, handles: normalized }, actor, output);
+  return output;
 }
 
 async function runProposeCart({ handle, variantTitle, quantity = 1 }, actor = "agent", signal) {
+  if (actor === "human preview") state.returnFocus = document.activeElement;
   const payload = await api(`/api/cart/propose?${originQuery()}`, {
     method: "POST",
     signal,
@@ -342,6 +409,7 @@ async function runProposeCart({ handle, variantTitle, quantity = 1 }, actor = "a
   elements.confirmCopy.textContent = `${line.quantity} x ${payload.offers[0].title}, ${line.variantTitle}, total ${payload.quote.total.amount} ${payload.quote.total.currencyCode}. The cart is still unchanged.`;
   elements.confirmPanel.hidden = false;
   elements.confirmPanel.scrollIntoView({ block: "center" });
+  elements.confirmPanel.focus({ preventScroll: true });
   const output = boundedJson({
     quoteId: payload.quote.quoteId,
     originId: payload.quote.originId,
@@ -349,6 +417,7 @@ async function runProposeCart({ handle, variantTitle, quantity = 1 }, actor = "a
     line,
     total: payload.quote.total,
     cartChanged: false,
+    suggestedNextActions: ["human_confirm_button", "human_dismiss_button"],
   });
   recordActivity("propose_add_to_cart", { handle, variantTitle, quantity }, actor, output);
   return output;
@@ -384,6 +453,7 @@ async function confirmCart() {
   elements.confirmPanel.hidden = true;
   renderCart();
   recordActivity("human_confirm_add_to_cart", { quoteId: quote.quoteId }, "human button", boundedJson(payload.receipt));
+  elements.cartPanel.focus();
 }
 
 function dismissCart() {
@@ -392,6 +462,23 @@ function dismissCart() {
   state.proposal = null;
   elements.confirmPanel.hidden = true;
   recordActivity("human_dismiss_cart_proposal", { quoteId }, "human button", JSON.stringify({ quoteId, status: "dismissed", cartChanged: false }));
+  if (state.returnFocus instanceof HTMLElement) state.returnFocus.focus();
+  state.returnFocus = null;
+}
+
+async function copyTrace() {
+  const trace = state.activity.slice().reverse().map((item) => ({
+    time: item.time.toISOString(),
+    tool: item.tool,
+    actor: item.actor,
+    originId: item.originId,
+    args: item.args,
+    result: item.result,
+  }));
+  const text = JSON.stringify({ exportedAt: new Date().toISOString(), trace }, null, 2);
+  await navigator.clipboard.writeText(text);
+  elements.copyTrace.textContent = "Trace copied";
+  setTimeout(() => { elements.copyTrace.textContent = "Copy trace"; }, 1600);
 }
 
 async function registerWebMcpTools() {
@@ -447,13 +534,17 @@ elements.briefForm.addEventListener("submit", (event) => {
 
 elements.confirmCart.addEventListener("click", () => confirmCart().catch(showError));
 elements.dismissCart.addEventListener("click", dismissCart);
+elements.copyTrace.addEventListener("click", () => copyTrace().catch(showError));
 
 function showError(error) {
   const message = error instanceof Error ? error.message : "The tool request failed.";
-  elements.message.textContent = message;
-  recordActivity("tool_error", {}, "system", message);
+  const code = error && typeof error === "object" && "code" in error ? error.code : "UNKNOWN_ERROR";
+  const retry = error && typeof error === "object" && error.retryable === true ? " Retry is reasonable." : " Check the input or origin status.";
+  elements.message.textContent = `${code}: ${message}${retry}`;
+  recordActivity("tool_error", {}, "system", JSON.stringify({ code, message, retryable: error?.retryable === true }));
 }
 
 await runListOrigins({}, "page initialization", undefined, false).catch(showError);
+await Promise.all([loadOriginHealth(), loadDeploymentIdentity()]);
 await registerWebMcpTools().catch(showError);
 await runSearch({ query: "", maxResults: 6 }, "page initialization").catch(showError);

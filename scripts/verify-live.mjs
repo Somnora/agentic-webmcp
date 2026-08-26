@@ -1,4 +1,7 @@
+import { execFileSync } from "node:child_process";
+
 const baseUrl = (process.env.AGENTIC_WEBMCP_URL || "https://agentic-webmcp.somnora.workers.dev").replace(/\/$/, "");
+const expectedCommit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
 const expectedTools = [
   "list_origins",
@@ -18,9 +21,20 @@ const checks = [
       const response = await fetch(`${baseUrl}/health`);
       const body = await response.json();
       if (response.status !== 200 || body.status !== "ok" || body.defaultOriginId !== "review-shop") throw new Error(`unexpected response ${response.status}`);
+      if (body.deployment?.commit !== expectedCommit) throw new Error(`deployment commit mismatch: ${body.deployment?.commit || "missing"}`);
+      if (!body.deployment?.versionId || !body.deployment?.deployedAt) throw new Error("deployment metadata missing");
       if (response.headers.get("Origin-Agent-Cluster") !== "?1") throw new Error("missing origin isolation");
       if (!response.headers.get("Permissions-Policy")?.includes("tools=(self)")) throw new Error("missing tools policy");
       if (response.headers.get("X-Frame-Options") !== "DENY") throw new Error("missing framing denial");
+    },
+  },
+  {
+    name: "origin adapter health",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/origins/health?originId=review-shop`);
+      const body = await response.json();
+      if (response.status !== 200 || body.origin?.id !== "review-shop") throw new Error("origin health unavailable");
+      if (!body.catalog?.adapter || typeof body.page?.live !== "boolean" || !body.checkedAt) throw new Error("origin health incomplete");
     },
   },
   {
@@ -67,6 +81,7 @@ const checks = [
       if (response.status !== 200 || !Array.isArray(body.offers) || !body.offers.some((offer) => offer.handle === "selling-plans-ski-wax")) {
         throw new Error("catalog returned no wax offer");
       }
+      if (!body.offers.every((offer) => offer.provenance?.pricing && offer.provenance?.availability)) throw new Error("offer provenance missing");
     },
   },
   {
@@ -106,6 +121,8 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/api/interpolate?originId=review-shop&path=%2Fcollections%2Fall`);
       if (response.status !== 400) throw new Error(`expected 400, received ${response.status}`);
+      const body = await response.json();
+      if (body.code !== "PATH_NOT_ALLOWED" || body.retryable !== false) throw new Error("structured allowlist error missing");
     },
   },
 ];
