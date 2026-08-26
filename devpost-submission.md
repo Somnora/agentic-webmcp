@@ -1,23 +1,18 @@
-# Agentic WebMCP: Devpost working draft
+# Agentic WebMCP: Allowlisted Origin Tools for Commerce Agents
 
-## Summary
+## One-line Summary
 
-Agentic WebMCP is a webpage converter and shared agent view over explicitly allowlisted product websites. The app Worker normalizes controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, stripped Markdown, and labeled fallback facts into a common Offer graph with field-level provenance. The agent receives compact tools while the human sees the same origin, facts, comparison, proposal, and result.
+Agentic WebMCP converts an explicitly allowlisted product website into compact WebMCP tools, structured Offers, stripped Markdown, comparisons, and a visible human-confirmed cart proposal.
 
-## What it does
+## Problem
 
-- Lists exact HTTPS origins allowed by the Worker.
-- Selects an origin in sessionless page state.
-- Searches and inspects normalized offers.
-- Compares two to four stable handles on one origin.
-- Interpolates one allowlisted product path into stripped Markdown plus a structured Offer.
-- Creates deterministic, source-only catalog briefs.
-- Stages a cart quote and waits for a visible human confirmation.
-- Creates only an in-page `in_cart` receipt after the human clicks the button.
-- Reports origin health, stable error codes, exact deployment identity, and an exportable shared activity trace.
-- Includes a 1280 by 720 presenter mode whose focus frame, precise cursor, tool inputs, and implementation captions react to the same actions as real WebMCP calls.
+Commerce agents often encounter product information through presentation-heavy pages. They must infer controls, reconstruct product relationships, and act without giving the person a clear view of the facts or the trust boundary. Traditional scraping also encourages a dangerous pattern: accept any URL, fetch it, and hope the page is safe and stable.
 
-## Registered tools
+## Solution
+
+Agentic WebMCP gives a browser agent an explicit tool contract over a controlled set of HTTPS origins. Every supported adapter normalizes product information into one Offer model with source labels and field-level provenance. The human sees the same origin, facts, comparison, stripped page, proposal, and result that the agent sees.
+
+The app registers eight WebMCP tools in the top-level document:
 
 - `list_origins`
 - `select_origin`
@@ -28,7 +23,36 @@ Agentic WebMCP is a webpage converter and shared agent view over explicitly allo
 - `create_catalog_brief`
 - `propose_add_to_cart`
 
-There is no WebMCP commit, checkout, order, or payment tool.
+The first seven tools are read-only. The proposal tool stages a quote with `awaiting_human_confirmation` status. It cannot mutate a merchant cart. Only the visible human confirmation button can create the page-local `in_cart` receipt. There is no WebMCP commit, checkout, order, or payment tool.
+
+## Why This Matters
+
+WebMCP is a strong fit because the page can expose stable, typed capabilities instead of forcing an agent to reverse-engineer visual controls. People and agents can inspect and compare source-grounded facts in one shared workspace, then stop at a clear human decision boundary before any cart result appears.
+
+This is also a syntax-conversion demonstration. `interpolate_page` takes one allowlisted path on the selected origin, removes presentation-heavy and unsafe elements, extracts JSON-LD when present, and returns compact Markdown beside a structured Offer. The canonical source URL remains visible as text. The app never frames the third-party page.
+
+## How We Used AI
+
+OpenAI Codex was used as an engineering collaborator for repository inspection, TypeScript implementation, test authoring, security review, documentation synchronization, browser QA, and demo rehearsal planning. Every generated change was checked against the repository constraints and validated with the project test and verification commands.
+
+No generative AI is required for the running product. Catalog briefs are deterministic and source-only, so they do not invent product claims.
+
+## How We Used Codex
+
+Codex helped turn the WebMCP concept into a deployable Cloudflare Worker and human workspace. It traced the existing Offer protocol, consolidated adapters around that model, implemented origin and interpolation boundaries, expanded route tests, verified the production surface, and built the presenter layer used to explain real tool calls during the recording.
+
+The presenter does not simulate a second application. Its cursor, focus frame, tool-input overlay, and implementation captions observe the same actions used by manual controls and WebMCP calls. The final cart confirmation remains an actual human click.
+
+## Key Features
+
+- Exact HTTPS origin allowlist stored as data in `src/origins.ts`.
+- Storefront GraphQL, Shopify products JSON, controlled public product JSON, JSON-LD, stripped Markdown, and labeled bundled fallback inputs normalized to one Offer graph.
+- Field-level provenance and visible live or fallback source status.
+- Same-origin APIs with strict query, handle, quantity, origin, and path validation.
+- Redirect restrictions, response byte limits, CSP, `Permissions-Policy: tools=(self)`, origin agent clustering, framing denial, and no-referrer behavior.
+- Shared visible workspace with origin badge, product grid, comparison, interpolation view, activity rail, proposal banner, and receipt.
+- Exportable activity trace and deterministic catalog brief.
+- A 1280 by 720 presenter mode with a precise agent or human cursor, smoothly morphing focus frame, tool input, and concise under-the-hood captions.
 
 ## Architecture
 
@@ -36,63 +60,116 @@ There is no WebMCP commit, checkout, order, or payment tool.
 Top-level document
   -> eight document.modelContext.registerTool calls
   -> shared manual and agent action functions
-  -> same-origin Worker routes
-  -> Origin record from src/origins.ts
-  -> controlled public product JSON or Shopify adapter chain
-  -> allowlisted HTML and JSON-LD interpolation
+  -> same-origin Cloudflare Worker routes
+  -> selected Origin record
+  -> allowlisted adapter chain
   -> normalized Offer graph
-  -> visible origin badge, grid, comparison, stripped view, activity, proposal, and cart receipt
-  -> optional presenter observes the same actions without registering another tool
+  -> visible human and agent workspace
+  -> human-only cart confirmation
 ```
 
-The Worker accepts no arbitrary upstream URL. It enforces HTTPS, exact hostnames, declared paths, redirect restrictions, response byte limits, request bounds, strict handles, and origin consistency. It preserves CSP, self-only tools permission, origin agent clustering, framing denial, no-referrer behavior, and Worker-side validation.
+The Worker accepts no arbitrary upstream URL. It requires HTTPS, an exact declared hostname, an allowed path, and origin consistency on every relevant route. The default recording origin is a controlled public HTTPS product source labeled `LIVE DEMO | public-products-json`. A secondary Shopify development origin is available as a clearly labeled fallback path but is not required for the judge flow.
 
-## Testing instructions
+## Testing Instructions
 
-1. Open https://agentic-webmcp.somnora.workers.dev/?present=1 in a WebMCP-capable browser after deploying the current branch.
-2. No account or credentials are required.
-3. Confirm `8 WebMCP tools registered`.
-4. Ask: `List the allowlisted origins and select catalog-lab.`
-5. Ask: `Search the selected origin for notebook and return the stable handles.`
-6. Ask: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
-7. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
-8. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook and wait for me.`
-9. Verify the cart is unchanged until you click `Confirm add to cart`, then verify an `in_cart` receipt appears.
+No account or credentials are required.
 
-The default badge must say `LIVE DEMO | public-products-json`. This means the app fetched the controlled origin over HTTPS; it does not mean the fixture is merchant inventory. The secondary Shopify development store remains password protected and is not used in the recording flow.
+1. Open https://agentic-webmcp.somnora.workers.dev/?present=1 in ChatGPT's in-app browser or Google Chrome with WebMCP enabled.
+2. Confirm the page reports `8 WebMCP tools registered`.
+3. Ask: `List the allowlisted origins and select catalog-lab.`
+4. Ask: `Search the selected origin for notebook and return the stable handles.`
+5. Ask: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
+6. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
+7. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook and wait for me.`
+8. Verify that the cart is unchanged while the visible confirmation banner is waiting.
+9. Click `Confirm add to cart` as the human.
+10. Verify that an `in_cart` receipt appears in the workspace.
 
-## Public links
+For a guided rehearsal, press `Start 2:28 rehearsal` in presenter mode. The flow pauses at the required human confirmation and cannot click it for the presenter.
 
-- App: https://agentic-webmcp.somnora.workers.dev/
-- Repository: https://github.com/Somnora/agentic-webmcp
-- Privacy: https://agentic-webmcp.somnora.workers.dev/privacy.html
-- Demo video: `TODO: public YouTube URL after James records it`
+## Public Demo Link
 
-## Verification
+https://agentic-webmcp.somnora.workers.dev/
 
-- Strict TypeScript: passed locally on August 26, 2026.
-- Unit and route tests: 43 of 43 passed locally.
-- Worker dry run: passed locally on August 26, 2026.
-- Updated production smoke check: 13 of 13 checks passed against both Workers on August 26, 2026, including the presenter asset.
-- Updated browser pass: the 1280 by 720 presenter rehearsal completed interpolation, comparison, proposal, required human confirmation, and receipt with no console warnings. The production workspace reported the controlled origin badge, live catalog and page health, four offers, and the deployed commit.
-- WebMCP discovery evidence: connected Chrome reported eight registered tools on the prior production commit. The final presenter change did not alter `public/tools.js`; the current Chrome extension connection was unavailable for a redundant post-deploy pass.
-- Public YouTube video: missing and required.
+Presenter URL: https://agentic-webmcp.somnora.workers.dev/?present=1
 
-## Known limitations
+Privacy: https://agentic-webmcp.somnora.workers.dev/privacy.html
 
-- The default recording origin is controlled demonstration data, not a real merchant catalog.
+## Public Repository Link
+
+https://github.com/Somnora/agentic-webmcp
+
+The repository is public and includes the MIT license, source, assets, tests, deployment configuration, and local run instructions.
+
+## Demo Video
+
+TODO: Record and publish a public YouTube video shorter than three minutes with clear audio, then paste its URL here and into Devpost.
+
+Planned 2:28 flow:
+
+1. Establish the problem and show all eight registered tools.
+2. List and select the allowlisted live demo origin.
+3. Search for `notebook` and show stable handles.
+4. Interpolate `/products/field-notebook` into stripped Markdown and a structured Offer.
+5. Compare `field-notebook` with `modular-desk-tray`.
+6. Propose the Sand variant and stop at `awaiting_human_confirmation`.
+7. Click the human confirmation button and show the `in_cart` receipt.
+8. Close on the exact-host allowlist, shared workspace, and reusable webpage-to-tool pattern.
+
+## Screenshot Shot List
+
+Capture outside the repository at 1280 by 720 or larger:
+
+1. Origin badge, health labels, and eight registered tools.
+2. Search results for `notebook` with the activity rail visible.
+3. Interpolated Markdown, structured Offer, and canonical source URL in one frame.
+4. Two-product comparison with provenance visible.
+5. Human confirmation banner with `awaiting_human_confirmation` visible and no cart receipt yet.
+6. Final page-local `in_cart` receipt after the human click.
+
+Do not include browser extensions, account details, credentials, unrelated tabs, or third-party trademarks in the screenshots.
+
+## Submission Readiness Notes
+
+- Devpost project: draft, not submitted.
+- Live application: deployed and verified on August 26, 2026.
+- Public repository and MIT license: present.
+- Strict TypeScript: passed locally.
+- Unit and route tests: 43 of 43 passed across 7 files.
+- Worker verification: 13 of 13 production checks passed against both deployed Workers, including the presenter asset.
+- Browser rehearsal: completed interpolation, comparison, proposal, required human confirmation, and receipt at 1280 by 720 with no console warnings.
+- WebMCP discovery: connected Chrome reported all eight registered tools on the prior production commit. The final presenter-only change did not modify `public/tools.js`; the Chrome extension connection was unavailable for a redundant final discovery pass.
+- Required public YouTube video: missing.
+- Final screenshots: missing.
+
+## Judging Criteria Alignment
+
+- WebMCP Leverage: eight non-trivial tools share one typed Offer protocol and update the visible page state.
+- Execution: the public Worker, manual workspace, agent tools, error states, security boundary, tests, and recording mode form one coherent product experience.
+- Potential Impact: the project demonstrates a reusable way to turn allowlisted product pages into auditable agent capabilities while preserving human control.
+- Creativity and Ambition: it combines structured catalog adapters with safe page interpolation, provenance, shared state, and a human-only action boundary.
+
+## Known Limitations
+
+- The default recording origin is controlled demonstration data served over real HTTPS, not active merchant inventory. The UI labels it clearly.
 - The secondary Shopify development store is password protected and its public access toggle is disabled without a plan or transfer change.
-- Live Storefront GraphQL for the secondary origin depends on an optional read-only secret whose production presence was not inspected.
+- Live Storefront GraphQL for the secondary origin depends on an optional read-only token whose production presence was not inspected.
 - Browser tool discovery requires a WebMCP-capable client. Manual controls remain available elsewhere.
-- The receipt is page-local and not a merchant cart.
+- The receipt is page-local and does not mutate a merchant cart.
 
-## Submission readiness
+## TODO Official Form Fields
 
-- Public repository: present.
-- Live URL: updated and verified on August 26, 2026.
-- Privacy disclosure: updated and deployed.
-- Judge flow and prompt script: updated and deployed.
-- Automated local gate: strict TypeScript, 43 of 43 tests, and both Worker dry runs passed.
-- Public YouTube video: missing and required.
+- Field 28249, Submitter Type: TODO, James to confirm `Individual`, `Team of Individuals`, or `Organization`.
+- Field 28250, Country of residence: TODO, James to confirm the official selection.
+- Field 28251, Organization name: leave blank unless submitting as an organization.
+- Field 28252, App Status: TODO, James to confirm `New` or `Existing`.
+- Field 28253, Existing app updates: if `Existing`, use the implementation summary in this draft and describe only work completed during the submission period.
+- Field 28254, Live URL: https://agentic-webmcp.somnora.workers.dev/
+- Field 28255, Testing instructions: use the credential-free ten-step flow above.
+- Field 28256, Public repository: https://github.com/Somnora/agentic-webmcp
+- Field 28257, Tested clients: Google Chrome with WebMCP enabled; final ChatGPT in-app browser discovery pass remains to be recorded if available.
+- Field 28258, AI tools used: OpenAI Codex.
+- Field 28259, Learning level: TODO, James to select `None`, `Moderate`, or `Significant`.
+- Field 28260, Career AI value: TODO, James to select `Yes` or `No`.
 
-Do not paste this file into Devpost until current screenshots are captured outside the repository and the public YouTube URL exists.
+Do not paste or submit this draft until the public YouTube URL, screenshots, and user-confirmed form selections are complete.
