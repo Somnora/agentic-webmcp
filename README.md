@@ -67,7 +67,7 @@ Top-level browser document
 
 Static assets and API requests pass through one Cloudflare Worker security boundary. Responses set a restrictive CSP, `Origin-Agent-Cluster: ?1`, a self-only `tools` permissions policy, framing denial, MIME-sniffing protection, and no-referrer behavior. Inputs are validated again in Worker code rather than trusting JSON Schema enforcement.
 
-See [Threat model](docs/THREAT_MODEL.md), [new-work evidence](docs/NEW_WORK_EVIDENCE.md), [evaluation prompts](docs/EVALS.md), and [submission draft](docs/SUBMISSION_COPY.md).
+See the [two-minute judge guide](docs/JUDGE_GUIDE.md), [threat model](docs/THREAT_MODEL.md), [new-work evidence](docs/NEW_WORK_EVIDENCE.md), [evaluation prompts](docs/EVALS.md), and [submission draft](docs/SUBMISSION_COPY.md).
 
 ## Privacy and security
 

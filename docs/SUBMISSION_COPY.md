@@ -40,3 +40,7 @@ Commercial Agentic existed before the Challenge as private Shopify middleware pu
 ## Suggested tags
 
 WebMCP, ecommerce, Shopify, Cloudflare Workers, browser agents, human-agent collaboration, open web
+
+## Testing instructions
+
+Open https://agentic-webmcp.somnora.workers.dev/ in ChatGPT's WebMCP-enabled in-app browser. No credentials are required. Confirm the header reports four registered tools, then ask: `Find comfortable hoodies in this catalog.` The page should invoke `search_products` and update both the catalog grid and shared activity timeline. Continue with: `Compare slides and sweatpants using only catalog facts.` The page should invoke `compare_products` and render both products visibly. A complete two-minute prompt sequence and expected results are in `docs/JUDGE_GUIDE.md`.
