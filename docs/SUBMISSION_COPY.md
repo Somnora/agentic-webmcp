@@ -2,45 +2,72 @@
 
 ## Project name
 
-Agentic WebMCP — Commerce Tools for Browser Agents
+Agentic WebMCP: Allowlisted Origin Tools for Commerce Agents
 
 ## One-line description
 
-An open commerce workspace where agents call explicit catalog tools while humans see every result reflected in the page.
+A shared agent view that compiles an allowlisted live merchant origin into structured Offers, stripped Markdown, comparisons, and human-confirmed cart proposals.
 
-## Why this is a strong WebMCP fit
+## Problem
 
-Commerce sites are rich in structured facts but agents often encounter them through presentation-heavy interfaces. Agentic WebMCP gives the page an explicit tool layer: an agent can search products, inspect variants, compare facts, and create a grounded catalog brief without guessing which controls to click or extracting data from rendered layout.
+Browser agents often encounter commerce facts through presentation-heavy pages. They must infer controls, reconstruct product relationships, and hide their work from the human sharing the task. A page can provide a clearer contract.
 
-## Better human experience
+## Solution
 
-Tool calls are not hidden background automation. Every agent invocation updates the same product grid, comparison view, and activity timeline the human sees. The human can inspect the requested arguments, catalog source, live/fallback state, and returned products. Manual controls use the same functions, so the page remains useful without agent support.
+Agentic WebMCP registers eight explicit tools on the top-level document. The agent can list and select allowlisted origins, search and inspect normalized offers, compare products, strip one approved product page into Markdown plus an Offer, create a grounded brief, and stage a cart proposal. Every call updates the same workspace the human sees.
 
-## What becomes possible
-
-A human can ask an agent to explore a catalog in natural language while retaining a transparent visual workspace. The agent gets concise structured results; the human gets shared state and source visibility. Neither side must surrender context to an opaque screen-scraping process.
+The agent cannot commit a cart add. `propose_add_to_cart` returns a quote and displays a confirmation banner. Only a human click calls the commit route, which creates an in-page receipt with status `in_cart`. There is no merchant cart mutation, checkout, account, order, or payment.
 
 ## WebMCP implementation
 
-The top-level page statically registers four focused tools with the WebMCP Imperative API: `search_products`, `get_product`, `compare_products`, and `create_catalog_brief`. Each has a JSON Schema, cancellation-aware execution, read-only and untrusted-content annotations, and a compact output. Tool functions call a same-origin Cloudflare Worker API backed by Shopify's public Mock Shop GraphQL demo and update human-visible state after completion.
+The page calls `document.modelContext.registerTool` for:
 
-The Worker validates all inputs independently of JSON Schema, bounds request and output sizes, normalizes external catalog strings, and applies CSP, self-only tools permissions, origin isolation, framing denial, and related security headers. If the public catalog is unavailable, the application uses a clearly labeled bundled snapshot rather than fabricating a live result.
+1. `list_origins`
+2. `select_origin`
+3. `search_products`
+4. `get_product`
+5. `compare_products`
+6. `interpolate_page`
+7. `create_catalog_brief`
+8. `propose_add_to_cart`
 
-## New versus existing work
+The first seven tools are read-only and untrusted-content annotated. The proposal tool is non-destructive, cancellation-aware, schema-constrained, and compact. No commit or checkout tool is registered.
 
-Commercial Agentic existed before the Challenge as private Shopify middleware publishing signed catalog Markdown. The standalone WebMCP workspace, registered tools, shared activity UI, public demo adapter, tests, and open-source repository were created after the Challenge period opened. The public commit history and `docs/NEW_WORK_EVIDENCE.md` document the boundary.
+## Origin interpolation
+
+The default Origin record is `review-shop` at `agentic-app-review-test.myshopify.com`. The Worker prefers optional read-only Storefront GraphQL, falls back to public `/products.json` and `/products/{handle}.js`, and finally uses a clearly labeled bundled snapshot. Page interpolation accepts only a product path declared in that Origin record. It strips navigation, footer, scripts, styles, frames, and forms, extracts Product JSON-LD when present, and returns the canonical URL as text rather than framing an external page.
+
+Every adapter projects into the same `Offer` protocol. The Worker rejects unknown origins, alternate hostnames, non-HTTPS targets, non-allowlisted paths, and redirects to unapproved paths. Upstream bodies and tool outputs are bounded.
+
+## Human experience
+
+The visible workspace includes an origin switcher, adapter and live/fallback badge, stable suggested prompts, offer grid, comparison cards, interpolation panel, activity rail, compact result panel, confirmation banner, and in-page cart. Manual controls call the same actions as WebMCP tools.
+
+## Project boundary
+
+The public repository is the complete Challenge application. The pre-existing commercial Agentic project is separate and is not read, imported, called, or required. This build uses no commercial Worker, App Proxy, HMAC, storage, secrets, Shopify Admin API, accounts, cookies, analytics, checkout, or payment.
 
 ## Required links
 
 - Live project: https://agentic-webmcp.somnora.workers.dev/
 - Public source: https://github.com/Somnora/agentic-webmcp
 - Privacy disclosure: https://agentic-webmcp.somnora.workers.dev/privacy.html
-- Demo video: `TBD after recording and YouTube upload`
-
-## Suggested tags
-
-WebMCP, ecommerce, Shopify, Cloudflare Workers, browser agents, human-agent collaboration, open web
+- Demo video: `TBD after James records and uploads the public YouTube video`
 
 ## Testing instructions
 
-Open https://agentic-webmcp.somnora.workers.dev/ in ChatGPT's WebMCP-enabled in-app browser. No credentials are required. Confirm the header reports four registered tools, then ask: `Find comfortable hoodies in this catalog.` The page should invoke `search_products` and update both the catalog grid and shared activity timeline. Continue with: `Compare slides and sweatpants using only catalog facts.` The page should invoke `compare_products` and render both products visibly. A complete two-minute prompt sequence and expected results are in `docs/JUDGE_GUIDE.md`.
+Open the app in a WebMCP-capable browser after the current branch is deployed. No credentials are required.
+
+1. Confirm the header says `8 WebMCP tools registered`.
+2. Ask: `List the allowlisted origins and select review-shop.`
+3. Ask: `Search the selected origin for wax and return the stable handles.`
+4. Ask: `Interpolate /products/the-complete-snowboard into stripped Markdown and a structured Offer.`
+5. Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
+6. Ask: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard and wait for me.`
+7. Confirm the cart is still empty, then click `Confirm add to cart` and observe the `in_cart` receipt.
+
+The badge must say whether facts came from a live adapter or `bundled-snapshot`. The default storefront was password-protected during local verification on August 26, 2026, so a no-token run correctly used the labeled snapshot and reported that the HTML page was not publicly readable.
+
+## Verification status
+
+Local strict TypeScript, 27 unit and route tests, the Worker dry run, and a visible 1280 x 720 local QA pass completed on August 26, 2026. The current branch was not deployed during this task, so updated production and WebMCP browser checks remain pending. The public YouTube video remains the required submission artifact.

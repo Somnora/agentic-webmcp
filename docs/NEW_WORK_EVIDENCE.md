@@ -1,51 +1,47 @@
 # New work created during the WebMCP Challenge
 
-## Pre-existing product baseline
+## Project boundary
 
-Commercial Agentic existed before the Challenge. Its last pre-window commit was:
+Commercial Agentic existed before the Challenge. It did not register the WebMCP tools or include the standalone shared workspace in this public repository. The public commit history is the timestamped source for Challenge work.
 
-- Repository: private commercial Agentic Shopify application
-- Commit: `78d920d6ebf6a439cb98d7feec596e0cd9c9e093`
-- Commit time: August 25, 2026 at 1:48:55 AM Pacific
-- Challenge submission window opened: August 25, 2026 at 11:00 AM Pacific
+The current origin interpolation change stays entirely inside `agentic-webmcp`. It does not read, import, call, or modify the commercial application.
 
-Pre-existing Agentic published live Shopify catalog data as compact Markdown behind signed App Proxy routes. It did not register WebMCP tools and did not include the standalone human-agent commerce workspace submitted here.
+## Challenge work in this repository
 
-## New Challenge work
+- Standalone top-level WebMCP workspace.
+- Eight imperative `document.modelContext.registerTool(...)` tools.
+- Origin records stored as data in `src/origins.ts`.
+- One Offer protocol used by Storefront GraphQL, public products JSON, JSON-LD, HTML interpolation, and the bundled snapshot projection.
+- Exact-host and path allowlists, redirect restrictions, and bounded upstream bodies.
+- Shared origin badge, offer grid, comparison, stripped Markdown, activity, proposal, and in-page cart receipt.
+- Human-confirmed proposal protocol with no registered commit or checkout tool.
+- Strict input bounds, source labels, security headers, tests, judge prompts, and submission documentation.
 
-This repository was initialized after the submission window opened. New work includes:
+## Earlier public milestones
 
-- Standalone top-level WebMCP commerce workspace.
-- Four imperative `document.modelContext.registerTool(...)` tools.
-- Human-visible activity synchronization for agent and manual invocations.
-- Same-origin Cloudflare Worker catalog API.
-- Shopify Mock Shop GraphQL adapter with explicit source labeling.
-- Resilient, visibly labeled bundled snapshot.
-- Strict input bounds, schema validation, cancellation support, security headers, and untrusted-content annotations.
-- Unit, route, type, bundle, and live smoke verification.
-- Public setup, threat model, evaluation prompts, and submission documentation.
-
-## Commit evidence
-
-The public repository history is the authoritative timestamped record. Update this table after each milestone.
-
-| Commit | Time | New WebMCP work |
+| Commit | Date | Challenge work |
 | --- | --- | --- |
-| [`75f0392`](https://github.com/Somnora/agentic-webmcp/commit/75f03928eb491fecc5a2266b9a148ea4eeb56737) | August 25, 2026 at 5:41:53 PM Pacific | Standalone workspace, tool API, Worker, tests, and documentation |
-| [`de31e91`](https://github.com/Somnora/agentic-webmcp/commit/de31e91) | August 25, 2026 | Public deployment and verification evidence |
-| [`75ddaac`](https://github.com/Somnora/agentic-webmcp/commit/75ddaac) | August 25, 2026 | Deployed submission-media captures and provenance |
-| [`4887e77`](https://github.com/Somnora/agentic-webmcp/commit/4887e77) | August 25, 2026 | Reproducible GitHub Actions verification workflow |
-| [`c5dfbb7`](https://github.com/Somnora/agentic-webmcp/commit/c5dfbb7) | August 25, 2026 | Definitive WebMCP-enabled Chrome evidence for all four registered tool paths |
+| `75f0392` | August 25, 2026 | Initial standalone workspace, tools, Worker, tests, and documentation |
+| `de31e91` | August 25, 2026 | Public deployment and verification evidence |
+| `75ddaac` | August 25, 2026 | Earlier submission media captures |
+| `4887e77` | August 25, 2026 | GitHub Actions verification workflow |
+| `c5dfbb7` | August 25, 2026 | Earlier four-tool WebMCP browser evidence |
+| `7b4b81e` | August 25, 2026 | Last commit before the allowlisted origin interpolation WIP |
 
-## Deployed evidence
+The older screenshots and four-tool browser evidence do not represent the current eight-tool origin flow. They must not be used as current proof after this branch changes.
 
-- Public repository: https://github.com/Somnora/agentic-webmcp
-- Cloudflare Worker: https://agentic-webmcp.somnora.workers.dev/
-- Worker version: `be7d17bb-0cee-4544-8f43-84e398ec519a`
-- Verification: 26 unit tests, strict TypeScript, deployment dry-run, startup analysis, and 7/7 live smoke checks passing on August 25, 2026.
-- Reproducibility: GitHub Actions run [`32916802627`](https://github.com/Somnora/agentic-webmcp/actions/runs/32916802627) passed, and an independent shallow clone completed `npm ci` plus the full verification command with zero credentials and zero vulnerabilities.
-- WebMCP browser evidence: Chrome 151 with the testing flag active reported all four tools registered; search, inspection, comparison, and brief paths completed against live Shopify Mock Shop data with visible shared-state updates and zero console warnings on August 25, 2026.
+## Current verification boundary
 
-## Evaluation boundary
+On August 26, 2026, local strict TypeScript, 27 unit and route tests, and the Worker deployment dry run passed for the origin interpolation implementation. A visible 1280 x 720 local QA pass also completed for origin labeling, search, interpolation, proposal, human confirmation, and the in-page receipt. QA screenshots were written only to a temporary directory and were not added to the repository.
 
-The Hackathon submission asks judges to evaluate only this repository's WebMCP extension. The private commercial repository is context for the problem's credibility, not submitted source or claimed Challenge-period work.
+No deployment, updated production smoke run, updated WebMCP browser pass, screenshot capture, or YouTube recording was performed during this task. The final commit hash should be added after commit.
+
+## Current origin access evidence
+
+On August 26, 2026, unauthenticated checks against `agentic-app-review-test.myshopify.com` observed:
+
+- `/products.json` redirected to `/password`.
+- `/products/the-complete-snowboard` redirected to `/password`.
+- Tokenless Storefront GraphQL reported that the Online Store channel was locked.
+
+The implementation therefore labels no-token local catalog results as `bundled-snapshot` and marks the blocked page projection as not live. This access state can change and should be checked again before deployment and recording.

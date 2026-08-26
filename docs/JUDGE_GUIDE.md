@@ -2,35 +2,64 @@
 
 ## Access
 
-- Live app: https://agentic-webmcp.somnora.workers.dev/
+- App URL: https://agentic-webmcp.somnora.workers.dev/
 - Credentials: none
-- Recommended browser: ChatGPT's WebMCP-enabled in-app browser
-- Chrome alternative: enable `chrome://flags/#enable-webmcp-testing`, restart Chrome, then open the live app
+- Current code expectation after deployment: `8 WebMCP tools registered`
+- Default origin: `review-shop`
+- Hostname: `agentic-app-review-test.myshopify.com`
 
-The header should read `4 WebMCP tools registered`. If the browser does not expose WebMCP, the page accurately reports that state and keeps a complete manual preview available.
+If the browser does not expose `document.modelContext`, the page reports that state and keeps the same manual controls available.
 
-## Two-minute evaluation
+## Exact evaluation flow
 
-1. Ask: `Find comfortable hoodies in this catalog.`
+1. Ask: `List the allowlisted origins and show which adapter each one uses.`
+   - Expected tool: `list_origins`
+   - Expected result: one origin with id `review-shop`, exact hostname, primary Storefront adapter, and public products JSON fallback.
+
+2. Ask: `Select review-shop for the rest of this task.`
+   - Expected tool: `select_origin`
+   - Expected visible change: the origin switcher and badge show the review shop. Selection is page-local and sessionless.
+
+3. Ask: `Search the selected origin for wax and return the stable handles.`
    - Expected tool: `search_products`
-   - Expected visible change: product grid and activity timeline show the search.
-2. Ask: `Inspect the available sizes and prices for slides.`
-   - Expected tool: `get_product` with handle `slides`
-   - Expected visible change: the workspace narrows to Slides and displays sampled variant facts.
-3. Ask: `Compare slides and sweatpants using only catalog facts.`
-   - Expected tool: `compare_products` with `slides` and `sweatpants`
-   - Expected visible change: two comparison cards and compact source-grounded output.
-4. Ask: `Create a concise brief for comfortable everyday apparel using slides and sweatpants.`
-   - Expected tool: `create_catalog_brief`
-   - Expected visible change: selected products remain visible and the activity rail shows the grounded brief call.
+   - Expected handle: `selling-plans-ski-wax`
+   - Expected visible change: the offer grid and activity rail update.
 
-## Trust and reliability checks
+4. Ask: `Interpolate /products/the-complete-snowboard into a stripped page view and show the canonical URL and structured Offer.`
+   - Expected tool: `interpolate_page`
+   - Expected handle: `the-complete-snowboard`
+   - Expected visible change: the stripped Markdown panel shows the canonical origin URL as text and the workspace shows the normalized Offer.
+   - Current access note: if the merchant page redirects to `/password`, the result must say `pageLive: false` and identify the labeled fallback. It must never claim that blocked HTML was read.
 
-- All tools are read-only and carry `readOnlyHint` plus `untrustedContentHint`.
-- Product text is rendered with `textContent`, never injected as HTML.
-- Source state says `Live Shopify Mock Shop` or clearly labels the bundled fallback.
-- There are no accounts, cookies, demo credentials, payment actions, mutations, or production merchant data.
-- Invalid result counts and malformed handles fail closed with HTTP 400.
+5. Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
+   - Expected tool: `compare_products`
+   - Expected visible change: two comparison cards and a compact result.
+
+6. Ask: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard to the cart, then stop for my confirmation.`
+   - Expected tool: `propose_add_to_cart`
+   - Expected visible change: a banner says it is waiting for human confirmation and the cart remains empty.
+   - Human action: click `Confirm add to cart`.
+   - Expected receipt: status `in_cart` appears in the shared cart.
+
+No agent tool can confirm, commit, checkout, or pay.
+
+## Source labels
+
+The origin itself is a live merchant hostname. The data badge separately reports the adapter state:
+
+- `LIVE | shopify-storefront` when a valid read-only Storefront token succeeds.
+- `LIVE | shopify-products-json` when the public JSON endpoints succeed.
+- `FALLBACK | bundled-snapshot` when neither live catalog adapter is readable.
+
+Never interpret the fallback label as current live inventory.
+
+## Security spot checks
+
+- Try `originId=unknown-shop`: expected HTTP 400.
+- Try interpolating `/collections/all`: expected HTTP 400.
+- Try an absolute URL on another host: expected HTTP 400.
+- Call `/api/cart/commit` without the human confirmation header: expected HTTP 400.
+- Inspect response headers for CSP, `tools=(self)`, origin agent clustering, and framing denial.
 
 ## Reproduction
 
@@ -41,4 +70,4 @@ npm ci
 npm run verify
 ```
 
-No environment variables are required. The public GitHub Actions workflow runs the same verification gate.
+The local gate requires no credentials and does not deploy.

@@ -4,6 +4,7 @@ __pycache__/
 .wrangler/
 .dev.vars
 .env
+.review-catalog.json
 dist/
 coverage/
 worker-startup.cpuprofile

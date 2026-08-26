@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "agentic-webmcp",
   "main": "src/index.ts",
-  "compatibility_date": "2026-08-25",
+  "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "assets": {
@@ -13,5 +13,8 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  "vars": {
+    "CATALOG_SHOP": "agentic-app-review-test.myshopify.com"
   }
 }

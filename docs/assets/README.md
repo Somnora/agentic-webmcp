@@ -1,12 +1,12 @@
-# Submission media
+# Legacy submission media
 
-These captures were taken from the deployed Agentic WebMCP Worker on August 25, 2026.
+These captures were taken from the earlier four-tool deployment on August 25, 2026. They do not show the current origin switcher, eight registered tools, interpolation view, proposal banner, or in-page cart receipt.
 
-| File | Dimensions | Suggested use |
+| File | Dimensions | Current status |
 | --- | --- | --- |
-| `agentic-webmcp-enabled.jpg` | 1280 × 963 | Definitive Chrome capture showing `4 WebMCP tools registered`; gallery cover or video opening frame |
-| `agentic-webmcp-enabled-flow.jpg` | 1280 × 963 | Completed search, inspection, comparison, and grounded-brief activity evidence |
-| `agentic-webmcp-hero.jpg` | 1280 × 720 | Devpost gallery cover, video opening frame, social preview |
-| `agentic-webmcp-comparison.jpg` | 1280 × 720 | Devpost gallery detail, comparison/tool-activity evidence |
+| `agentic-webmcp-enabled.jpg` | 1280 x 963 | Legacy four-tool browser evidence only |
+| `agentic-webmcp-enabled-flow.jpg` | 1280 x 963 | Legacy four-tool flow evidence only |
+| `agentic-webmcp-hero.jpg` | 1280 x 720 | Legacy workspace overview |
+| `agentic-webmcp-comparison.jpg` | 1280 x 720 | Legacy comparison view |
 
-The enabled captures were recorded from Chrome 151 with the WebMCP testing flag active on August 25, 2026. They contain no account details, tokens, bookmarks, or unrelated tabs. The earlier captures are retained as graceful-fallback and manual-flow evidence.
+Do not use these files as current judge or video evidence. After James deploys and verifies the origin interpolation branch, capture new media outside this repository. Do not commit screenshots or video files from the new take.

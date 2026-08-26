@@ -1,14 +1,37 @@
 const READ_ONLY_ANNOTATIONS = Object.freeze({ readOnlyHint: true, untrustedContentHint: true });
+const CONFIRM_WRITE_ANNOTATIONS = Object.freeze({
+  readOnlyHint: false,
+  untrustedContentHint: true,
+  destructiveHint: false,
+});
 
 export function createAgenticTools(actions) {
   return [
     {
+      name: "list_origins",
+      description: "List the exact HTTPS merchant origins this page is allowed to read and show their configured adapters in the shared interface.",
+      inputSchema: { type: "object", properties: {} },
+      annotations: READ_ONLY_ANNOTATIONS,
+      execute: (args, { signal } = {}) => actions.listOrigins(args, signal),
+    },
+    {
+      name: "select_origin",
+      description: "Select one allowlisted origin for later tools and update the visible origin badge. Selection is page-local and does not create a server session.",
+      inputSchema: {
+        type: "object",
+        properties: { originId: { type: "string", description: "Stable origin id returned by list_origins." } },
+        required: ["originId"],
+      },
+      annotations: READ_ONLY_ANNOTATIONS,
+      execute: (args, { signal } = {}) => actions.selectOrigin(args, signal),
+    },
+    {
       name: "search_products",
-      description: "Search the commerce catalog by natural-language product terms and show matching products in the shared page interface.",
+      description: "Search offers on the selected allowlisted merchant origin and show matching products in the shared page interface.",
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Product words to match, such as hoodie, cotton, or slides." },
+          query: { type: "string", description: "Product words to match, such as snowboard, Ice, or wax." },
           maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum number of results to return." },
         },
         required: ["query"],
@@ -18,7 +41,7 @@ export function createAgenticTools(actions) {
     },
     {
       name: "get_product",
-      description: "Get current catalog facts and sampled variants for one product handle, then show that product in the shared interface.",
+      description: "Get normalized offer facts and sampled variants for one product handle on the selected origin, then show it in the shared interface.",
       inputSchema: {
         type: "object",
         properties: { handle: { type: "string", description: "Stable lowercase product handle returned by search_products." } },
@@ -29,7 +52,7 @@ export function createAgenticTools(actions) {
     },
     {
       name: "compare_products",
-      description: "Compare catalog facts for two to four product handles and display a transparent side-by-side view for the human.",
+      description: "Compare normalized facts for two to four handles on one selected origin and display a side-by-side view for the human.",
       inputSchema: {
         type: "object",
         properties: {
@@ -41,18 +64,44 @@ export function createAgenticTools(actions) {
       execute: (args, { signal } = {}) => actions.compare(args, signal),
     },
     {
+      name: "interpolate_page",
+      description: "Read one allowlisted product path on the selected origin, remove page chrome, and show compact Markdown plus the normalized Offer and canonical origin URL.",
+      inputSchema: {
+        type: "object",
+        properties: { path: { type: "string", description: "Allowlisted product path only, such as /products/the-complete-snowboard." } },
+        required: ["path"],
+      },
+      annotations: READ_ONLY_ANNOTATIONS,
+      execute: (args, { signal } = {}) => actions.interpolate(args, signal),
+    },
+    {
       name: "create_catalog_brief",
-      description: "Create a compact Markdown brief grounded in one to four selected catalog products and show the source selection to the human.",
+      description: "Create compact Markdown grounded in one to four selected offers from the selected origin and show the source selection to the human.",
       inputSchema: {
         type: "object",
         properties: {
-          goal: { type: "string", description: "The shopper or catalog-research goal to ground the brief." },
+          goal: { type: "string", description: "The shopper or catalog research goal to ground the brief." },
           handles: { type: "array", minItems: 1, maxItems: 4, items: { type: "string" }, description: "One to four unique product handles." },
         },
         required: ["goal", "handles"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
       execute: (args, { signal } = {}) => actions.brief(args, signal),
+    },
+    {
+      name: "propose_add_to_cart",
+      description: "Stage one available variant as a visible cart proposal. The cart stays unchanged until the human clicks Confirm add to cart. This never checks out or charges.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          handle: { type: "string", description: "Product handle from search_products or get_product." },
+          variantTitle: { type: "string", description: "Optional variant title such as Ice, Dawn, or Powder." },
+          quantity: { type: "integer", minimum: 1, maximum: 4, description: "Quantity to propose, from 1 to 4." },
+        },
+        required: ["handle"],
+      },
+      annotations: CONFIRM_WRITE_ANNOTATIONS,
+      execute: (args, { signal } = {}) => actions.proposeCart(args, signal),
     },
   ];
 }

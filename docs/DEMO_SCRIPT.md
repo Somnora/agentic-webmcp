@@ -1,89 +1,71 @@
 # Agentic WebMCP demo script
 
-Target: under 3 minutes, public YouTube, 1920 x 1080, spoken audio. The
-interactive driver below targets 1 minute 55 seconds; the longer narration
-outline remains available for a manually edited cut.
+Target: under three minutes, public YouTube, 1280 x 720 or larger, spoken audio, no music.
 
-## Interactive recording driver
+Do not use the older four-tool screenshots or the older automated driver for the final take. They show the previous catalog flow. Record only after this branch is deployed and a fresh manual judge pass matches `docs/JUDGE_GUIDE.md`.
 
-The repository includes a deterministic visible-browser driver with a smooth cursor,
-click rings, element spotlights, scene captions, and confirmed-result callouts. It
-operates the live deployed interface and stops if the recording Chrome instance does
-not expose the WebMCP API.
+## 0:00 to 0:20: Problem and origin
 
-One-time setup:
+Show the page header, eight-tool status, origin switcher, source badge, search prompts, and interpolate control.
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r scripts/requirements-demo.txt
-```
+Narration: "A commerce agent should receive explicit capabilities and source labels, not guess through visual controls. Agentic is a structured agent view over one exact allowlisted merchant origin."
 
-Record the production demo:
+## 0:20 to 0:40: Tool discovery
 
-```bash
-cd /Users/jamesmcshane/APP_PROJECTS/Agentic/agentic-webmcp
-.venv/bin/python scripts/drive_demo.py
-```
+Ask: `List the allowlisted origins and select review-shop.`
 
-Start a 1500 × 950 or larger QuickTime screen recording when prompted. For a fast
-automated QA pass with retained screenshots:
+Show `list_origins` and `select_origin` in the activity rail. Keep the hostname and adapter visible. Do not show a framed third-party page.
 
-```bash
-AGENTIC_DEMO_QA_DIR=docs/demo-qa .venv/bin/python scripts/drive_demo.py --fast
-```
+Narration: "The top-level document registers eight WebMCP tools. Seven read origin and offer facts. One can only stage a cart proposal."
 
-Chrome 149+ must have `chrome://flags/#enable-webmcp-testing` enabled for the final
-take. The driver also requests the corresponding Blink testing feature on launch.
+## 0:40 to 1:05: Search a stable handle
 
-## 0:00–0:20 — Problem
+Ask: `Search the selected origin for wax and return the stable handles.`
 
-Show the Agentic WebMCP workspace.
+Show `selling-plans-ski-wax`, the adapter badge, and the activity entry.
 
-Narration: “Commerce sites contain structured facts, but browser agents often have to infer intent from visual controls. Agentic gives the page an explicit WebMCP tool layer while keeping the human and agent in the same visible workspace.”
+Narration: "The Worker tries a read-only Storefront API token, then public products JSON, then a clearly labeled bundled snapshot. The interface never presents fallback facts as live."
 
-## 0:20–0:40 — Tool discovery
+## 1:05 to 1:35: Interpolate a product page
 
-Show WebMCP status and the four registered tool names. Briefly show source or inspector evidence if it is clean and readable.
+Ask: `Interpolate /products/the-complete-snowboard into stripped Markdown and a structured Offer.`
 
-Narration: “The page registers four focused, read-only tools: search, product inspection, comparison, and a grounded catalog brief. Each tool has a strict schema and compact result contract.”
+Show the canonical URL as text, the stripped Markdown panel, and the structured offer card. If the page is password-protected, show and say that `pageLive` is false. Do not imply that blocked page HTML was fetched.
 
-## 0:40–1:05 — Search
+Narration: "Interpolation accepts only a path declared on the selected origin. Navigation, footer, scripts, styles, frames, and forms are removed. Structured adapters remain the authority for inventory."
 
-Ask the agent: “Find comfortable hoodies in this catalog.” Show `search_products` executing and the product grid/activity timeline updating.
+## 1:35 to 1:55: Compare offers
 
-Narration: “The agent calls a catalog function instead of clicking through cards or scraping layout. The same result appears for the human, including source and live-status information.”
+Ask: `Compare the-complete-snowboard and selling-plans-ski-wax using only origin facts.`
 
-## 1:05–1:30 — Inspect and compare
+Show two comparison cards and the compact result panel.
 
-Ask the agent to inspect slides, then compare slides and sweatpants. Show the shared UI state.
+Narration: "Both projections use one Offer protocol, so comparison does not require a second catalog model."
 
-Narration: “Tool completion changes the human interface. Product facts are normalized, bounded, and returned from Shopify's public Mock Shop GraphQL demo. Externally sourced text is explicitly labeled untrusted.”
+## 1:55 to 2:25: Propose and confirm
 
-## 1:30–1:55 — Grounded brief
+Ask: `Propose adding quantity 1 of the Ice variant of the-complete-snowboard, then wait for me.`
 
-Ask for a concise brief using two selected products. Show `create_catalog_brief` and its source products.
+Pause on the visible confirmation banner and empty cart. Click `Confirm add to cart` yourself. Show the `in_cart` receipt.
 
-Narration: “The brief is deterministic and grounded only in selected catalog facts. Agentic does not invent reviews, ratings, or outcome claims.”
+Narration: "The agent can stage a short-lived quote, but it cannot commit. Only this human button calls the commit route. The receipt is in-page state, not a merchant cart, checkout, or payment."
 
-## 1:55–2:20 — Reliability and impact
+## 2:25 to 2:45: Trust boundary
 
-Show the read-only trust note and source indicator.
+Show the trust note and source label.
 
-Narration: “The Worker enforces the same limits as the schemas, applies origin isolation and a self-only tools policy, and provides a visibly labeled fallback if the public demo catalog is unavailable. This is the open web with a reliable tool surface: explicit for agents, transparent for humans.”
+Narration: "Every upstream request is HTTPS, exact-host allowlisted, path checked, redirect restricted, and byte bounded. Origin content stays untrusted and visible to the human."
 
 ## Recording checks
 
-- No account names, passwords, tokens, browser bookmarks, unrelated tabs, or copyrighted music.
-- Avoid prominent third-party logos or marks.
-- Keep the video under three minutes.
-- Confirm tool names, spoken claims, and deployed behavior match.
-- Upload publicly to YouTube and test the link logged out.
+- Confirm the deployed header says `8 WebMCP tools registered`.
+- Confirm the source badge is honest for the current adapter and fallback state.
+- Keep the origin badge, suggested prompts, interpolate view, confirmation banner, and receipt legible at 1280 x 720.
+- Do not show product images, external pages, third-party logos, account names, passwords, tokens, browser bookmarks, unrelated tabs, or copyrighted music.
+- The default hostname contains a platform trademark. Confirm that its appearance is permitted for the final video or replace it with an owned, allowlisted hostname before recording.
+- Do not claim conversion, sales impact, crawler adoption, or customer token savings.
+- Upload publicly to YouTube and test the link while logged out.
 
-## Ready-to-use media
+## Remaining required artifact
 
-- `docs/assets/agentic-webmcp-hero.jpg` — 1280 × 720 opening/title frame.
-- `docs/assets/agentic-webmcp-comparison.jpg` — 1280 × 720 comparison and shared activity frame.
-- `docs/assets/agentic-webmcp-enabled.jpg` — definitive WebMCP-enabled opening frame showing four registered tools.
-- `docs/assets/agentic-webmcp-enabled-flow.jpg` — completed four-path activity and grounded brief.
-
-Both captures come from the deployed Worker and contain no account details, tokens, bookmarks, or unrelated tabs.
+The public YouTube URL is still required. No video was recorded or uploaded by this implementation task.
