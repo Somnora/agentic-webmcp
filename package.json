@@ -1,0 +1,22 @@
+{
+  "name": "agentic-webmcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Open-source WebMCP commerce tools for human-agent catalog collaboration.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test && wrangler deploy --dry-run",
+    "verify:live": "node scripts/verify-live.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11",
+    "webmcp-types": "^0.1.5",
+    "wrangler": "^4.125.0"
+  }
+}

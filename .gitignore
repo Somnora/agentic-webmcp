@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+dist/
+coverage/
+worker-startup.cpuprofile
+.DS_Store

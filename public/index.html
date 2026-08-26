@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Agentic WebMCP gives browser agents explicit tools for searching, inspecting, and comparing commerce catalogs.">
+  <title>Agentic WebMCP — Commerce tools for browser agents</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Agentic WebMCP home">
+      <img src="/icon.webp" alt="" width="42" height="42">
+      <span><strong>Agentic</strong><small>WebMCP Commerce Tools</small></span>
+    </a>
+    <div class="status-cluster" aria-live="polite">
+      <span class="status-dot"></span>
+      <span id="webmcp-status">Detecting WebMCP…</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="eyebrow">THE OPEN WEB, WITH AN EXPLICIT TOOL LAYER</div>
+      <h1 id="hero-title">Commerce agents should call tools,<br><span>not click through storefronts.</span></h1>
+      <p>Agentic registers a small, reliable catalog toolset directly in the page. Agents get structured intent and compact results; humans see every invocation reflected in the interface.</p>
+      <div class="tool-strip" aria-label="Available tools">
+        <code>search_products</code>
+        <code>get_product</code>
+        <code>compare_products</code>
+        <code>create_catalog_brief</code>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="Agentic commerce workspace">
+      <div class="catalog-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="kicker">HUMAN WORKSPACE</span>
+            <h2>Explore the catalog</h2>
+          </div>
+          <span id="source-badge" class="source-badge">Loading source…</span>
+        </div>
+
+        <form id="search-form" class="search-form">
+          <label for="search-input">Search product facts</label>
+          <div class="search-row">
+            <input id="search-input" name="query" maxlength="80" placeholder="Try hoodie, cotton, slides…" autocomplete="off">
+            <button type="submit">Search</button>
+          </div>
+        </form>
+
+        <div class="prompt-row" aria-label="Suggested agent prompts">
+          <span>Try:</span>
+          <button type="button" data-query="hoodie">Find hoodies</button>
+          <button type="button" data-query="cotton">Search cotton</button>
+          <button type="button" data-query="">Show catalog</button>
+        </div>
+
+        <div id="catalog-message" class="catalog-message" aria-live="polite"></div>
+        <div id="product-grid" class="product-grid"></div>
+
+        <div class="action-dock">
+          <div>
+            <strong id="selection-count">0 products selected</strong>
+            <span>Select two to four products for a grounded comparison.</span>
+          </div>
+          <button id="compare-button" type="button" disabled>Compare selected</button>
+        </div>
+
+        <form id="brief-form" class="brief-form">
+          <label for="brief-goal">Create a catalog brief from selected products</label>
+          <div class="search-row">
+            <input id="brief-goal" maxlength="160" value="Choose comfortable everyday apparel with clear availability.">
+            <button type="submit" disabled id="brief-button">Create brief</button>
+          </div>
+        </form>
+      </div>
+
+      <aside class="agent-panel" aria-labelledby="activity-title">
+        <div class="panel-heading compact">
+          <div>
+            <span class="kicker">SHARED AGENT STATE</span>
+            <h2 id="activity-title">Tool activity</h2>
+          </div>
+          <span class="read-only">READ ONLY</span>
+        </div>
+        <p class="activity-intro">Calls made by an agent or the human preview use the same functions and update this visible record.</p>
+        <ol id="activity-list" class="activity-list" aria-live="polite"></ol>
+        <section id="result-panel" class="result-panel" aria-live="polite">
+          <span class="kicker">LATEST RESULT</span>
+          <p>Invoke a tool to inspect its compact, source-grounded result.</p>
+        </section>
+        <div class="trust-note">
+          <strong>Trust boundary</strong>
+          <p>All tools are read-only and label externally sourced catalog text as untrusted content. No checkout, account, or mutation capability is exposed.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="why-grid" aria-label="Why WebMCP changes the experience">
+      <article><span>01</span><h3>Explicit intent</h3><p>Agents discover precise schemas instead of guessing which interface element to click.</p></article>
+      <article><span>02</span><h3>Shared state</h3><p>Tool completion updates the page, keeping the human and agent oriented to the same result.</p></article>
+      <article><span>03</span><h3>Bounded trust</h3><p>Small read-only tools, strict validation, source labels, and compact outputs reduce ambiguity.</p></article>
+    </section>
+  </main>
+
+  <footer>
+    <span>Agentic WebMCP Challenge build · New work begun August 25, 2026</span>
+    <span>Catalog source: Shopify Mock Shop public GraphQL demo, with labeled resilient fallback.</span>
+  </footer>
+</body>
+</html>
