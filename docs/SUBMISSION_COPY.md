@@ -70,4 +70,4 @@ The badge must say whether facts came from a live adapter or `bundled-snapshot`.
 
 ## Verification status
 
-Local strict TypeScript and 34 unit and route tests passed on August 26, 2026. The Worker dry run, production smoke result, and WebMCP client record must be refreshed after the final deployment. The public YouTube video remains the required submission artifact.
+Local strict TypeScript and 34 unit and route tests passed on August 26, 2026. The Worker dry run passed, all 11 production smoke checks passed, and Chrome reported exactly eight registered WebMCP tools. The public YouTube video remains the required submission artifact.

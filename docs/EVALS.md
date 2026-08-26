@@ -112,10 +112,11 @@ Expected:
 | 2026-08-26 | Vitest | Allowlisted interpolation | route | Yes | N/A | Yes | Stripped page and off-allowlist rejection verified |
 | 2026-08-26 | Vitest | Cart proposal | proposal and commit routes | Yes | N/A | Yes | Proposal has no receipt; commit requires human header |
 | 2026-08-26 | Chrome local | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
-| Pending | WebMCP browser after deploy | Full judge flow | | | | | Current branch has not been deployed in this task |
+| 2026-08-26 | Chrome production | Tool discovery | all eight | N/A | Yes | Yes | Chrome reported `8 WebMCP tools registered`; agent prompt selection was not exercised |
+| 2026-08-26 | Production smoke | API judge flow | routes | Yes | Yes | Yes | All 11 automated checks passed against the deployed Worker |
 
 ## Automated baseline
 
 On August 26, 2026, strict TypeScript and 34 unit and route tests passed locally. The suite covers the eight-tool registration contract, compact tool metadata budgets, Storefront and products JSON normalization into one Offer graph, ProductGroup JSON-LD, field provenance, labeled fallback behavior, exact-origin mismatch rejection, interpolation stripping and allowlist rejection, password and off-origin redirect rejection, upstream byte limits, proposal without commit, human-header commit, structured errors, security headers, bounded JSON, and static asset routing.
 
-No updated WebMCP browser run or production smoke result is claimed until James deploys this branch.
+The production browser pass verifies registration and visible state, not autonomous agent tool selection. Run the repetition protocol before claiming an agent success rate.

@@ -71,8 +71,8 @@ If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a la
 - Strict TypeScript: passed locally on August 26, 2026.
 - Unit and route tests: 34 of 34 passed locally.
 - Worker dry run: passed locally on August 26, 2026.
-- Updated production smoke check: pending deployment by James.
-- Updated WebMCP browser pass: pending deployment by James.
+- Updated production smoke check: 11 of 11 checks passed on August 26, 2026.
+- Updated Chrome WebMCP browser pass: exactly eight tools registered on August 26, 2026.
 - Public YouTube video: missing and required.
 
 ## Known limitations
@@ -87,10 +87,10 @@ If the source badge says `FALLBACK | bundled-snapshot`, treat the result as a la
 ## Submission readiness
 
 - Public repository: present.
-- Live URL: present but not updated by this task.
-- Privacy disclosure: updated in source.
-- Judge flow and prompt script: updated in source.
+- Live URL: updated and verified on August 26, 2026.
+- Privacy disclosure: updated and deployed.
+- Judge flow and prompt script: updated and deployed.
 - Automated local gate: strict TypeScript, 34 of 34 tests, and Worker dry run passed.
 - Public YouTube video: missing and required.
 
-Do not paste this file into Devpost until the current branch is deployed, the live judge flow is verified, current screenshots are captured outside the repository, and the public YouTube URL exists.
+Do not paste this file into Devpost until current screenshots are captured outside the repository and the public YouTube URL exists.
