@@ -118,7 +118,7 @@ Planned 2:28 flow:
 
 ## Screenshot Shot List
 
-Six candidate screenshots were captured outside the repository at 1280 by 720:
+Six candidate screenshots were captured outside the repository. Frames 2 through 6 are 1280 by 720. The connected Chrome registration frame uses Chrome's captured viewport at 1154 by 927:
 
 1. Origin badge, health labels, and eight registered tools.
 2. Search results for `notebook` with the activity rail visible.
@@ -129,7 +129,7 @@ Six candidate screenshots were captured outside the repository at 1280 by 720:
 
 Do not include browser extensions, account details, credentials, unrelated tabs, or third-party trademarks in the screenshots.
 
-Frames 2 through 6 are visually reviewed and ready for selection. Frame 1 is rehearsal evidence only because the in-app browser truthfully reports that its WebMCP API is not detected. Replace that opening frame with a connected Chrome or ChatGPT capture that visibly confirms all eight registered tools before uploading it to Devpost.
+All six frames are visually reviewed and ready for selection. Frame 1 was captured in connected Chrome and visibly confirms all eight registered WebMCP tools, the selected live demo origin, the AGENT cursor, and the presenter overlay.
 
 ## Submission Readiness Notes
 
@@ -140,9 +140,9 @@ Frames 2 through 6 are visually reviewed and ready for selection. Frame 1 is reh
 - Unit and route tests: 43 of 43 passed across 7 files.
 - Worker verification: 13 of 13 production checks passed against both deployed Workers, including the presenter asset.
 - Browser rehearsal: completed interpolation, comparison, proposal, required human confirmation, and receipt at 1280 by 720 with no console warnings.
-- WebMCP discovery: connected Chrome reported all eight registered tools on the prior production commit. The final presenter-only change did not modify `public/tools.js`; the Chrome extension connection was unavailable for a redundant final discovery pass.
+- WebMCP discovery: connected Chrome reported all eight registered tools on the deployed presenter URL after the final presenter change.
 - Required public YouTube video: missing.
-- Candidate screenshots: six captured outside the repository and visually reviewed. One connected WebMCP registration frame still needs replacement.
+- Candidate screenshots: six captured outside the repository and visually reviewed, including connected Chrome evidence of all eight registered WebMCP tools.
 
 ## Judging Criteria Alignment
 
@@ -169,9 +169,9 @@ Frames 2 through 6 are visually reviewed and ready for selection. Frame 1 is reh
 - Field 28254, Live URL: https://agentic-webmcp.somnora.workers.dev/
 - Field 28255, Testing instructions: use the credential-free ten-step flow above.
 - Field 28256, Public repository: https://github.com/Somnora/agentic-webmcp
-- Field 28257, Tested clients: Google Chrome with WebMCP enabled; final ChatGPT in-app browser discovery pass remains to be recorded if available.
+- Field 28257, Tested clients: Google Chrome with WebMCP enabled. Connected Chrome visibly reported all eight registered tools on the deployed presenter URL.
 - Field 28258, AI tools used: OpenAI Codex.
 - Field 28259, Learning level: TODO, James to select `None`, `Moderate`, or `Significant`.
 - Field 28260, Career AI value: TODO, James to select `Yes` or `No`.
 
-Do not paste or submit this draft until the public YouTube URL, screenshots, and user-confirmed form selections are complete.
+Do not paste or submit this draft until the public YouTube URL and user-confirmed form selections are complete.
