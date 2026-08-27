@@ -194,15 +194,12 @@ footer a, .policy-page a { color: var(--cream); }
 }
 .presenter-hud.hud-top { top: 18px; bottom: auto; }
 .presenter-hud.hud-left { right: auto; left: 18px; }
-.presenter-hud > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--amber); font-size: 0.62rem; font-weight: 850; letter-spacing: 0.12em; }
-.presenter-hud > code { display: block; margin-top: 9px; color: var(--cream); font-size: 1rem; font-weight: 750; overflow-wrap: anywhere; }
-.presenter-hud > p { margin: 8px 0 10px; color: var(--text); font-size: 0.78rem; line-height: 1.48; }
+.presenter-hud > code { display: block; color: var(--cream); font-size: 1rem; font-weight: 750; overflow-wrap: anywhere; }
 .presenter-call, .presenter-underhood { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.025); }
+.presenter-call { margin-top: 10px; }
 .presenter-underhood { margin-top: 7px; }
 .presenter-call > span, .presenter-underhood > span { display: block; margin-bottom: 4px; color: var(--green); font-size: 0.56rem; font-weight: 850; letter-spacing: 0.12em; }
 .presenter-call pre, .presenter-underhood p { margin: 0; color: var(--muted); font-size: 0.67rem; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
-.presenter-progress { height: 3px; margin-top: 11px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.08); }
-.presenter-progress i { display: block; width: 100%; height: 100%; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--green), var(--amber), var(--orange)); }
 .presenter-hud > footer { display: flex; justify-content: flex-end; gap: 6px; max-width: none; margin: 10px 0 0; padding: 0; border: 0; }
 .presenter-hud > footer button { padding: 7px 9px; font-size: 0.63rem; }
 .presenter-hud > footer button:first-child { margin-right: auto; }

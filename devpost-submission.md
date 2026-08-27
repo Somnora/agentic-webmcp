@@ -85,7 +85,7 @@ No account or credentials are required.
 9. Click `Confirm add to cart` as the human.
 10. Verify that an `in_cart` receipt appears in the workspace.
 
-For a guided rehearsal, press `Start 2:28 rehearsal` in presenter mode. The flow pauses at the required human confirmation and cannot click it for the presenter.
+For a guided screen sequence, press `Run guided demo` in presenter mode. The flow has no on-screen countdown or narration copy. It pauses at the required human confirmation and cannot click it for the presenter.
 
 ## Public Demo Link
 

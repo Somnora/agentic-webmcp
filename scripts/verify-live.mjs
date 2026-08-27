@@ -62,7 +62,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/presenter.js`);
       const script = await response.text();
-      if (response.status !== 200 || !script.includes("REHEARSAL_STEPS") || !script.includes("human_confirm_add_to_cart") || !script.includes("2:28 target sequence")) {
+      if (response.status !== 200 || !script.includes("REHEARSAL_STEPS") || !script.includes("human_confirm_add_to_cart") || !script.includes("Guided demo complete")) {
         throw new Error("recording presenter unavailable");
       }
     },

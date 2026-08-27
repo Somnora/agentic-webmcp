@@ -133,11 +133,6 @@ const REHEARSAL_STEPS = Object.freeze([
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-function formatTime(milliseconds) {
-  const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
 export function createPresenter(actions) {
   const elements = {
     toggle: document.querySelector("#presenter-toggle"),
@@ -146,13 +141,9 @@ export function createPresenter(actions) {
     cursor: document.querySelector("#presenter-cursor"),
     cursorLabel: document.querySelector("#presenter-cursor-label"),
     hud: document.querySelector("#presenter-hud"),
-    phase: document.querySelector("#presenter-phase"),
-    time: document.querySelector("#presenter-time"),
     tool: document.querySelector("#presenter-tool"),
-    caption: document.querySelector("#presenter-caption"),
     args: document.querySelector("#presenter-args"),
     detail: document.querySelector("#presenter-underhood"),
-    progress: document.querySelector("#presenter-progress"),
     rehearse: document.querySelector("#presenter-rehearse"),
     pause: document.querySelector("#presenter-pause"),
     next: document.querySelector("#presenter-next"),
@@ -211,13 +202,10 @@ export function createPresenter(actions) {
     placeTarget(target, immediate);
   }
 
-  function renderStory({ phase, tool, args = {}, caption, detail, duration = 0 }) {
-    elements.phase.textContent = phase;
+  function renderStory({ tool, args = {}, detail }) {
     elements.tool.textContent = tool;
     elements.args.textContent = JSON.stringify(args);
-    elements.caption.textContent = caption;
     elements.detail.textContent = detail;
-    elements.time.textContent = duration ? `${formatTime(duration)} VO` : "LIVE TOOL CALL";
   }
 
   function clearTimer() {
@@ -225,19 +213,12 @@ export function createPresenter(actions) {
     timerId = undefined;
   }
 
-  function startTimer(milliseconds, initialRatio = 1) {
+  function startTimer(milliseconds) {
     clearTimer();
     remaining = milliseconds;
     deadline = performance.now() + milliseconds;
-    elements.progress.style.transition = "none";
-    elements.progress.style.transform = `scaleX(${initialRatio})`;
-    requestAnimationFrame(() => {
-      elements.progress.style.transition = `transform ${milliseconds}ms linear`;
-      elements.progress.style.transform = "scaleX(0)";
-    });
     timerId = setInterval(() => {
       remaining = Math.max(0, deadline - performance.now());
-      elements.time.textContent = `${formatTime(remaining)} VO`;
       if (remaining <= 0) {
         clearTimer();
         if (waitingForHuman) {
@@ -245,8 +226,7 @@ export function createPresenter(actions) {
           cursorRole = "HUMAN";
           document.body.classList.add("presenter-waiting");
           elements.pause.disabled = true;
-          elements.time.textContent = "WAITING FOR HUMAN";
-          elements.caption.textContent = "The agent has stopped. Click Confirm add to cart when the narration reaches the human control boundary.";
+          elements.detail.textContent = "The agent has stopped. Only the visible human button can create the page-local receipt.";
           focusSelector("#confirm-cart").catch(() => undefined);
         } else {
           advance().catch(showPresenterError);
@@ -288,12 +268,10 @@ export function createPresenter(actions) {
       elements.pause.disabled = true;
       elements.next.disabled = true;
       elements.rehearse.disabled = false;
-      elements.rehearse.textContent = "Run rehearsal again";
+      elements.rehearse.textContent = "Run guided demo again";
       renderStory({
-        phase: "REHEARSAL COMPLETE",
-        tool: "2:28 target sequence",
+        tool: "Guided demo complete",
         args: { readyToRecord: true },
-        caption: "The converter, provenance, comparison, and human confirmation boundary are all visible in one coherent sequence.",
         detail: "Use presenter mode with the real agent. Every actual tool call will update this overlay and move the focus frame.",
       });
       await focusSelector(".workspace");
@@ -305,9 +283,8 @@ export function createPresenter(actions) {
   function showPresenterError(error) {
     clearTimer();
     paused = true;
-    elements.time.textContent = "REHEARSAL PAUSED";
-    elements.caption.textContent = error instanceof Error ? error.message : "The rehearsal step failed.";
-    elements.detail.textContent = "The live app remains usable. Check the visible origin health, then press Next to retry the narrative flow manually.";
+    const message = error instanceof Error ? error.message : "The guided demo step failed.";
+    elements.detail.textContent = `${message} The live app remains usable. Check the visible origin health, then press Next.`;
   }
 
   function enable() {
@@ -361,13 +338,8 @@ export function createPresenter(actions) {
     if (paused) {
       remaining = Math.max(0, deadline - performance.now());
       clearTimer();
-      elements.progress.style.transition = "none";
-      const step = REHEARSAL_STEPS[stepIndex];
-      elements.progress.style.transform = `scaleX(${step ? remaining / step.duration : 0})`;
-      elements.time.textContent = `${formatTime(remaining)} PAUSED`;
     } else {
-      const step = REHEARSAL_STEPS[stepIndex];
-      startTimer(remaining, step ? remaining / step.duration : 1);
+      startTimer(remaining);
     }
   }
 
@@ -379,10 +351,8 @@ export function createPresenter(actions) {
     if (!running) {
       cursorRole = actor.includes("human") ? "HUMAN" : "AGENT";
       renderStory({
-        phase: `${actor.toUpperCase()} | LIVE`,
         tool,
         args,
-        caption: `The ${tool} call completed and updated the shared visible workspace.`,
         detail: story.detail,
       });
       focusSelector(story.selector).catch(() => undefined);

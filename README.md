@@ -79,11 +79,11 @@ Click `Presenter mode` in the header or add `?present=1` to the app URL. At 1280
 
 - One focus frame that smoothly changes position, size, and corner radius between affected workspace regions.
 - A precise SVG pointer that follows actual mouse input and moves to the result of a WebMCP call.
-- A tool overlay with validated input, narration copy, and a concise under-the-hood explanation.
-- A 2 minute 28 second rehearsal with pause and next controls.
-- A required stop at the cart proposal. The rehearsal cannot advance past that boundary until the visible human confirmation button is clicked.
+- A compact tool overlay with validated input and a concise under-the-hood explanation.
+- A guided recording sequence with pause and next controls, without an on-screen countdown or voice-over timing.
+- A required stop at the cart proposal. The sequence cannot advance past that boundary until the visible human confirmation button is clicked.
 
-Presenter mode observes the existing action functions. It does not register another tool, fabricate a commit tool, or weaken the human confirmation boundary. Use the timed rehearsal to practice narration. For the final recording, leave presenter mode open and invoke the real WebMCP tools from the browser agent.
+Presenter mode observes the existing action functions. It does not register another tool, fabricate a commit tool, or weaken the human confirmation boundary. For the final recording, capture the screen sequence without microphone audio, then add the prepared Lapetus narration track in post-production. Leave presenter mode open and invoke the real WebMCP tools from the browser agent.
 
 ## Verify
 

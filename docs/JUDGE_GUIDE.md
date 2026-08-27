@@ -12,7 +12,7 @@
 
 If the browser does not expose `document.modelContext`, the page reports that state and keeps the same manual controls available.
 
-Optional presentation aid: click `Presenter mode` or add `?present=1`. This changes only the recording layout. Real WebMCP calls move one focus frame to the workspace they updated and show the tool input plus an implementation note. The timed rehearsal uses the same application actions and stops for the real human confirmation button.
+Optional presentation aid: click `Presenter mode` or add `?present=1`. This changes only the recording layout. Real WebMCP calls move one focus frame to the workspace they updated and show the tool input plus an implementation note. The guided demo uses the same application actions, shows no voice-over countdown, and stops for the real human confirmation button.
 
 ## Exact evaluation flow
 

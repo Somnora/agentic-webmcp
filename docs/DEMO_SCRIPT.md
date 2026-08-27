@@ -1,19 +1,21 @@
 # Agentic WebMCP demo script
 
-Target: 2 minutes 28 seconds, public YouTube, 1280 x 720, spoken audio, no music.
+Target: approximately 2 minutes 28 seconds, public YouTube, 2560 x 1440 capture, generated spoken audio, no music.
 
 Do not use the older four-tool screenshots or the older automated driver for the final take. They show the previous catalog flow. Record only after this branch is deployed and a fresh manual judge pass matches `docs/JUDGE_GUIDE.md`.
 
 ## Recording setup
 
-1. Open the production URL in a WebMCP-capable browser at 1280 by 720.
+1. Open the production URL in a WebMCP-capable browser on a 2560 by 1440 or larger canvas.
 2. Close unrelated tabs and hide bookmarks, account details, and browser extensions from the capture.
 3. Click `Presenter mode`. The same result is available with `?present=1`.
-4. Use `Start 2:28 rehearsal` until the narration fits comfortably. Pause and Next are rehearsal controls only.
-5. For the final take, reload presenter mode and invoke the real WebMCP tools from the agent. The overlay reacts to those real calls.
+4. Use `Run guided demo` to rehearse the screen sequence. The overlay intentionally shows no countdown, target duration, or narration copy.
+5. Record the final screen sequence without microphone audio. Reload presenter mode and invoke the real WebMCP tools from the agent. The overlay reacts to those real calls.
 6. Park the physical pointer in an empty area. Presenter mode replaces the operating system pointer with the high-contrast SVG pointer. Physical movement labels it `HUMAN`; tool-directed movement labels it `AGENT`.
 
-The focus frame is one fixed overlay. It transitions its position, dimensions, and corner radius instead of destroying and recreating selection boxes. The overlay changes sides when a right-rail action is selected so it does not cover the confirmation banner or receipt.
+The focus frame is one fixed overlay. It transitions its position, dimensions, and corner radius instead of destroying and recreating selection boxes. The overlay changes sides when a right-rail action is selected so it does not cover the confirmation banner or receipt. Narration is generated after the screen capture with `gemini-3.1-flash-tts-preview` and the Lapetus voice.
+
+After recording, send Codex the source video path. The prepared renderer is `scripts/render_demo_voiceover.py`. It generates timed Lapetus segments, normalizes the voice track, and muxes it into the original video without re-encoding the picture.
 
 ## 0:00 to 0:12: The converter idea
 
@@ -94,11 +96,22 @@ Under the hood: every upstream request is HTTPS, exact-host allowlisted, path ch
 - Confirm the footer commit matches the submitted repository commit.
 - Confirm the presenter cursor stays fully inside the capture and changes to `HUMAN` when the physical pointer moves.
 - Confirm the focus frame does not overlap the tool overlay on search, interpolation, comparison, confirmation, or receipt steps.
-- Keep the origin badge, interpolate view, confirmation banner, and receipt legible at 1280 x 720.
+- Keep the origin badge, interpolate view, confirmation banner, and receipt legible in a 16:9 frame.
 - Do not show product images, external pages, third-party logos, account names, passwords, tokens, browser bookmarks, unrelated tabs, or copyrighted music.
 - Keep the `controlled demo` label visible and never describe the fixture catalog as current merchant inventory.
 - Do not claim conversion, sales impact, crawler adoption, or customer token savings.
 - Upload publicly to YouTube and test the link while logged out.
+
+## Voice-over render
+
+After the silent recording is available, render the narrated copy with:
+
+```bash
+cd /Users/jamesmcshane/APP_PROJECTS/Agentic/agentic-webmcp
+python3 scripts/render_demo_voiceover.py /absolute/path/to/recording.mov /absolute/path/to/Agentic_WebMCP_Lapetus_VO.mov
+```
+
+Requirements: authenticated `gcloud` project access to Vertex AI, `google-genai`, `ffmpeg`, and `ffprobe`. Generated WAV segments stay under `build/demo-voiceover`, which is excluded from the public submission artifacts.
 
 ## Remaining required artifact
 

@@ -12,3 +12,4 @@ worker-startup.cpuprofile
 .devpost-hackathon-state.json
 devpost-submission.md
 docs/demo-qa/
+build/demo-voiceover/

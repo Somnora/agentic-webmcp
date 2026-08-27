@@ -585,7 +585,7 @@ function resetWorkspaceForRehearsal() {
   state.returnFocus = null;
   elements.activity.replaceChildren();
   elements.confirmPanel.hidden = true;
-  elements.result.replaceChildren(node("span", "kicker", "LATEST RESULT"), node("p", "", "The timed rehearsal is ready for its first tool call."));
+  elements.result.replaceChildren(node("span", "kicker", "LATEST RESULT"), node("p", "", "The guided demo is ready for its first tool call."));
   renderCart();
   updateSelection();
   hideInterpolate();
@@ -593,12 +593,12 @@ function resetWorkspaceForRehearsal() {
 
 presenter = createPresenter({
   reset: resetWorkspaceForRehearsal,
-  listOrigins: () => runListOrigins({}, "guided rehearsal"),
-  selectOrigin: (args) => runSelectOrigin(args, "guided rehearsal"),
-  search: (args) => runSearch(args, "guided rehearsal"),
-  interpolate: (args) => runInterpolate(args, "guided rehearsal"),
-  compare: (args) => runCompare(args, "guided rehearsal"),
-  propose: (args) => runProposeCart(args, "guided rehearsal"),
+  listOrigins: () => runListOrigins({}, "guided demo"),
+  selectOrigin: (args) => runSelectOrigin(args, "guided demo"),
+  search: (args) => runSearch(args, "guided demo"),
+  interpolate: (args) => runInterpolate(args, "guided demo"),
+  compare: (args) => runCompare(args, "guided demo"),
+  propose: (args) => runProposeCart(args, "guided demo"),
 });
 
 await runListOrigins({}, "page initialization", undefined, false).catch(showError);
