@@ -1,75 +1,63 @@
-# Devpost submission draft
+# Devpost submission copy
 
-## Project name
+## Project title
 
-Agentic WebMCP: Allowlisted Origin Tools for Commerce Agents
+Agentic WebMCP
 
-## One-line description
+## Tagline
 
-A shared agent view that compiles allowlisted product origins into structured Offers, stripped Markdown, comparisons, and human-confirmed cart proposals.
+An explainable market decision layer for people and web agents.
 
-## Problem
+## Inspiration
 
-Browser agents often encounter commerce facts through presentation-heavy pages. They must infer controls, reconstruct product relationships, and hide their work from the human sharing the task. A page can provide a clearer contract.
+Visual websites make agents infer controls and reconstruct product facts from presentation markup. We wanted a page where the agent and the person share the same source, evidence, recommendation, and approval boundary.
 
-## Solution
+## What it does
 
-Agentic WebMCP registers eight explicit tools on the top-level document. The agent can list and select allowlisted origins, search and inspect normalized offers, compare products, strip one approved product page into Markdown plus an Offer, create a grounded brief, and stage a cart proposal. Every call updates the same workspace the human sees.
+Agentic WebMCP exposes nine WebMCP tools over explicitly allowlisted product origins. It converts public product JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options by visible evidence, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review.
 
-The agent cannot commit a cart add. `propose_add_to_cart` returns a quote and displays a confirmation banner. Only a human click calls the commit route, which creates an in-page receipt with status `in_cart`. There is no merchant cart mutation, checkout, account, order, or payment.
+The final decision stays human-controlled. The agent cannot place an order or pay. A visible button creates only a page-local approved selection and links back to the merchant.
 
-## WebMCP implementation
+## How we built it
 
-The page calls `document.modelContext.registerTool` for:
+- Cloudflare Workers serve the application and a separate controlled public origin.
+- `src/origins.ts` is the exact-host allowlist and adapter configuration.
+- All adapters normalize into the same `Offer` structure.
+- The recommender uses deterministic factor scores for relevance, condition, delivered price, seller confidence, and returns.
+- The interpolation route validates the origin and path, extracts structured facts, removes page chrome, and returns compact Markdown.
+- Browser tools call the same actions as the manual UI and update the shared workspace.
+- Worker-side validation, response bounds, restrictive headers, and human-only approval limit the trust boundary.
 
-1. `list_origins`
-2. `select_origin`
-3. `search_products`
-4. `get_product`
-5. `compare_products`
-6. `interpolate_page`
-7. `create_catalog_brief`
-8. `propose_add_to_cart`
+## Challenges
 
-The first seven tools are read-only and untrusted-content annotated. The proposal tool is non-destructive, cancellation-aware, schema-constrained, and compact. No commit or checkout tool is registered.
+The main challenge was making a useful live-web demonstration without claiming access to unrelated retailers or weakening the security model with arbitrary URL fetching. We chose a controlled public guitar marketplace with original listings, kept the Shopify adapter as a secondary labeled origin, and made provenance and limitations visible.
 
-## Origin interpolation
+## Accomplishments
 
-The default Origin record is `catalog-lab` at `agentic-webmcp-origin.somnora.workers.dev`. It is explicitly labeled `controlled-demo` and serves four original fixture products through public `/products.json`, `/products/{handle}.json`, and semantic product pages. The app fetches those HTTPS responses live but never calls them current merchant inventory. The secondary `review-shop` record preserves optional Storefront GraphQL, Shopify products JSON, and a clearly labeled bundled snapshot.
+- Nine coherent WebMCP tools, including explainable recommendation and page interpolation.
+- One Offer model across public JSON, Shopify, JSON-LD, and HTML projections.
+- Exact-host and path allowlisting with bounded fetches and redirect checks.
+- A polished shared workspace with source-visible ranking and smooth presentation focus.
+- A human-only purchase handoff with no agent checkout or payment capability.
 
-Page interpolation accepts only a product path declared in the selected Origin record. It strips navigation, footer, scripts, styles, frames, and forms, extracts Product JSON-LD when present, and returns the canonical URL as text rather than framing an external page.
+## What we learned
 
-Every adapter projects into the same `Offer` protocol with field-level provenance. The Worker rejects unknown origins, alternate hostnames, non-HTTPS targets, non-allowlisted paths, and redirects to unapproved paths. Upstream bodies and tool outputs are bounded. Stable error codes distinguish invalid input from retryable origin failures.
+The strongest agent interface is not just hidden structure. It gives the person enough visibility to understand why the agent chose an option, where every fact came from, and exactly where automation stops.
 
-## Human experience
+## What's next
 
-The visible workspace includes an origin switcher, adapter health, live/fallback badge, stable suggested prompts, offer grid, comparison cards, dual-projection interpolation panel, exportable activity rail, compact result panel, confirmation banner, and in-page cart. Manual controls call the same actions as WebMCP tools.
+With merchant permission, the same protocol can support additional real origins and richer marketplace evidence. A production handoff could use a merchant-owned checkout link or account system, but payments and orders remain outside this Challenge build.
 
-## Project boundary
+## Judge flow
 
-The public repository is the complete Challenge application. The pre-existing commercial Agentic project is separate and is not read, imported, called, or required. This build uses no commercial Worker, App Proxy, HMAC, storage, secrets, Shopify Admin API, accounts, cookies, analytics, checkout, or payment.
-
-## Required links
-
-- Live project: https://agentic-webmcp.somnora.workers.dev/
-- Public source: https://github.com/Somnora/agentic-webmcp
-- Privacy disclosure: https://agentic-webmcp.somnora.workers.dev/privacy.html
-- Demo video: `TBD after James records and uploads the public YouTube video`
-
-## Testing instructions
-
-Open the app in a WebMCP-capable browser after the current branch is deployed. No credentials are required.
-
-1. Confirm the header says `8 WebMCP tools registered`.
+1. Confirm nine tools are registered.
 2. Ask: `List the allowlisted origins and select catalog-lab.`
-3. Ask: `Search the selected origin for notebook and return the stable handles.`
-4. Ask: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
-5. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
-6. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook and wait for me.`
-7. Confirm the cart is still empty, then click `Confirm add to cart` and observe the `in_cart` receipt.
+3. Ask: `Find the best electric guitars under 900 USD. Rank them by condition, delivered price, seller confidence, and returns.`
+4. Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
+5. Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
+6. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
+7. Click `Approve for handoff` as the human and show the decision record.
 
-The badge must say `LIVE DEMO | public-products-json`, origin health must report both catalog and page live, and interpolation must show the controlled origin canonical URL. The secondary Shopify development store remains password protected and is not used for the recording flow.
+## Disclosure
 
-## Verification status
-
-Local strict TypeScript and 43 unit and route tests passed on August 26, 2026. All 13 production checks passed against the app and controlled origin Workers, including the presenter asset. A 1280 by 720 browser pass completed the nine-phase presenter flow through interpolation, comparison, proposal, required human confirmation, and receipt with no console warnings. A prior Chrome production pass showed eight registered tools; the presenter release did not change the tool registration client. The public YouTube video remains the required submission artifact.
+The default origin is a controlled public demonstration marketplace with original guitar listings. Its HTTPS responses and interpolation are live, but the listings are not presented as eBay or another third-party merchant. The app does not place orders or handle payment.

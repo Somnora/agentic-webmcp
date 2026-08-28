@@ -15,25 +15,27 @@ describe("controlled public demo origin", () => {
     const response = handleDemoOriginRequest(new Request(`${base}/products.json?limit=24`));
     const body = await response.json() as { products: Array<{ handle: string; image: null }> };
     expect(body.products.map((product) => product.handle)).toEqual([
-      "field-notebook",
-      "travel-cable-organizer",
-      "modular-desk-tray",
-      "studio-tool-roll",
+      "sunburst-s-style-electric",
+      "mahogany-single-cut-electric",
+      "natural-dreadnought-acoustic",
+      "offset-electric-ocean-blue",
     ]);
     expect(body.products.every((product) => product.image === null)).toBe(true);
   });
 
   it("serves one product as JSON and semantic HTML", async () => {
-    const product = handleDemoOriginRequest(new Request(`${base}/products/field-notebook.json`));
-    const productBody = await product.json() as { handle: string; variants: Array<{ title: string; available: boolean }> };
-    expect(productBody.handle).toBe("field-notebook");
-    expect(productBody.variants[0]).toMatchObject({ title: "Sand", available: true });
+    const product = handleDemoOriginRequest(new Request(`${base}/products/sunburst-s-style-electric.json`));
+    const productBody = await product.json() as { handle: string; condition: string; variants: Array<{ title: string; available: boolean }> };
+    expect(productBody.handle).toBe("sunburst-s-style-electric");
+    expect(productBody.condition).toBe("excellent");
+    expect(productBody.variants[0]).toMatchObject({ title: "As listed", available: true });
 
-    const page = handleDemoOriginRequest(new Request(`${base}/products/field-notebook`));
+    const page = handleDemoOriginRequest(new Request(`${base}/products/sunburst-s-style-electric`));
     const html = await page.text();
     expect(page.headers.get("Content-Type")).toContain("text/html");
     expect(html).toContain("application/ld+json");
-    expect(html).toContain("Field Notebook");
+    expect(html).toContain("Sunburst S-Style Electric Guitar");
+    expect(html).toContain("99.8% positive");
     expect(html).toContain("Demonstration data only");
     expect(html).not.toContain("<form");
   });

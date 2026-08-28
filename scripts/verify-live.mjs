@@ -9,6 +9,7 @@ const expectedTools = [
   "list_origins",
   "select_origin",
   "search_products",
+  "find_best_options",
   "get_product",
   "compare_products",
   "interpolate_page",
@@ -54,7 +55,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/`);
       const html = await response.text();
-      if (response.status !== 200 || !html.includes("A structured agent view") || !html.includes("interpolate-form") || !html.includes("presenter-toggle")) throw new Error("workspace unavailable");
+      if (response.status !== 200 || !html.includes("Compare the evidence") || !html.includes("recommend-form") || !html.includes("interpolate-form") || !html.includes("presenter-toggle")) throw new Error("workspace unavailable");
     },
   },
   {
@@ -62,7 +63,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/presenter.js`);
       const script = await response.text();
-      if (response.status !== 200 || !script.includes("REHEARSAL_STEPS") || !script.includes("human_confirm_add_to_cart") || !script.includes("Guided demo complete")) {
+      if (response.status !== 200 || !script.includes("REHEARSAL_STEPS") || !script.includes("human_approval_button") || !script.includes("Guided demo complete")) {
         throw new Error("recording presenter unavailable");
       }
     },
@@ -99,10 +100,10 @@ const checks = [
   {
     name: "catalog search",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/catalog?originId=catalog-lab&query=notebook&limit=4`);
+      const response = await fetch(`${baseUrl}/api/catalog?originId=catalog-lab&query=electric%20guitar&limit=4`);
       const body = await response.json();
-      if (response.status !== 200 || body.live !== true || body.source !== "public-products-json" || !body.offers?.some((offer) => offer.handle === "field-notebook")) {
-        throw new Error("catalog returned no live notebook offer");
+      if (response.status !== 200 || body.live !== true || body.source !== "public-products-json" || !body.offers?.some((offer) => offer.handle === "sunburst-s-style-electric")) {
+        throw new Error("catalog returned no live guitar offer");
       }
       if (!body.offers.every((offer) => offer.provenance?.pricing && offer.provenance?.availability)) throw new Error("offer provenance missing");
     },
@@ -110,18 +111,28 @@ const checks = [
   {
     name: "product details",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/products/field-notebook?originId=catalog-lab`);
+      const response = await fetch(`${baseUrl}/api/products/sunburst-s-style-electric?originId=catalog-lab`);
       const body = await response.json();
-      if (response.status !== 200 || body.live !== true || body.offers?.[0]?.handle !== "field-notebook") throw new Error("field notebook unavailable");
+      if (response.status !== 200 || body.live !== true || body.offers?.[0]?.handle !== "sunburst-s-style-electric") throw new Error("guitar listing unavailable");
+      if (body.offers[0]?.marketplace?.condition !== "excellent") throw new Error("marketplace evidence unavailable");
+    },
+  },
+  {
+    name: "explainable recommendations",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/recommendations?originId=catalog-lab&query=electric%20guitar&maxDeliveredPrice=900&limit=4`);
+      const body = await response.json();
+      if (response.status !== 200 || body.rankedOffers?.[0]?.offer?.handle !== "sunburst-s-style-electric") throw new Error("ranked options unavailable");
+      if (typeof body.rankedOffers[0]?.score !== "number" || body.rankedOffers[0]?.factors?.condition === undefined) throw new Error("recommendation evidence missing");
     },
   },
   {
     name: "interpolation contract",
     run: async () => {
-      const response = await fetch(`${baseUrl}/api/interpolate?originId=catalog-lab&path=%2Fproducts%2Ffield-notebook`);
+      const response = await fetch(`${baseUrl}/api/interpolate?originId=catalog-lab&path=%2Fproducts%2Fsunburst-s-style-electric`);
       const body = await response.json();
-      if (response.status !== 200 || body.offer?.handle !== "field-notebook" || body.live !== true || body.pageLive !== true) throw new Error("live interpolation unavailable");
-      if (body.canonicalUrl !== `${originUrl}/products/field-notebook`) throw new Error("canonical URL mismatch");
+      if (response.status !== 200 || body.offer?.handle !== "sunburst-s-style-electric" || body.live !== true || body.pageLive !== true) throw new Error("live interpolation unavailable");
+      if (body.canonicalUrl !== `${originUrl}/products/sunburst-s-style-electric`) throw new Error("canonical URL mismatch");
       if (typeof body.markdown !== "string" || !body.markdown.includes("Canonical origin")) throw new Error("stripped Markdown missing");
       if (body.markdown.includes("Controlled WebMCP demonstration origin") || body.markdown.includes("Demonstration data only")) throw new Error("page chrome was not stripped");
     },
@@ -132,7 +143,7 @@ const checks = [
       const response = await fetch(`${baseUrl}/api/cart/propose?originId=catalog-lab`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ originId: "catalog-lab", handle: "field-notebook", variantTitle: "Sand", quantity: 1 }),
+        body: JSON.stringify({ originId: "catalog-lab", handle: "sunburst-s-style-electric", variantTitle: "As listed", quantity: 1 }),
       });
       const body = await response.json();
       if (response.status !== 200 || body.confirmation?.status !== "awaiting_human_confirmation" || body.receipt) {

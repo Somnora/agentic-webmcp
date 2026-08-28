@@ -23,8 +23,8 @@ SEGMENTS = [
     Segment(
         0,
         12,
-        "Most websites make agents reverse engineer a visual interface. Agentic adds an "
-        "explicit capability layer while keeping the human on the same page.",
+        "Shopping agents can find options, but people still need to know why one listing won. "
+        "Agentic turns that research into a shared, inspectable decision.",
     ),
     Segment(
         12,
@@ -34,14 +34,14 @@ SEGMENTS = [
     Segment(
         22,
         30,
-        "It selects the controlled public catalog. The source mode and live adapter remain "
-        "visible to the human.",
+        "It selects Independent Gear Exchange, a clearly labeled controlled guitar marketplace. "
+        "The exact host and live adapter remain visible.",
     ),
     Segment(
         30,
         48,
-        "A natural language goal becomes a typed search call. Stable handles and "
-        "source-grounded facts appear in the shared workspace.",
+        "A natural language goal becomes a typed recommendation call. The shortlist is scored by "
+        "relevance, condition, delivered price, seller confidence, and returns.",
     ),
     Segment(
         48,
@@ -53,21 +53,21 @@ SEGMENTS = [
     Segment(
         78,
         98,
-        "Because every adapter produces the same Offer shape, the agent can compare products "
-        "without learning a second catalog model.",
+        "Because every adapter produces the same Offer shape, the agent can compare condition, "
+        "seller evidence, shipping, and returns without learning a second catalog model.",
     ),
     Segment(
         98,
         120,
-        "The agent stages one available variant, then stops. The cart remains unchanged, and "
-        "the confirmation boundary is visible to the human.",
+        "The agent prepares one listing for review, then stops. Nothing has been ordered or "
+        "charged, and the approval boundary is visible to the human.",
     ),
     Segment(
         120,
         140,
-        "The human confirms. Only that visible button creates the page-local receipt, and the "
-        "activity rail records the boundary. There is no agent commit tool, checkout, payment, "
-        "or merchant cart.",
+        "The human approves the selection for handoff. Only that visible button creates the "
+        "page-local decision record. Payment remains on the source merchant, and there is no "
+        "agent commit, checkout, or payment tool.",
     ),
     Segment(
         140,

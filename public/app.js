@@ -7,6 +7,7 @@ const state = {
   origins: [],
   selected: new Set(),
   offers: [],
+  recommendations: new Map(),
   activity: [],
   proposal: null,
   receipts: [],
@@ -25,6 +26,9 @@ const elements = {
   result: document.querySelector("#result-panel"),
   searchForm: document.querySelector("#search-form"),
   searchInput: document.querySelector("#search-input"),
+  recommendForm: document.querySelector("#recommend-form"),
+  recommendInput: document.querySelector("#recommend-input"),
+  recommendBudget: document.querySelector("#recommend-budget"),
   compareButton: document.querySelector("#compare-button"),
   selectionCount: document.querySelector("#selection-count"),
   briefForm: document.querySelector("#brief-form"),
@@ -80,6 +84,14 @@ function compactOffer(offer, withVariants = false) {
     adapter: offer.source.adapter,
     live: offer.source.live,
     provenance: offer.provenance,
+    ...(offer.marketplace ? {
+      marketplace: {
+        condition: offer.marketplace.condition,
+        deliveredPrice: `${offer.marketplace.deliveredPrice.amount} ${offer.marketplace.deliveredPrice.currencyCode}`,
+        seller: `${offer.marketplace.seller.displayName} | ${offer.marketplace.seller.positiveFeedbackPercent}% positive`,
+        returns: offer.marketplace.returns.accepted ? `${offer.marketplace.returns.windowDays} days` : "not accepted",
+      },
+    } : {}),
   };
   if (withVariants) {
     summary.variants = offer.variants.slice(0, 5).map((variant) => ({
@@ -163,7 +175,7 @@ function updateOrigin(origin, live, source) {
   const sourceMode = state.origin.mode === "controlled-demo" ? "controlled demo" : "merchant";
   const activeSource = source || state.origin.adapter;
   elements.originMeta.textContent = `${state.origin.displayName} | ${state.origin.hostname} | ${sourceMode} | ${state.origin.adapter} with ${state.origin.fallbackAdapters.join(", ")} fallback | ${mode}`;
-  elements.source.textContent = `${live === undefined ? "PENDING" : live ? state.origin.mode === "controlled-demo" ? "LIVE DEMO" : "LIVE" : "FALLBACK"} | ${activeSource}`;
+  elements.source.textContent = `${live === undefined ? "PENDING" : live ? state.origin.mode === "controlled-demo" ? "CONTROLLED LIVE" : "LIVE" : "FALLBACK"} | ${activeSource}`;
   elements.source.classList.toggle("fallback", live === false);
   if (origin?.demo) {
     elements.promptButtons.forEach((button, index) => {
@@ -173,6 +185,8 @@ function updateOrigin(origin, live, source) {
       button.textContent = index === 0 ? `Find ${query}` : `Search ${query}`;
     });
     elements.searchInput.placeholder = `Try ${origin.demo.queries.join(", ")}...`;
+    elements.recommendInput.value = origin.demo.queries[0];
+    elements.recommendBudget.value = origin.vertical === "marketplace" ? "900" : "";
     elements.interpolatePath.value = origin.healthPath;
     elements.briefGoal.value = origin.demo.briefGoal;
   }
@@ -229,7 +243,7 @@ function recordActivity(tool, args, actor, resultText) {
 
 function updateSelection() {
   const count = state.selected.size;
-  elements.selectionCount.textContent = `${count} product${count === 1 ? "" : "s"} selected`;
+  elements.selectionCount.textContent = `${count} listing${count === 1 ? "" : "s"} selected`;
   elements.compareButton.disabled = count < 2 || count > 4;
   elements.briefButton.disabled = count < 1 || count > 4;
 }
@@ -238,11 +252,22 @@ function hideInterpolate() {
   elements.interpolateView.hidden = true;
 }
 
+function marketplaceFacts(offer) {
+  if (!offer.marketplace) return null;
+  const market = offer.marketplace;
+  return [
+    ["Condition", market.condition.replaceAll("-", " ")],
+    ["Delivered", `${market.deliveredPrice.amount} ${market.deliveredPrice.currencyCode}`],
+    ["Seller", `${market.seller.positiveFeedbackPercent.toFixed(1)}% positive`],
+    ["Returns", market.returns.accepted ? `${market.returns.windowDays} days` : "Final sale"],
+  ];
+}
+
 function provenanceLabel(offer) {
   const entries = Object.entries(offer.provenance || {});
   return entries.length
-    ? entries.map(([field, adapter]) => `${field}: ${adapter}`).join(" | ")
-    : `all facts: ${offer.source.adapter}`;
+    ? `${entries.length} source fields grounded by ${offer.source.adapter}`
+    : `Source evidence: ${offer.source.adapter}`;
 }
 
 function renderOffers(offers) {
@@ -258,9 +283,13 @@ function renderOffers(offers) {
   }
   for (const offer of offers) {
     const card = node("article", `product-card${state.selected.has(offer.handle) ? " selected" : ""}`);
+    const recommendation = state.recommendations.get(offer.handle);
     const available = offer.variants.filter((variant) => variant.available).length;
     const meta = node("div", "product-meta");
-    meta.append(node("span", "", price(offer)), node("span", "", `${available}/${offer.variants.length} available`));
+    meta.append(
+      node("span", "", offer.marketplace ? `${offer.marketplace.deliveredPrice.amount} ${offer.marketplace.deliveredPrice.currencyCode} delivered` : price(offer)),
+      node("span", "", recommendation ? `Score ${recommendation.score}` : `${available}/${offer.variants.length} available`),
+    );
     const actions = node("div", "product-actions");
     const label = node("label", "select-label");
     const checkbox = document.createElement("input");
@@ -276,15 +305,27 @@ function renderOffers(offers) {
     const inspect = node("button", "", "Inspect");
     inspect.type = "button";
     inspect.addEventListener("click", () => runGetProduct({ handle: offer.handle }, "human preview").catch(showError));
-    const propose = node("button", "", "Propose");
+    const propose = node("button", "", "Prepare review");
     propose.type = "button";
     propose.disabled = !offer.constraints.available;
     propose.addEventListener("click", () => runProposeCart({ handle: offer.handle, quantity: 1 }, "human preview").catch(showError));
     actions.append(label, inspect, propose);
+    if (recommendation) {
+      const rank = node("div", "recommendation-rank");
+      rank.append(node("span", "", `Option ${recommendation.rank}`), node("strong", "", `${recommendation.score}/100`));
+      card.append(rank);
+    }
+    card.append(node("h3", "", offer.title), meta);
+    const facts = marketplaceFacts(offer);
+    if (facts) {
+      const evidence = node("dl", "evidence-grid");
+      for (const [labelText, value] of facts) {
+        evidence.append(node("dt", "", labelText), node("dd", "", value));
+      }
+      card.append(evidence);
+    }
     card.append(
-      node("h3", "", offer.title),
-      meta,
-      node("p", "", offer.description || "No origin description supplied."),
+      node("p", "", recommendation?.summary || offer.description || "No origin description supplied."),
       node("p", "provenance-line", provenanceLabel(offer)),
       actions,
     );
@@ -296,13 +337,13 @@ function renderOffers(offers) {
 function renderComparison(offers) {
   elements.grid.replaceChildren();
   for (const offer of offers) {
-    const available = offer.variants.filter((variant) => variant.available).length;
+    const recommendation = state.recommendations.get(offer.handle);
     const card = node("article", "product-card selected");
     card.append(
-      node("span", "kicker", "COMPARISON"),
+      node("span", "kicker", recommendation ? `Option ${recommendation.rank} | ${recommendation.score}/100` : "Comparison"),
       node("h3", "", offer.title),
-      node("div", "product-meta", price(offer)),
-      node("p", "", `${available} of ${offer.variants.length} sampled variants available. ${offer.description}`),
+      node("div", "product-meta", offer.marketplace ? `${offer.marketplace.deliveredPrice.amount} ${offer.marketplace.deliveredPrice.currencyCode} delivered` : price(offer)),
+      node("p", "", recommendation?.summary || offer.description),
       node("p", "provenance-line", provenanceLabel(offer)),
     );
     elements.grid.append(card);
@@ -332,6 +373,7 @@ async function runListOrigins(_args = {}, actor = "agent", signal, record = true
 async function runSelectOrigin({ originId }, actor = "agent", signal) {
   const payload = await api("/api/origins/select", { method: "POST", signal, body: JSON.stringify({ originId }) });
   state.selected.clear();
+  state.recommendations.clear();
   updateOrigin(payload.selected);
   updateSelection();
   hideInterpolate();
@@ -345,10 +387,29 @@ async function runSearch({ query = "", maxResults = 6 }, actor = "agent", signal
   const payload = await api(`/api/catalog?query=${encodeURIComponent(query)}&limit=${encodeURIComponent(maxResults)}&${originQuery()}`, { signal });
   updateSource(payload);
   hideInterpolate();
+  state.recommendations.clear();
   renderOffers(payload.offers);
   payload.suggestedNextActions = ["get_product", "compare_products", "propose_add_to_cart"];
   const output = compactCatalog(payload);
   recordActivity("search_products", { query, maxResults }, actor, output);
+  return output;
+}
+
+async function runRecommend({ query, maxDeliveredPrice, maxResults = 4 }, actor = "agent", signal) {
+  const budget = maxDeliveredPrice === undefined || maxDeliveredPrice === null || maxDeliveredPrice === "" ? "" : String(maxDeliveredPrice);
+  const payload = await api(`/api/recommendations?query=${encodeURIComponent(query)}&maxDeliveredPrice=${encodeURIComponent(budget)}&limit=${encodeURIComponent(maxResults)}&${originQuery()}`, { signal });
+  updateSource(payload);
+  hideInterpolate();
+  state.recommendations = new Map(payload.recommendations.map((item) => [item.handle, item]));
+  renderOffers(payload.offers);
+  const output = boundedJson({
+    origin: compactOrigin(payload.origin),
+    goal: payload.goal,
+    rubric: payload.rubric,
+    recommendations: payload.recommendations.map((item) => ({ rank: item.rank, handle: item.handle, score: item.score, factors: item.factors })),
+    suggestedNextActions: ["get_product", "interpolate_page", "propose_add_to_cart"],
+  });
+  recordActivity("find_best_options", { query, maxDeliveredPrice, maxResults }, actor, output);
   return output;
 }
 
@@ -438,7 +499,9 @@ async function runProposeCart({ handle, variantTitle, quantity = 1 }, actor = "a
   updateSource(payload);
   state.proposal = payload.quote;
   const line = payload.quote.lines[0];
-  elements.confirmCopy.textContent = `${line.quantity} x ${payload.offers[0].title}, ${line.variantTitle}, total ${payload.quote.total.amount} ${payload.quote.total.currencyCode}. The cart is still unchanged.`;
+  const evidence = payload.offers[0].marketplace;
+  const sellerText = line.seller ? ` from ${line.seller.replace(/[.]+$/, "")}` : "";
+  elements.confirmCopy.textContent = `${payload.offers[0].title}, ${evidence?.condition?.replaceAll("-", " ") || line.variantTitle}, ${payload.quote.total.amount} ${payload.quote.total.currencyCode} delivered${sellerText}. Nothing has been ordered or charged.`;
   elements.confirmPanel.hidden = false;
   elements.confirmPanel.scrollIntoView({ block: "center" });
   elements.confirmPanel.focus({ preventScroll: true });
@@ -460,7 +523,14 @@ function renderCart() {
   elements.cartEmpty.hidden = state.receipts.length > 0;
   for (const receipt of state.receipts) {
     const line = receipt.lines[0];
-    elements.cartList.append(node("li", "cart-line", `${line.quantity} x ${line.handle} | ${line.variantTitle} | ${receipt.total.amount} ${receipt.total.currencyCode} | in_cart`));
+    const row = node("li", "cart-line");
+    row.append(node("span", "", `${line.handle} | ${receipt.total.amount} ${receipt.total.currencyCode} | approved for merchant handoff`));
+    const sourceLink = node("a", "", "Open source listing");
+    sourceLink.href = line.sourceUrl;
+    sourceLink.target = "_blank";
+    sourceLink.rel = "noopener noreferrer";
+    row.append(sourceLink);
+    elements.cartList.append(row);
   }
 }
 
@@ -484,7 +554,7 @@ async function confirmCart() {
   state.proposal = null;
   elements.confirmPanel.hidden = true;
   renderCart();
-  recordActivity("human_confirm_add_to_cart", { quoteId: quote.quoteId }, "human button", boundedJson(payload.receipt));
+  recordActivity("human_approval_button", { quoteId: quote.quoteId }, "human button", boundedJson(payload.receipt));
   elements.cartPanel.focus();
   presenter?.humanConfirmed();
 }
@@ -494,7 +564,7 @@ function dismissCart() {
   const quoteId = state.proposal.quoteId;
   state.proposal = null;
   elements.confirmPanel.hidden = true;
-  recordActivity("human_dismiss_cart_proposal", { quoteId }, "human button", JSON.stringify({ quoteId, status: "dismissed", cartChanged: false }));
+  recordActivity("human_dismiss_review", { quoteId }, "human button", JSON.stringify({ quoteId, status: "dismissed", cartChanged: false }));
   if (state.returnFocus instanceof HTMLElement) state.returnFocus.focus();
   state.returnFocus = null;
 }
@@ -523,6 +593,7 @@ async function registerWebMcpTools() {
     listOrigins: (args, signal) => runListOrigins(args, "agent via WebMCP", signal),
     selectOrigin: (args, signal) => runSelectOrigin(args, "agent via WebMCP", signal),
     search: (args, signal) => runSearch(args, "agent via WebMCP", signal),
+    recommend: (args, signal) => runRecommend(args, "agent via WebMCP", signal),
     get: (args, signal) => runGetProduct(args, "agent via WebMCP", signal),
     compare: (args, signal) => runCompare(args, "agent via WebMCP", signal),
     interpolate: (args, signal) => runInterpolate(args, "agent via WebMCP", signal),
@@ -542,6 +613,15 @@ elements.originSelect.addEventListener("change", () => {
 elements.searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runSearch({ query: elements.searchInput.value, maxResults: 6 }, "human preview").catch(showError);
+});
+
+elements.recommendForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runRecommend({
+    query: elements.recommendInput.value,
+    maxDeliveredPrice: elements.recommendBudget.value,
+    maxResults: 4,
+  }, "human preview").catch(showError);
 });
 
 document.querySelectorAll("[data-query]").forEach((button) => {
@@ -596,6 +676,7 @@ presenter = createPresenter({
   listOrigins: () => runListOrigins({}, "guided demo"),
   selectOrigin: (args) => runSelectOrigin(args, "guided demo"),
   search: (args) => runSearch(args, "guided demo"),
+  recommend: (args) => runRecommend(args, "guided demo"),
   interpolate: (args) => runInterpolate(args, "guided demo"),
   compare: (args) => runCompare(args, "guided demo"),
   propose: (args) => runProposeCart(args, "guided demo"),

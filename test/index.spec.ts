@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleRequest } from "../src/index";
+import { DEMO_PRODUCTS } from "../src/demo-origin-catalog";
 
 const rawProduct = {
   id: 1,
@@ -73,6 +74,16 @@ function mockUpstream(): void {
   }));
 }
 
+function mockMarketplaceUpstream(): void {
+  vi.stubGlobal("fetch", vi.fn(async (input: URL | RequestInfo) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/products.json") return json({ products: DEMO_PRODUCTS });
+    const match = /^\/products\/([^/.]+)\.json$/.exec(url.pathname);
+    if (match?.[1]) return json(DEMO_PRODUCTS.find((item) => item.handle === match[1]) ?? {}, 200);
+    return json({}, 404);
+  }));
+}
+
 function jsonRequest(url: string, body: unknown, headers: Record<string, string> = {}): Request {
   return new Request(url, {
     method: "POST",
@@ -130,7 +141,7 @@ describe("Worker routes", () => {
       status: "live",
       origin: { id: "catalog-lab", mode: "controlled-demo" },
       catalog: { live: true, adapter: "public-products-json" },
-      page: { live: true, path: "/products/field-notebook" },
+      page: { live: true, path: "/products/sunburst-s-style-electric" },
     });
   });
 
@@ -142,6 +153,16 @@ describe("Worker routes", () => {
     expect(body.live).toBe(true);
     expect(body.source).toBe("shopify-products-json");
     expect(body.offers[0]?.handle).toBe("the-complete-snowboard");
+  });
+
+  it("returns an explainable marketplace shortlist", async () => {
+    mockMarketplaceUpstream();
+    const response = await handleRequest(new Request("https://example.test/api/recommendations?query=electric%20guitar&maxDeliveredPrice=900&limit=3&originId=catalog-lab"), env);
+    const body = await response.json() as { recommendations: Array<{ handle: string; score: number }>; rubric: Record<string, number> };
+    expect(response.status).toBe(200);
+    expect(body.recommendations).toHaveLength(3);
+    expect(body.recommendations[0]).toMatchObject({ handle: "sunburst-s-style-electric", score: expect.any(Number) });
+    expect(body.rubric).toMatchObject({ relevance: 30, condition: 25, deliveredPrice: 25 });
   });
 
   it("rejects unknown origins and configured hostname mismatches", async () => {

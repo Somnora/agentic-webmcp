@@ -11,6 +11,10 @@ const TOOL_STORIES = Object.freeze({
     selector: "#product-grid",
     detail: "The adapter fetches bounded product JSON over HTTPS and normalizes every result into the shared Offer protocol.",
   },
+  find_best_options: {
+    selector: "#product-grid",
+    detail: "A deterministic rubric scores relevance, condition, delivered price, seller confidence, and returns. Every factor remains visible to the human.",
+  },
   get_product: {
     selector: "#product-grid",
     detail: "A stable handle resolves to compact offer facts, variants, availability, and field-level provenance.",
@@ -29,11 +33,11 @@ const TOOL_STORIES = Object.freeze({
   },
   propose_add_to_cart: {
     selector: "#confirm-panel",
-    detail: "The proposal creates a short-lived quote with awaiting_human_confirmation status. It does not change the cart.",
+    detail: "The proposal creates a short-lived review with awaiting_human_confirmation status. It cannot create an order or charge.",
   },
-  human_confirm_add_to_cart: {
+  human_approval_button: {
     selector: "#cart-panel",
-    detail: "Only the visible human button calls the commit route. There is no WebMCP commit tool, checkout, payment, or merchant cart.",
+    detail: "Only the visible human button calls the commit route. It creates a decision record, not a merchant order. There is no WebMCP commit tool or payment access.",
   },
 });
 
@@ -44,7 +48,7 @@ const REHEARSAL_STEPS = Object.freeze([
     selector: ".status-cluster",
     duration: 12000,
     caption: "Most websites make agents reverse engineer a visual interface. Agentic adds an explicit capability layer while keeping the human on the same page.",
-    detail: "The top-level document registers eight bounded tools. Seven are read-only, and one can only stage a proposal.",
+    detail: "The top-level document registers nine bounded tools. Eight are read-only, and one can only stage a proposal.",
   },
   {
     phase: "02 / 09  ALLOWLIST",
@@ -68,14 +72,14 @@ const REHEARSAL_STEPS = Object.freeze([
   },
   {
     phase: "04 / 09  SEARCH",
-    tool: "search_products",
-    selector: "#search-form",
+    tool: "find_best_options",
+    selector: "#recommend-form",
     resultSelector: "#product-grid",
     duration: 18000,
-    args: { query: "notebook", maxResults: 6 },
-    caption: "A natural language goal becomes a typed search call. Stable handles and source-grounded facts appear in the shared workspace.",
-    detail: TOOL_STORIES.search_products.detail,
-    action: "search",
+    args: { query: "electric guitar", maxDeliveredPrice: 900, maxResults: 4 },
+    caption: "A shopping goal becomes a scored shortlist grounded in condition, delivered price, seller confidence, and returns.",
+    detail: TOOL_STORIES.find_best_options.detail,
+    action: "recommend",
   },
   {
     phase: "05 / 09  INTERPOLATE",
@@ -83,7 +87,7 @@ const REHEARSAL_STEPS = Object.freeze([
     selector: "#interpolate-form",
     resultSelector: "#interpolate-view",
     duration: 30000,
-    args: { path: "/products/field-notebook" },
+    args: { path: "/products/sunburst-s-style-electric" },
     caption: "This is the converter: one real HTTPS page becomes compact Markdown plus a structured Offer, with its canonical URL and provenance intact.",
     detail: TOOL_STORIES.interpolate_page.detail,
     action: "interpolate",
@@ -93,7 +97,7 @@ const REHEARSAL_STEPS = Object.freeze([
     tool: "compare_products",
     selector: "#product-grid",
     duration: 20000,
-    args: { handles: ["field-notebook", "modular-desk-tray"] },
+    args: { handles: ["sunburst-s-style-electric", "mahogany-single-cut-electric"] },
     caption: "Because every adapter produces the same Offer shape, the agent can compare products without learning a second catalog model.",
     detail: TOOL_STORIES.compare_products.detail,
     action: "compare",
@@ -104,20 +108,20 @@ const REHEARSAL_STEPS = Object.freeze([
     selector: ".agent-panel",
     resultSelector: "#confirm-panel",
     duration: 22000,
-    args: { handle: "field-notebook", variantTitle: "Sand", quantity: 1 },
-    caption: "The agent stages one available variant, then stops. The empty cart and the confirmation boundary are both visible.",
+    args: { handle: "sunburst-s-style-electric", variantTitle: "As listed", quantity: 1 },
+    caption: "The agent stages one listing with its delivered price and seller evidence, then stops for human review.",
     detail: TOOL_STORIES.propose_add_to_cart.detail,
     action: "propose",
     waitForHuman: true,
   },
   {
     phase: "08 / 09  HUMAN CONTROL",
-    tool: "human_confirm_add_to_cart",
+    tool: "human_approval_button",
     selector: "#cart-panel",
     duration: 20000,
     args: { action: "visible button only" },
-    caption: "The human confirms. Only that button commits the page-local receipt, and the activity rail records the boundary.",
-    detail: TOOL_STORIES.human_confirm_add_to_cart.detail,
+    caption: "The human approves the selection. Only that button creates the page-local decision record, and payment remains with the source merchant.",
+    detail: TOOL_STORIES.human_approval_button.detail,
     humanResult: true,
   },
   {
@@ -226,7 +230,7 @@ export function createPresenter(actions) {
           cursorRole = "HUMAN";
           document.body.classList.add("presenter-waiting");
           elements.pause.disabled = true;
-          elements.detail.textContent = "The agent has stopped. Only the visible human button can create the page-local receipt.";
+          elements.detail.textContent = "The agent has stopped. Only the visible human button can approve the selection for handoff.";
           focusSelector("#confirm-cart").catch(() => undefined);
         } else {
           advance().catch(showPresenterError);

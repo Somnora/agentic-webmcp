@@ -10,6 +10,10 @@ export type QuoteLine = {
   variantTitle: string;
   quantity: number;
   unitPrice: Money;
+  shippingPrice?: Money;
+  condition?: string;
+  seller?: string;
+  sourceUrl: string;
 };
 
 export type Quote = {
@@ -92,6 +96,12 @@ function lineFor(origin: Origin, offer: Offer, variant: Variant, quantity: numbe
     variantTitle: variant.title,
     quantity,
     unitPrice: variant.price,
+    ...(offer.marketplace ? {
+      shippingPrice: offer.marketplace.shipping.price,
+      condition: offer.marketplace.condition,
+      seller: offer.marketplace.seller.displayName,
+    } : {}),
+    sourceUrl: offer.url,
   };
 }
 
@@ -109,6 +119,7 @@ export async function proposeCartAdd(
   const createdAt = new Date();
   const quoteId = crypto.randomUUID();
   const lines = [lineFor(origin, offer, variant, quantity)];
+  const quoteUnitPrice = offer.marketplace?.deliveredPrice ?? variant.price;
   return {
     ...catalog,
     offers: [offer],
@@ -116,7 +127,7 @@ export async function proposeCartAdd(
       quoteId,
       originId: origin.id,
       lines,
-      total: total(variant.price, quantity),
+      total: total(quoteUnitPrice, quantity),
       createdAt: createdAt.toISOString(),
       expiresAt: new Date(createdAt.getTime() + 15 * 60 * 1000).toISOString(),
       status: "proposed",

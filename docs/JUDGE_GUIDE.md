@@ -1,82 +1,36 @@
-# Judge testing guide
+# Judge guide
 
-## Access
+## What to verify
 
-- App URL: https://agentic-webmcp.somnora.workers.dev/
-- Credentials: none
-- Current code expectation after deployment: `8 WebMCP tools registered`
-- Default origin: `catalog-lab`
-- Origin mode: `controlled-demo`
-- Hostname: `agentic-webmcp-origin.somnora.workers.dev`
-- Deployment identity: `/health` and the footer show the exact deployed commit.
+Agentic WebMCP turns allowlisted public product pages into structured, source-visible decisions. The default origin is a controlled public guitar marketplace served over real HTTPS. It is clearly labeled demonstration data and does not impersonate eBay or another merchant.
 
-If the browser does not expose `document.modelContext`, the page reports that state and keeps the same manual controls available.
+The key interaction is not a chatbot transcript. Each WebMCP call updates the same visible workspace the human is viewing. Ranking factors, canonical source links, normalized offers, and the approval boundary remain inspectable.
 
-Optional presentation aid: click `Presenter mode` or add `?present=1`. This changes only the recording layout. Real WebMCP calls move one focus frame to the workspace they updated and show the tool input plus an implementation note. The guided demo uses the same application actions, shows no voice-over countdown, and stops for the real human confirmation button.
+## No-credential flow
 
-## Exact evaluation flow
+Open [the live app](https://agentic-webmcp.somnora.workers.dev/) in a WebMCP-capable client. Presenter mode is optional and changes only the recording layout.
 
-1. Ask: `List the allowlisted origins and show which adapter each one uses.`
-   - Expected tool: `list_origins`
-   - Expected result: `catalog-lab` is the default controlled demo origin and `review-shop` is the secondary password-protected Shopify development store.
+1. Confirm the page reports nine registered tools.
+2. Ask: `List the allowlisted origins and select catalog-lab.`
+3. Ask: `Find the best electric guitars under 900 USD. Rank them by condition, delivered price, seller confidence, and returns.`
+4. Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
+5. Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
+6. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
+7. Confirm the review says nothing has been ordered or charged.
+8. Click `Approve for handoff` yourself.
+9. Verify the approved selection includes a source link and still says payment remains with the merchant.
 
-2. Ask: `Select catalog-lab for the rest of this task.`
-   - Expected tool: `select_origin`
-   - Expected visible change: the origin switcher shows Agentic Catalog Lab and the badge says `LIVE DEMO | public-products-json`. Selection is page-local and sessionless.
-   - The origin health line separately reports catalog adapter access and product page access.
+## Expected evidence
 
-3. Ask: `Search the selected origin for notebook and return the stable handles.`
-   - Expected tool: `search_products`
-   - Expected handles include `field-notebook` and `modular-desk-tray`.
-   - Expected visible change: the offer grid and activity rail update.
+- Origin: `Independent Gear Exchange`
+- Host: `agentic-webmcp-origin.somnora.workers.dev`
+- Source mode: `controlled-demo`
+- Live adapter: `public-products-json`
+- Representative handles: `sunburst-s-style-electric`, `mahogany-single-cut-electric`, `natural-dreadnought-acoustic`, `offset-electric-ocean-blue`
+- Interpolation output: canonical URL, compact Markdown, structured `Offer`, and provenance
+- Recommendation output: deterministic scores for relevance, condition, delivered price, seller confidence, and returns
+- Human boundary: no commit, checkout, order, or payment tool exists
 
-4. Ask: `Interpolate /products/field-notebook into a stripped page view and show the canonical URL and structured Offer.`
-   - Expected tool: `interpolate_page`
-   - Expected handle: `field-notebook`
-   - Expected visible change: the stripped Markdown panel shows the canonical origin URL as text and the workspace shows the normalized Offer.
-   - Expected provenance: title, description, pricing, availability, and variants identify their adapter.
-   - Expected status: `live: true` and `pageLive: true`. Navigation, footer, script, style, frame, and form content must not appear in the stripped projection.
+## Important limits
 
-5. Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
-   - Expected tool: `compare_products`
-   - Expected visible change: two comparison cards and a compact result.
-
-6. Ask: `Propose adding quantity 1 of the Sand variant of field-notebook to the cart, then stop for my confirmation.`
-   - Expected tool: `propose_add_to_cart`
-   - Expected visible change: a banner says it is waiting for human confirmation and the cart remains empty.
-   - Human action: click `Confirm add to cart`.
-   - Expected receipt: status `in_cart` appears in the shared cart.
-
-No agent tool can confirm, commit, checkout, or pay.
-
-The activity rail can be exported with `Copy trace` to show tool names, validated arguments, actors, source origin, and compact results.
-
-## Source labels
-
-The default origin is a controlled public demo catalog, not merchant inventory. Its data badge reports:
-
-- `LIVE DEMO | public-products-json` when the public JSON service succeeds.
-- `LIVE PAGE MARKDOWN` when the allowlisted HTML page is fetched and stripped.
-- `FALLBACK | bundled-snapshot` only when the secondary Shopify origin cannot use a live catalog adapter.
-
-Never interpret the fallback label as current live inventory.
-
-## Security spot checks
-
-- Try `originId=unknown-shop`: expected HTTP 400 with `ORIGIN_NOT_ALLOWED`.
-- Try interpolating `/collections/all`: expected HTTP 400 with `PATH_NOT_ALLOWED`.
-- Try an absolute URL on another host: expected HTTP 400.
-- Call `/api/cart/commit` without the human confirmation header: expected HTTP 400.
-- Inspect response headers for CSP, `tools=(self)`, origin agent clustering, and framing denial.
-- Inspect `X-Agentic-Cache` on repeated validated GET requests for `MISS` or `HIT`.
-
-## Reproduction
-
-```bash
-git clone https://github.com/Somnora/agentic-webmcp.git
-cd agentic-webmcp
-npm ci
-npm run verify
-```
-
-The local gate requires no credentials and does not deploy.
+The public origin and page fetches are live, but the four listings are original controlled demonstration data. The app does not search arbitrary websites, scrape eBay, place an order, handle money, or create a merchant account. The secondary Shopify origin may show a labeled snapshot when public inventory is unavailable.

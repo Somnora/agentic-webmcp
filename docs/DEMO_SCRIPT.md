@@ -1,118 +1,53 @@
-# Agentic WebMCP demo script
+# Recording script
 
-Target: approximately 2 minutes 28 seconds, public YouTube, 2560 x 1440 capture, generated spoken audio, no music.
+## Capture setup
 
-Do not use the older four-tool screenshots or the older automated driver for the final take. They show the previous catalog flow. Record only after this branch is deployed and a fresh manual judge pass matches `docs/JUDGE_GUIDE.md`.
+- Record at 2560 by 1440 when possible, then deliver at 1440p.
+- Open the app with `?present=1` and hide browser chrome if practical.
+- Record without microphone audio. Add the Lapetus track afterward.
+- Keep the activity rail, origin badge, focus frame, pointer, and purchase review visible.
+- Do not show eBay, third-party trademarks, credentials, or payment details.
 
-## Recording setup
+## Screen sequence
 
-1. Open the production URL in a WebMCP-capable browser on a 2560 by 1440 or larger canvas.
-2. Close unrelated tabs and hide bookmarks, account details, and browser extensions from the capture.
-3. Click `Presenter mode`. The same result is available with `?present=1`.
-4. Use `Run guided demo` to rehearse the screen sequence. The overlay intentionally shows no countdown, target duration, or narration copy.
-5. Record the final screen sequence without microphone audio. Reload presenter mode and invoke the real WebMCP tools from the agent. The overlay reacts to those real calls.
-6. Park the physical pointer in an empty area. Presenter mode replaces the operating system pointer with the high-contrast SVG pointer. Physical movement labels it `HUMAN`; tool-directed movement labels it `AGENT`.
+### Opening
 
-The focus frame is one fixed overlay. It transitions its position, dimensions, and corner radius instead of destroying and recreating selection boxes. The overlay changes sides when a right-rail action is selected so it does not cover the confirmation banner or receipt. Narration is generated after the screen capture with `gemini-3.1-flash-tts-preview` and the Lapetus voice.
+Show the restrained workspace and the nine-tool status. Establish that this is a shared decision surface, not an autonomous buyer.
 
-After recording, send Codex the source video path. The prepared renderer is `scripts/render_demo_voiceover.py`. It generates timed Lapetus segments, normalizes the voice track, and muxes it into the original video without re-encoding the picture.
+### Discover and select
 
-## 0:00 to 0:12: The converter idea
+Ask: `List the allowlisted origins and select catalog-lab.`
 
-Focus: registered-tool status.
+Point out the exact hostname, live adapter, and controlled demonstration label.
 
-Narration: "Most websites make agents reverse engineer a visual interface. Agentic adds an explicit capability layer while keeping the human on the same page."
+### Rank the options
 
-Under the hood: the top-level document registers eight bounded tools. Seven are read-only, and one can only stage a proposal.
+Ask: `Find the best electric guitars under 900 USD. Rank them by condition, delivered price, seller confidence, and returns.`
 
-## 0:12 to 0:22: Discover origins
+Show the ranked cards and visible factor scores. Explain that the ranking is deterministic and all candidates use the same normalized `Offer` shape.
 
-Ask: `List the allowlisted origins and show which adapter each one uses.`
+### Convert a real page
 
-Narration: "The agent begins by discovering the exact public origins and adapters this page permits."
+Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
 
-Under the hood: the Worker reads origin records from one static allowlist. No tool can supply an arbitrary hostname.
+Show the canonical HTTPS URL, stripped Markdown, provenance, and structured facts. Explain exact-host and path validation before the Worker fetches the page.
 
-## 0:22 to 0:30: Select the origin
+### Compare
 
-Ask: `Select catalog-lab for the rest of this task.`
+Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
 
-Narration: "It selects the controlled public catalog. The source mode and live adapter remain visible to the human."
+Show delivered price, condition, seller confidence, shipping, and return evidence in one comparison.
 
-Under the hood: selection changes page-local state, and every later read carries a validated origin id.
+### Human-controlled handoff
 
-## 0:30 to 0:48: Search a stable handle
+Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
 
-Ask: `Search the selected origin for notebook and return the stable handles.`
+Pause on the review. Read the sentence that nothing has been ordered or charged. Click `Approve for handoff` yourself and show the page-local decision record with its merchant source link.
 
-Narration: "A natural language goal becomes a typed search call. Stable handles and source-grounded facts appear in the shared workspace."
+### Close
 
-Under the hood: bounded product JSON is fetched over HTTPS and normalized into the shared Offer protocol.
+End on the trust boundary: the agent can discover, convert, rank, compare, and prepare a decision. The person approves the selection and completes any payment on the merchant site.
 
-## 0:48 to 1:18: Convert one page
+## Narration timing
 
-Ask: `Interpolate /products/field-notebook into stripped Markdown and a structured Offer.`
-
-Narration: "This is the converter: one real HTTPS page becomes compact Markdown plus a structured Offer, with its canonical URL and provenance intact."
-
-Under the hood: exact host and path validation runs before Cloudflare HTMLRewriter removes navigation, footer, scripts, styles, frames, and forms. Structured adapters remain authoritative for inventory.
-
-## 1:18 to 1:38: Compare normalized offers
-
-Ask: `Compare field-notebook and modular-desk-tray using only origin facts.`
-
-Narration: "Because every adapter produces the same Offer shape, the agent can compare products without learning a second catalog model."
-
-Under the hood: comparison consumes the same normalized Offer graph and retains field-level provenance.
-
-## 1:38 to 2:00: Propose and stop
-
-Ask: `Propose adding quantity 1 of the Sand variant of field-notebook, then wait for me.`
-
-Narration: "The agent stages one available variant, then stops. The empty cart and the confirmation boundary are both visible."
-
-Under the hood: the proposal creates a short-lived quote with `awaiting_human_confirmation` status and leaves the cart unchanged.
-
-## 2:00 to 2:20: Human control
-
-Move the pointer to `Confirm add to cart` and click it yourself. Show the `in_cart` receipt.
-
-Narration: "The human confirms. Only that button commits the page-local receipt, and the activity rail records the boundary."
-
-Under the hood: there is no WebMCP commit tool, checkout, payment, or merchant cart.
-
-## 2:20 to 2:28: Trust boundary
-
-Show the trust note and source label.
-
-Narration: "Agents get a useful open-web interface, while people retain source visibility and final control over writes."
-
-Under the hood: every upstream request is HTTPS, exact-host allowlisted, path checked, off-host redirects rejected, and response-byte bounded.
-
-## Recording checks
-
-- Confirm the deployed header says `8 WebMCP tools registered`.
-- Confirm the source badge is honest for the current adapter and fallback state.
-- Confirm the footer commit matches the submitted repository commit.
-- Confirm the presenter cursor stays fully inside the capture and changes to `HUMAN` when the physical pointer moves.
-- Confirm the focus frame does not overlap the tool overlay on search, interpolation, comparison, confirmation, or receipt steps.
-- Keep the origin badge, interpolate view, confirmation banner, and receipt legible in a 16:9 frame.
-- Do not show product images, external pages, third-party logos, account names, passwords, tokens, browser bookmarks, unrelated tabs, or copyrighted music.
-- Keep the `controlled demo` label visible and never describe the fixture catalog as current merchant inventory.
-- Do not claim conversion, sales impact, crawler adoption, or customer token savings.
-- Upload publicly to YouTube and test the link while logged out.
-
-## Voice-over render
-
-After the silent recording is available, render the narrated copy with:
-
-```bash
-cd /Users/jamesmcshane/APP_PROJECTS/Agentic/agentic-webmcp
-python3 scripts/render_demo_voiceover.py /absolute/path/to/recording.mov /absolute/path/to/Agentic_WebMCP_Lapetus_VO.mov
-```
-
-Requirements: authenticated `gcloud` project access to Vertex AI, `google-genai`, `ffmpeg`, and `ffprobe`. Generated WAV segments stay under `build/demo-voiceover`, which is excluded from the public submission artifacts.
-
-## Remaining required artifact
-
-The public YouTube URL is still required. No video was recorded or uploaded by this implementation task.
+The presenter overlay intentionally contains no duration, countdown, or narration copy. `scripts/render_demo_voiceover.py` aligns the final Lapetus narration to the silent recording. If the recording timing changes, adjust the segment boundaries in that script after the visual edit is locked.

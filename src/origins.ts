@@ -1,4 +1,4 @@
-export type Vertical = "retail" | "wholesale" | "travel";
+export type Vertical = "retail" | "marketplace" | "wholesale" | "travel";
 
 export type Adapter =
   | "shopify-storefront"
@@ -42,8 +42,8 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
   Object.freeze({
     id: DEFAULT_ORIGIN_ID,
     mode: "controlled-demo",
-    vertical: "retail",
-    displayName: "Agentic Catalog Lab",
+    vertical: "marketplace",
+    displayName: "Independent Gear Exchange",
     hostname: "agentic-webmcp-origin.somnora.workers.dev",
     canonicalUrl: "https://agentic-webmcp-origin.somnora.workers.dev",
     adapter: "public-products-json",
@@ -53,13 +53,13 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
       "^/products/[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?/?$",
     ] as const,
     currencyCode: "USD",
-    notes: "Controlled public demo catalog. Live HTTPS responses, original fixture content, no checkout or payment.",
-    healthPath: "/products/field-notebook",
+    notes: "Controlled public marketplace. Live HTTPS responses, original guitar listings, no checkout or payment.",
+    healthPath: "/products/sunburst-s-style-electric",
     demo: {
-      queries: ["notebook", "desk", "travel"],
-      handles: ["field-notebook", "modular-desk-tray"],
-      variant: "Sand",
-      briefGoal: "Choose an available workspace product with a clear price and variant.",
+      queries: ["electric guitar", "acoustic guitar", "offset guitar"],
+      handles: ["sunburst-s-style-electric", "natural-dreadnought-acoustic"],
+      variant: "As listed",
+      briefGoal: "Find the strongest guitar option under 900 USD using condition, delivered price, seller confidence, and returns.",
     },
   }),
   Object.freeze({

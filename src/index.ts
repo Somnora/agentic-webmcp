@@ -13,6 +13,7 @@ import { commitCartAdd, proposeCartAdd, type CartInput } from "./cart";
 import { classifyError, fixedError, type ErrorCode } from "./errors";
 import { interpolatePage } from "./interpolate";
 import { DEFAULT_ORIGIN_ID, ORIGINS, getOrigin, publicOrigin, type Origin } from "./origins";
+import { findBestOptions } from "./recommendations";
 import type { Fetcher } from "./upstream";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -256,6 +257,20 @@ export async function handleRequest(request: Request, env: Env, ctx?: ExecutionC
       const query = validateQuery(url.searchParams.get("query"));
       const limit = validateLimit(url.searchParams.get("limit"));
       return await cachedJson(request, ctx, () => searchProducts(query, limit, origin, originFetcher, runtimeCatalogEnv));
+    }
+
+    if (url.pathname === "/api/recommendations") {
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin);
+      const query = url.searchParams.get("query") ?? "";
+      const limit = url.searchParams.get("limit");
+      const maxDeliveredPrice = url.searchParams.get("maxDeliveredPrice");
+      return await cachedJson(
+        request,
+        ctx,
+        () => findBestOptions(query, limit, maxDeliveredPrice, origin, originFetcher, runtimeCatalogEnv),
+      );
     }
 
     if (url.pathname.startsWith("/api/products/")) {

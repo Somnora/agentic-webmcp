@@ -27,17 +27,32 @@ export function createAgenticTools(actions) {
     },
     {
       name: "search_products",
-      description: "Search offers on the selected allowlisted product origin and show matching products in the shared page interface.",
+      description: "Search offers on the selected allowlisted origin and show matching products or listings in the shared page interface.",
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Product words to match, such as notebook, desk, or travel." },
+          query: { type: "string", description: "Product words to match, such as electric guitar or acoustic guitar." },
           maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum number of results to return." },
         },
         required: ["query"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
       execute: (args, { signal } = {}) => actions.search(args, signal),
+    },
+    {
+      name: "find_best_options",
+      description: "Rank marketplace offers by query relevance, condition, delivered price, seller confidence, and returns. Show the scored shortlist in the shared interface.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "What the shopper wants, such as electric guitar." },
+          maxDeliveredPrice: { type: "number", minimum: 25, maximum: 100000, description: "Optional budget including listed shipping." },
+          maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum ranked options to return." },
+        },
+        required: ["query"],
+      },
+      annotations: READ_ONLY_ANNOTATIONS,
+      execute: (args, { signal } = {}) => actions.recommend(args, signal),
     },
     {
       name: "get_product",
@@ -68,7 +83,7 @@ export function createAgenticTools(actions) {
       description: "Read one allowlisted product path on the selected origin, remove page chrome, and show compact Markdown plus the normalized Offer and canonical origin URL.",
       inputSchema: {
         type: "object",
-        properties: { path: { type: "string", description: "Allowlisted product path only, such as /products/field-notebook." } },
+        properties: { path: { type: "string", description: "Allowlisted product path only, such as /products/sunburst-s-style-electric." } },
         required: ["path"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
@@ -90,12 +105,12 @@ export function createAgenticTools(actions) {
     },
     {
       name: "propose_add_to_cart",
-      description: "Stage one available variant as a visible cart proposal. The cart stays unchanged until the human clicks Confirm add to cart. This never checks out or charges.",
+      description: "Stage one available listing as a visible purchase review. Nothing changes until the human clicks Approve for handoff. This never checks out, places an order, or charges.",
       inputSchema: {
         type: "object",
         properties: {
           handle: { type: "string", description: "Product handle from search_products or get_product." },
-          variantTitle: { type: "string", description: "Optional variant title such as Sand, Slate, or Compact." },
+          variantTitle: { type: "string", description: "Optional variant title returned by get_product, such as As listed." },
           quantity: { type: "integer", minimum: 1, maximum: 4, description: "Quantity to propose, from 1 to 4." },
         },
         required: ["handle"],

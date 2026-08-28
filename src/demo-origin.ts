@@ -43,6 +43,8 @@ function jsonLd(product: DemoProduct, canonicalUrl: string): string {
       price: variant.price,
       priceCurrency: "USD",
       availability: variant.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: `https://schema.org/${product.condition === "new" ? "NewCondition" : "UsedCondition"}`,
+      seller: { "@type": "Organization", name: product.seller.display_name },
     })),
   }).replaceAll("<", "\\u003c");
 }
@@ -55,22 +57,30 @@ function productPage(product: DemoProduct, canonicalUrl: string): Response {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(product.title)} | Agentic Catalog Lab</title>
+  <title>${escapeHtml(product.title)} | Independent Gear Exchange</title>
   <style>body{max-width:760px;margin:60px auto;padding:0 24px;font:16px/1.6 system-ui;color:#17202a}nav,footer{color:#52606d}main{border:1px solid #d9e2ec;border-radius:18px;padding:30px}code{background:#f0f4f8;padding:2px 6px}</style>
   <script type="application/ld+json">${jsonLd(product, canonicalUrl)}</script>
 </head>
 <body>
-  <nav>Agentic Catalog Lab | Controlled WebMCP demonstration origin</nav>
+  <nav>Independent Gear Exchange | Controlled WebMCP demonstration origin</nav>
   <main>
-    <p>CONTROLLED PUBLIC DEMO CATALOG</p>
+    <p>INDEPENDENT GEAR EXCHANGE</p>
     <h1>${escapeHtml(product.title)}</h1>
     ${product.body_html}
+    <h2>Listing evidence</h2>
+    <ul>
+      <li>Condition: ${escapeHtml(product.condition.replaceAll("-", " "))}</li>
+      <li>Condition notes: ${escapeHtml(product.condition_description)}</li>
+      <li>Seller: ${escapeHtml(product.seller.display_name)}, ${product.seller.positive_feedback_percent.toFixed(1)}% positive across ${product.seller.feedback_count} reviews</li>
+      <li>Shipping: ${escapeHtml(product.shipping.price)} USD by ${escapeHtml(product.shipping.method)}, estimated ${product.shipping.estimated_days_min} to ${product.shipping.estimated_days_max} days</li>
+      <li>Returns: ${product.returns.accepted ? `${product.returns.window_days} days` : "not accepted"}</li>
+    </ul>
     <h2>Variants</h2>
     <ul>${variants}</ul>
     <p>Canonical handle: <code>${escapeHtml(product.handle)}</code></p>
-    <p>This origin provides live HTTPS responses from original fixture content. It has no checkout, payment, accounts, or analytics.</p>
+    <p>This controlled origin provides live HTTPS responses from original demonstration listings. It has no checkout, payment, accounts, or analytics.</p>
   </main>
-  <footer>Agentic Catalog Lab. Demonstration data only.</footer>
+  <footer>Independent Gear Exchange. Demonstration data only.</footer>
 </body>
 </html>`;
   return new Response(html, { headers: headers(HTML_HEADERS) });
@@ -93,7 +103,7 @@ export function handleDemoOriginRequest(request: Request): Response {
   }
   if (url.pathname === "/") {
     const links = DEMO_PRODUCTS.map((product) => `<li><a href="/products/${product.handle}">${escapeHtml(product.title)}</a></li>`).join("");
-    return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Agentic Catalog Lab</title></head><body><main><h1>Agentic Catalog Lab</h1><p>Controlled public demonstration catalog for WebMCP evaluation.</p><ul>${links}</ul></main></body></html>`, { headers: headers(HTML_HEADERS) });
+    return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Independent Gear Exchange</title></head><body><main><h1>Independent Gear Exchange</h1><p>Controlled public guitar marketplace for WebMCP evaluation.</p><ul>${links}</ul></main></body></html>`, { headers: headers(HTML_HEADERS) });
   }
   return json({ error: "Not found." }, 404);
 }

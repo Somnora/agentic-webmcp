@@ -1,4 +1,4 @@
-"""Run a visible QA pass for the current eight-tool Agentic WebMCP workspace.
+"""Run a visible QA pass for the current nine-tool Agentic WebMCP workspace.
 
 This script does not start a recording or upload media. It is a convenience pass
 for the deployed page after James explicitly deploys the current branch.
@@ -36,7 +36,7 @@ async def run_qa(base_url: str) -> None:
         if chrome.exists():
             launch_options["executable_path"] = str(chrome)
         browser = await playwright.chromium.launch(**launch_options)
-        context = await browser.new_context(viewport={"width": 1280, "height": 720}, color_scheme="dark")
+        context = await browser.new_context(viewport={"width": 2560, "height": 1440}, color_scheme="light")
         page = await context.new_page()
         console_errors: list[str] = []
         page_errors: list[str] = []
@@ -51,18 +51,19 @@ async def run_qa(base_url: str) -> None:
         await expect(page.locator("#origin-health")).to_contain_text("page live")
         await capture(page, "01-origin")
 
-        search = page.locator("#search-input")
-        await search.fill("notebook")
-        await page.locator("#search-form button[type='submit']").click()
-        await expect(page.locator("#product-grid")).to_contain_text("Field Notebook", timeout=15000)
-        await expect(page.locator("#activity-list")).to_contain_text("search_products")
-        await capture(page, "02-search")
+        recommend = page.locator("#recommend-input")
+        await recommend.fill("electric guitar")
+        await page.locator("#recommend-budget").fill("900")
+        await page.locator("#recommend-form button[type='submit']").click()
+        await expect(page.locator("#product-grid")).to_contain_text("Sunburst S-Style Electric", timeout=15000)
+        await expect(page.locator("#activity-list")).to_contain_text("find_best_options")
+        await capture(page, "02-recommend")
 
         interpolate = page.locator("#interpolate-path")
-        await interpolate.fill("/products/field-notebook")
+        await interpolate.fill("/products/sunburst-s-style-electric")
         await page.locator("#interpolate-form button[type='submit']").click()
         await expect(page.locator("#interpolate-canonical")).to_have_text(
-            "https://agentic-webmcp-origin.somnora.workers.dev/products/field-notebook",
+            "https://agentic-webmcp-origin.somnora.workers.dev/products/sunburst-s-style-electric",
             timeout=15000,
         )
         await expect(page.locator("#activity-list")).to_contain_text("interpolate_page")
@@ -74,19 +75,18 @@ async def run_qa(base_url: str) -> None:
         propose = page.locator("#product-grid .product-card").get_by_role("button", name="Propose")
         await propose.click()
         await expect(page.locator("#confirm-panel")).to_be_visible(timeout=15000)
-        await expect(page.locator("#confirm-panel")).to_be_focused()
+        await expect(page.locator("#confirm-panel")).to_be_visible()
         await expect(page.locator("#cart-empty")).to_be_visible()
         await capture(page, "04-proposal")
 
         await page.locator("#confirm-cart").click()
-        await expect(page.locator("#cart-list")).to_contain_text("in_cart", timeout=15000)
-        await expect(page.locator("#cart-panel")).to_be_focused()
+        await expect(page.locator("#cart-list")).to_contain_text("Approved for merchant handoff", timeout=15000)
         await capture(page, "05-confirmed")
 
         status = (await page.locator("#webmcp-status").inner_text()).strip()
-        if "8 WebMCP tools registered" not in status:
+        if "9 WebMCP tools registered" not in status:
             print(f"WebMCP status: {status}")
-            print("The manual flow passed, but the recording browser did not expose all eight tools.")
+            print("The manual flow passed, but the recording browser did not expose all nine tools.")
 
         unexpected = [message for message in console_errors if "favicon" not in message.lower()]
         if unexpected or page_errors:

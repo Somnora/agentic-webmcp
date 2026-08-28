@@ -8,6 +8,10 @@ export type OfferProvenance = {
   pricing: OfferSourceAdapter;
   availability: OfferSourceAdapter;
   variants: OfferSourceAdapter;
+  condition?: OfferSourceAdapter;
+  seller?: OfferSourceAdapter;
+  shipping?: OfferSourceAdapter;
+  returns?: OfferSourceAdapter;
 };
 
 export type Money = { amount: string; currencyCode: string };
@@ -32,6 +36,29 @@ export type Constraints = {
   stayNights?: { min: number; max: number };
 };
 
+export type MarketplaceCondition = "new" | "open-box" | "excellent" | "very-good" | "good" | "fair";
+
+export type MarketplaceEvidence = {
+  condition: MarketplaceCondition;
+  conditionDescription: string;
+  seller: {
+    displayName: string;
+    positiveFeedbackPercent: number;
+    feedbackCount: number;
+  };
+  shipping: {
+    price: Money;
+    method: string;
+    estimatedDays: { min: number; max: number };
+  };
+  returns: {
+    accepted: boolean;
+    windowDays: number | null;
+    paidBy: "buyer" | "seller" | "not-applicable";
+  };
+  deliveredPrice: Money;
+};
+
 export type Offer = {
   originId: string;
   handle: string;
@@ -44,6 +71,7 @@ export type Offer = {
   priceRange: { min: Money; max: Money };
   variants: Variant[];
   constraints: Constraints;
+  marketplace?: MarketplaceEvidence;
   image?: { url: string; altText: string | null };
   source: {
     adapter: OfferSourceAdapter;

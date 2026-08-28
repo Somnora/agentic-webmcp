@@ -1,4 +1,6 @@
-# New work created during the WebMCP Challenge
+# Previous deployment evidence
+
+This file records the August 26, 2026 deployment before the guitar recommendation redesign. It is historical evidence, not the current judge script. Use `docs/JUDGE_GUIDE.md` and `docs/DEMO_SCRIPT.md` for the current nine-tool flow.
 
 ## Project boundary
 

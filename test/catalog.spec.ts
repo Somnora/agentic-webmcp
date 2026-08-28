@@ -12,6 +12,7 @@ import {
   validateQuery,
 } from "../src/catalog";
 import { getOrigin } from "../src/origins";
+import { DEMO_PRODUCTS } from "../src/demo-origin-catalog";
 
 const origin = getOrigin("review-shop");
 const controlledOrigin = getOrigin("catalog-lab");
@@ -72,6 +73,26 @@ describe("offer normalization and validation", () => {
     expect(offer?.source.adapter).toBe("shopify-products-json");
   });
 
+  it("keeps marketplace evidence inside the Offer protocol", () => {
+    const offer = normalizeProductsJsonOffer(DEMO_PRODUCTS[0], controlledOrigin);
+    expect(offer?.marketplace).toMatchObject({
+      condition: "excellent",
+      seller: { displayName: "Northline Music Co.", positiveFeedbackPercent: 99.8 },
+      shipping: { price: { amount: "35.00", currencyCode: "USD" } },
+      returns: { accepted: true, windowDays: 30 },
+      deliveredPrice: { amount: "610.00", currencyCode: "USD" },
+    });
+    expect(offer?.provenance).toMatchObject({ condition: "public-products-json", seller: "public-products-json" });
+  });
+
+  it("drops incomplete marketplace evidence instead of inventing a delivered price", () => {
+    const base = DEMO_PRODUCTS[0]!;
+    const product = { ...base, shipping: { ...base.shipping, price: "not-a-price" } };
+    const offer = normalizeProductsJsonOffer(product, controlledOrigin);
+    expect(offer?.marketplace).toBeUndefined();
+    expect(offer?.provenance.shipping).toBeUndefined();
+  });
+
   it("rejects unsafe handles and bounds inputs", () => {
     expect(normalizeStorefrontOffer({ ...rawStorefrontProduct, handle: "../unsafe" }, origin)).toBeNull();
     expect(() => validateHandle("BAD HANDLE")).toThrow("invalid");
@@ -113,7 +134,7 @@ describe("catalog adapter chain", () => {
     const result = await searchProducts("wax", 6, controlledOrigin, fetcher, { CATALOG_SHOP: origin.hostname });
     expect(result).toMatchObject({ live: true, source: "public-products-json", origin: { mode: "controlled-demo" } });
     expect(result.offers[0]?.source.adapter).toBe("public-products-json");
-    expect(result.offers[0]?.variants[0]?.id).toBe("urn:agentic-catalog-lab:variant:2");
+    expect(result.offers[0]?.variants[0]?.id).toBe("urn:independent-gear-exchange:variant:2");
   });
 
   it("uses a clearly labeled bundled snapshot when both live adapters fail", async () => {

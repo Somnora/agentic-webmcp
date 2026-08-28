@@ -1,5 +1,15 @@
 import { FALLBACK_PRODUCTS, type SnapshotProduct } from "./demo-catalog";
-import { money, offerAvailable, priceLabel, uniformProvenance, type Money, type Offer, type Variant } from "./offers";
+import {
+  money,
+  offerAvailable,
+  priceLabel,
+  uniformProvenance,
+  type MarketplaceCondition,
+  type MarketplaceEvidence,
+  type Money,
+  type Offer,
+  type Variant,
+} from "./offers";
 import { assertCatalogShop, getOrigin, publicOrigin, type Adapter, type Origin, type PublicOrigin } from "./origins";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
@@ -80,6 +90,59 @@ function array(value: unknown): unknown[] {
 
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+const MARKETPLACE_CONDITIONS = new Set<MarketplaceCondition>(["new", "open-box", "excellent", "very-good", "good", "fair"]);
+
+function boundedNumber(value: unknown, min: number, max: number): number | null {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
+}
+
+function marketplaceEvidence(candidate: Record<string, unknown>, currencyCode: string, itemPrice: Money): MarketplaceEvidence | undefined {
+  const condition = text(candidate.condition, 32) as MarketplaceCondition;
+  const conditionDescription = text(candidate.condition_description, 320);
+  const seller = record(candidate.seller);
+  const sellerName = text(seller.display_name, 100);
+  const positiveFeedbackPercent = boundedNumber(seller.positive_feedback_percent, 0, 100);
+  const feedbackCount = boundedNumber(seller.feedback_count, 0, 10_000_000);
+  const shipping = record(candidate.shipping);
+  const shippingPriceValue = boundedNumber(shipping.price, 0, 100_000);
+  const shippingPrice = money(shippingPriceValue, currencyCode);
+  const method = text(shipping.method, 80);
+  const estimatedMin = boundedNumber(shipping.estimated_days_min, 0, 90);
+  const estimatedMax = boundedNumber(shipping.estimated_days_max, 0, 90);
+  const returns = record(candidate.returns);
+  const returnsAccepted = typeof returns.accepted === "boolean" ? returns.accepted : null;
+  const windowDays = returns.window_days === null ? null : boundedNumber(returns.window_days, 1, 365);
+  const paidBy = text(returns.paid_by, 24);
+  if (
+    !MARKETPLACE_CONDITIONS.has(condition)
+    || !conditionDescription
+    || !sellerName
+    || positiveFeedbackPercent === null
+    || feedbackCount === null
+    || shippingPriceValue === null
+    || !method
+    || estimatedMin === null
+    || estimatedMax === null
+    || estimatedMax < estimatedMin
+    || returnsAccepted === null
+    || !["buyer", "seller", "not-applicable"].includes(paidBy)
+    || (returnsAccepted && (windowDays === null || paidBy === "not-applicable"))
+    || (!returnsAccepted && (windowDays !== null || paidBy !== "not-applicable"))
+  ) return undefined;
+  const itemCents = Math.round(Number.parseFloat(itemPrice.amount) * 100);
+  const shippingCents = Math.round(Number.parseFloat(shippingPrice.amount) * 100);
+  const deliveredPrice = money((itemCents + shippingCents) / 100, currencyCode);
+  return {
+    condition,
+    conditionDescription,
+    seller: { displayName: sellerName, positiveFeedbackPercent, feedbackCount },
+    shipping: { price: shippingPrice, method, estimatedDays: { min: estimatedMin, max: estimatedMax } },
+    returns: { accepted: returnsAccepted, windowDays, paidBy: paidBy as MarketplaceEvidence["returns"]["paidBy"] },
+    deliveredPrice,
+  };
 }
 
 function safeJson(raw: string): Record<string, unknown> {
@@ -207,7 +270,7 @@ function normalizeProductsJsonVariant(
       ? rawId
       : adapter === "shopify-products-json"
         ? `gid://shopify/ProductVariant/${rawId}`
-        : `urn:agentic-catalog-lab:variant:${rawId}`,
+        : `urn:independent-gear-exchange:variant:${rawId}`,
     title,
     available: candidate.available === true,
     quantityAvailable: null,
@@ -234,6 +297,14 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
   const image = safeImage(imageCandidate);
   const vendor = text(candidate.vendor, 100);
   const productType = text(candidate.product_type ?? candidate.productType, 100);
+  const marketplace = variants[0] ? marketplaceEvidence(candidate, origin.currencyCode, variants[0].price) : undefined;
+  const provenance = uniformProvenance(adapter);
+  if (marketplace) {
+    provenance.condition = adapter;
+    provenance.seller = adapter;
+    provenance.shipping = adapter;
+    provenance.returns = adapter;
+  }
   return {
     originId: origin.id,
     handle,
@@ -246,9 +317,10 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
     priceRange: { min: money(min, origin.currencyCode), max: money(max, origin.currencyCode) },
     variants,
     constraints: { available: offerAvailable(variants) },
+    ...(marketplace ? { marketplace } : {}),
     ...(image ? { image } : {}),
     source: { adapter, live: true, fetchedAt, untrusted: true },
-    provenance: uniformProvenance(adapter),
+    provenance,
   };
 }
 

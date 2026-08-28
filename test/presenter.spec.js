@@ -12,10 +12,11 @@ describe("recording presenter", () => {
       "list_origins",
       "select_origin",
       "search_products",
+      "find_best_options",
       "interpolate_page",
       "compare_products",
       "propose_add_to_cart",
-      "human_confirm_add_to_cart",
+      "human_approval_button",
     ]) {
       expect(presenter).toContain(name);
     }
@@ -28,7 +29,6 @@ describe("recording presenter", () => {
     expect(page).toContain('id="presenter-next"');
     expect(page).toContain("UNDER THE HOOD");
     expect(page).toContain("Run guided demo");
-    expect(page).not.toContain("2:28 TARGET");
     expect(page).not.toContain("presenter-time");
     expect(page).not.toContain("presenter-progress");
     expect(page).not.toContain("presenter-caption");

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Agentic WebMCP gives browser agents explicit tools for allowlisted product origins, structured offers, stripped pages, comparison, and human-confirmed cart proposals.">
-  <title>Agentic WebMCP - Allowlisted product origin tools</title>
+  <meta name="description" content="Agentic WebMCP turns allowlisted marketplace pages into structured evidence, ranked options, and human-approved purchase handoffs.">
+  <title>Agentic WebMCP | Market decision workspace</title>
   <link rel="icon" href="/icon.webp" type="image/webp">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
@@ -13,7 +13,7 @@
   <header class="site-header">
     <a class="brand" href="/" aria-label="Agentic WebMCP home">
       <img src="/icon.webp" alt="" width="42" height="42">
-      <span><strong>Agentic</strong><small>WebMCP Commerce Tools</small></span>
+      <span><strong>Agentic</strong><small>Market decision workspace</small></span>
     </a>
     <div class="header-actions">
       <button id="presenter-toggle" class="presenter-toggle" type="button" aria-pressed="false">Presenter mode</button>
@@ -26,13 +26,14 @@
 
   <main>
     <section class="hero" aria-labelledby="hero-title">
-      <div class="eyebrow">THE OPEN WEB, WITH AN EXPLICIT TOOL LAYER</div>
-      <h1 id="hero-title">A structured agent view<br><span>over allowlisted live origins.</span></h1>
-      <p>Agentic compiles an allowlisted product origin into normalized Offers and stripped Markdown. The default is a clearly labeled controlled public demo. Agents can read and propose. Only a human confirmation button can update the in-page cart.</p>
+      <div class="eyebrow">WEB RESEARCH WITH A VISIBLE DECISION TRAIL</div>
+      <h1 id="hero-title">Compare the evidence.<br><span>Keep the decision.</span></h1>
+      <p>Agentic turns allowlisted marketplace pages into normalized Offers, stripped Markdown, and a ranked shortlist. The agent can research and prepare a purchase handoff. The human reviews the source, condition, delivered price, and seller before anything moves forward.</p>
       <div class="tool-strip" aria-label="Available tools">
         <code>list_origins</code>
         <code>select_origin</code>
         <code>search_products</code>
+        <code>find_best_options</code>
         <code>get_product</code>
         <code>compare_products</code>
         <code>interpolate_page</code>
@@ -41,49 +42,59 @@
       </div>
     </section>
 
-    <section class="workspace" aria-label="Agentic commerce workspace">
+    <section class="workspace" aria-label="Agentic market decision workspace">
       <div class="catalog-panel">
         <div class="panel-heading">
           <div>
-            <span class="kicker">HUMAN WORKSPACE</span>
-            <h2>Explore the allowlisted origin</h2>
+            <span class="kicker">Research workspace</span>
+            <h2>Find the strongest option</h2>
           </div>
           <span id="source-badge" class="source-badge">Loading source...</span>
         </div>
 
         <div class="origin-control">
-          <label for="origin-select">Allowlisted product origin</label>
+          <label for="origin-select">Allowlisted source</label>
           <select id="origin-select" aria-describedby="origin-meta"></select>
           <p id="origin-meta">Loading allowlisted origin...</p>
           <p id="origin-health" class="origin-health">Checking adapter and page access...</p>
         </div>
 
-        <form id="search-form" class="search-form">
-          <label for="search-input">Search product facts</label>
+        <form id="recommend-form" class="recommend-form">
+          <label for="recommend-input">What are you looking for?</label>
+          <div class="decision-row">
+            <input id="recommend-input" name="goal" maxlength="80" value="electric guitar" autocomplete="off">
+            <label class="budget-field" for="recommend-budget"><span>Maximum delivered price</span><input id="recommend-budget" name="budget" type="number" min="25" max="100000" step="25" value="900"></label>
+            <button type="submit">Rank options</button>
+          </div>
+          <p class="rubric-note">Scored from source evidence: relevance 30, condition 25, delivered price 25, seller confidence 10, returns 10.</p>
+        </form>
+
+        <form id="search-form" class="search-form secondary-search">
+          <label for="search-input">Or search listing facts directly</label>
           <div class="search-row">
-            <input id="search-input" name="query" maxlength="80" placeholder="Try notebook, desk, travel..." autocomplete="off">
+            <input id="search-input" name="query" maxlength="80" placeholder="Try electric guitar, acoustic guitar, offset guitar..." autocomplete="off">
             <button type="submit">Search</button>
           </div>
         </form>
 
         <div class="prompt-row" aria-label="Suggested agent prompts">
           <span>Try:</span>
-          <button type="button" data-query="notebook">Find notebook</button>
-          <button type="button" data-query="desk">Search desk</button>
-          <button type="button" data-query="travel">Search travel</button>
+          <button type="button" data-query="electric guitar">Electric guitar</button>
+          <button type="button" data-query="acoustic guitar">Acoustic guitar</button>
+          <button type="button" data-query="offset guitar">Offset guitar</button>
         </div>
 
         <form id="interpolate-form" class="interpolate-form">
-          <label for="interpolate-path">Strip an allowlisted product page into Offer plus Markdown</label>
+          <label for="interpolate-path">Inspect one source page as Offer plus Markdown</label>
           <div class="search-row">
-            <input id="interpolate-path" maxlength="240" value="/products/field-notebook" autocomplete="off">
-            <button type="submit">Interpolate page</button>
+            <input id="interpolate-path" maxlength="240" value="/products/sunburst-s-style-electric" autocomplete="off">
+            <button type="submit">Inspect source</button>
           </div>
         </form>
 
         <section id="interpolate-view" class="interpolate-view" hidden aria-live="polite" tabindex="-1">
           <span class="kicker">STRIPPED ORIGIN VIEW</span>
-          <h3>One live page, two agent-ready projections</h3>
+          <h3>One source page, two agent-ready projections</h3>
           <p>Canonical origin URL: <code id="interpolate-canonical"></code></p>
           <div class="projection-grid">
             <div><strong id="interpolate-page-status">PAGE STATUS</strong><pre id="interpolate-markdown"></pre></div>
@@ -97,16 +108,16 @@
 
         <div class="action-dock">
           <div>
-            <strong id="selection-count">0 products selected</strong>
-            <span>Select two to four products for a grounded comparison.</span>
+            <strong id="selection-count">0 listings selected</strong>
+            <span>Select two to four listings for a grounded comparison.</span>
           </div>
           <button id="compare-button" type="button" disabled>Compare selected</button>
         </div>
 
         <form id="brief-form" class="brief-form">
-          <label for="brief-goal">Create a catalog brief from selected products</label>
+          <label for="brief-goal">Create a decision brief from selected listings</label>
           <div class="search-row">
-            <input id="brief-goal" maxlength="160" value="Choose an available workspace product with a clear price and variant.">
+            <input id="brief-goal" maxlength="160" value="Choose the strongest guitar under 900 USD using condition, delivered price, seller confidence, and returns.">
             <button type="submit" disabled id="brief-button">Create brief</button>
           </div>
         </form>
@@ -115,26 +126,26 @@
       <aside class="agent-panel" aria-labelledby="activity-title">
         <div class="panel-heading compact">
           <div>
-            <span class="kicker">SHARED AGENT STATE</span>
-            <h2 id="activity-title">Tool activity</h2>
+            <span class="kicker">Shared decision trail</span>
+            <h2 id="activity-title">Research activity</h2>
           </div>
           <div class="panel-actions">
             <button id="copy-trace" type="button" class="trace-button">Copy trace</button>
-            <span class="read-only">HUMAN CONFIRMS WRITES</span>
+            <span class="read-only">Human approval required</span>
           </div>
         </div>
-        <p class="activity-intro">Calls made by an agent or the human preview use the same functions and update this visible record. Cart writes wait for a confirm click.</p>
+        <p class="activity-intro">Agent calls and human previews use the same functions. Every result remains visible, and purchase proposals stop for review.</p>
         <section id="confirm-panel" class="confirm-panel" hidden tabindex="-1">
-          <span class="kicker">WAITING FOR HUMAN CONFIRM</span>
-          <p id="confirm-copy">An agent proposed a cart add.</p>
+          <span class="kicker">Purchase review</span>
+          <p id="confirm-copy">The agent prepared a selection for review.</p>
           <div class="confirm-actions">
-            <button id="confirm-cart" type="button">Confirm add to cart</button>
+            <button id="confirm-cart" type="button">Approve for handoff</button>
             <button id="dismiss-cart" type="button" class="ghost">Dismiss</button>
           </div>
         </section>
         <section id="cart-panel" class="cart-panel" aria-live="polite" tabindex="-1">
-          <span class="kicker">SHARED CART</span>
-          <p id="cart-empty">Cart is empty. An agent can propose a line; it appears here after you confirm.</p>
+          <span class="kicker">Approved selection</span>
+          <p id="cart-empty">Nothing approved yet. Payment remains with the source merchant.</p>
           <ul id="cart-list"></ul>
         </section>
         <ol id="activity-list" class="activity-list" aria-live="polite"></ol>
@@ -144,15 +155,15 @@
         </section>
         <div class="trust-note">
           <strong>Trust boundary</strong>
-          <p>Origin and catalog tools are read-only. propose_add_to_cart only stages a visible proposal. The in-page cart updates after a human confirm click. There is no checkout, account, or payment flow.</p>
+          <p>Research tools are read-only. propose_add_to_cart only stages a visible review. Approval creates an in-page decision record, not an order. There is no checkout, account, or payment flow.</p>
         </div>
       </aside>
     </section>
 
     <section class="why-grid" aria-label="Why WebMCP changes the experience">
-      <article><span>01</span><h3>Explicit intent</h3><p>Agents discover precise schemas instead of guessing which interface element to click.</p></article>
-      <article><span>02</span><h3>Shared state</h3><p>Tool completion updates the page, keeping the human and agent oriented to the same result.</p></article>
-      <article><span>03</span><h3>Bounded trust</h3><p>Small read-only tools, strict validation, source labels, and compact outputs reduce ambiguity.</p></article>
+      <article><span>01</span><h3>Comparable evidence</h3><p>Condition, shipping, seller confidence, and returns become explicit fields instead of scattered page fragments.</p></article>
+      <article><span>02</span><h3>Explainable ranking</h3><p>Every shortlist exposes its scoring factors, source page, and delivered-price assumption.</p></article>
+      <article><span>03</span><h3>Human authority</h3><p>The agent can prepare a decision, but it cannot approve a purchase or handle payment.</p></article>
     </section>
   </main>
 
