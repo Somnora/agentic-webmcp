@@ -122,8 +122,8 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/api/recommendations?originId=catalog-lab&query=electric%20guitar&maxDeliveredPrice=900&limit=4`);
       const body = await response.json();
-      if (response.status !== 200 || body.rankedOffers?.[0]?.offer?.handle !== "sunburst-s-style-electric") throw new Error("ranked options unavailable");
-      if (typeof body.rankedOffers[0]?.score !== "number" || body.rankedOffers[0]?.factors?.condition === undefined) throw new Error("recommendation evidence missing");
+      if (response.status !== 200 || body.recommendations?.[0]?.handle !== "sunburst-s-style-electric") throw new Error("ranked options unavailable");
+      if (typeof body.recommendations[0]?.score !== "number" || body.recommendations[0]?.factors?.condition === undefined) throw new Error("recommendation evidence missing");
     },
   },
   {
