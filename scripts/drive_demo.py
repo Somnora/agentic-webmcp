@@ -68,8 +68,8 @@ async def run_qa(base_url: str) -> None:
         )
         await expect(page.locator("#activity-list")).to_contain_text("interpolate_page")
         await expect(page.locator("#interpolate-view")).to_contain_text("two agent-ready projections")
-        await expect(page.locator("#interpolate-provenance")).to_contain_text("pricing:")
-        await expect(page.locator("#interpolate-page-status")).to_have_text("LIVE PAGE MARKDOWN")
+        await expect(page.locator("#interpolate-provenance")).to_contain_text("Verified across product JSON and page")
+        await expect(page.locator("#interpolate-page-status")).to_have_text("EVIDENCE VERIFIED | HANDOFF READY")
         await capture(page, "03-interpolate")
 
         propose = page.locator("#product-grid .product-card").get_by_role("button", name="Propose")
@@ -81,6 +81,7 @@ async def run_qa(base_url: str) -> None:
 
         await page.locator("#confirm-cart").click()
         await expect(page.locator("#cart-list")).to_contain_text("Approved for merchant handoff", timeout=15000)
+        await expect(page.locator("#download-dossier")).to_be_enabled()
         await capture(page, "05-confirmed")
 
         status = (await page.locator("#webmcp-status").inner_text()).strip()

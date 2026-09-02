@@ -3,6 +3,8 @@ import {
   money,
   offerAvailable,
   priceLabel,
+  finalizeOffer,
+  singleSourceEvidence,
   uniformProvenance,
   type MarketplaceCondition,
   type MarketplaceEvidence,
@@ -10,7 +12,9 @@ import {
   type Offer,
   type Variant,
 } from "./offers";
+import { assertOfferAdapterContract } from "./origin-contract";
 import { assertCatalogShop, getOrigin, publicOrigin, type Adapter, type Origin, type PublicOrigin } from "./origins";
+import { OriginFailure, markAdapterAttemptFailure, normalizeFailureReason, type OriginFailureReason } from "./reliability";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
 export type CatalogEnv = {
@@ -26,12 +30,11 @@ export type CatalogResult = {
   live: boolean;
   offers: Offer[];
   warning?: string;
+  failureReason?: OriginFailureReason;
 };
 
 const MAX_CATALOG_RESULTS = 8;
 const MAX_COMPARE_PRODUCTS = 4;
-const MAX_GRAPHQL_BYTES = 384 * 1024;
-const MAX_PRODUCTS_JSON_BYTES = 512 * 1024;
 const HANDLE_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/;
 
 const CATALOG_QUERY = `
@@ -151,7 +154,7 @@ function safeJson(raw: string): Record<string, unknown> {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
     return parsed as Record<string, unknown>;
   } catch {
-    throw new Error("Upstream returned invalid JSON.");
+    throw new OriginFailure("invalid-response", "Upstream returned invalid JSON.");
   }
 }
 
@@ -223,7 +226,7 @@ export function normalizeStorefrontOffer(value: unknown, origin: Origin = getOri
   const image = safeImage(candidate.featuredImage);
   const vendor = text(candidate.vendor, 100);
   const productType = text(candidate.productType, 100);
-  return {
+  return finalizeOffer({
     originId: origin.id,
     handle,
     title,
@@ -241,7 +244,7 @@ export function normalizeStorefrontOffer(value: unknown, origin: Origin = getOri
     ...(image ? { image } : {}),
     source: { adapter: "shopify-storefront", live: true, fetchedAt, untrusted: true },
     provenance: uniformProvenance("shopify-storefront"),
-  };
+  }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
 }
 
 function optionNames(product: Record<string, unknown>): string[] {
@@ -300,12 +303,12 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
   const marketplace = variants[0] ? marketplaceEvidence(candidate, origin.currencyCode, variants[0].price) : undefined;
   const provenance = uniformProvenance(adapter);
   if (marketplace) {
-    provenance.condition = adapter;
-    provenance.seller = adapter;
-    provenance.shipping = adapter;
-    provenance.returns = adapter;
+    provenance.condition = singleSourceEvidence(adapter);
+    provenance.seller = singleSourceEvidence(adapter);
+    provenance.shipping = singleSourceEvidence(adapter);
+    provenance.returns = singleSourceEvidence(adapter);
   }
-  return {
+  return finalizeOffer({
     originId: origin.id,
     handle,
     title,
@@ -321,7 +324,7 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
     ...(image ? { image } : {}),
     source: { adapter, live: true, fetchedAt, untrusted: true },
     provenance,
-  };
+  }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
 }
 
 function normalizeSnapshotOffer(product: SnapshotProduct, origin: Origin, fetchedAt: string): Offer {
@@ -333,7 +336,7 @@ function normalizeSnapshotOffer(product: SnapshotProduct, origin: Origin, fetche
     price: money(variant.price.amount, variant.price.currencyCode),
     options: variant.selectedOptions.slice(0, 6),
   }));
-  return {
+  return finalizeOffer({
     originId: origin.id,
     handle: product.handle,
     title: product.title,
@@ -351,7 +354,7 @@ function normalizeSnapshotOffer(product: SnapshotProduct, origin: Origin, fetche
     ...(product.featuredImage ? { image: { ...product.featuredImage } } : {}),
     source: { adapter: "bundled-snapshot", live: false, fetchedAt, untrusted: true },
     provenance: uniformProvenance("bundled-snapshot"),
-  };
+  }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
 }
 
 function parseGraphqlPayload(raw: string): Record<string, unknown> {
@@ -359,10 +362,10 @@ function parseGraphqlPayload(raw: string): Record<string, unknown> {
   const errors = array(payload.errors);
   if (errors.length) {
     const message = text(record(errors[0]).message, 180);
-    throw new Error(message || "Storefront API returned an error.");
+    throw new OriginFailure("invalid-response", message || "Storefront API returned an error.");
   }
   const data = record(payload.data);
-  if (!Object.keys(data).length) throw new Error("Storefront API returned no data.");
+  if (!Object.keys(data).length) throw new OriginFailure("invalid-response", "Storefront API returned no data.");
   return data;
 }
 
@@ -381,8 +384,13 @@ async function graphql(
       "X-Shopify-Storefront-Access-Token": token,
     },
     body: JSON.stringify({ query, variables }),
-  }, MAX_GRAPHQL_BYTES, fetcher);
-  return parseGraphqlPayload(response.text);
+  }, origin.policy.maxGraphqlResponseBytes, fetcher);
+  try {
+    return parseGraphqlPayload(response.text);
+  } catch (error) {
+    markAdapterAttemptFailure(response.diagnosticAttempt, error);
+    throw error;
+  }
 }
 
 async function storefrontCatalog(origin: Origin, token: string, fetcher: Fetcher): Promise<Offer[]> {
@@ -403,8 +411,14 @@ async function productsJsonCatalog(origin: Origin, fetcher: Fetcher): Promise<Of
   const response = await fetchOriginText(origin, "/products.json?limit=24", {
     method: "GET",
     headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
-  }, MAX_PRODUCTS_JSON_BYTES, fetcher);
-  const payload = safeJson(response.text);
+  }, origin.policy.maxCatalogResponseBytes, fetcher);
+  let payload: Record<string, unknown>;
+  try {
+    payload = safeJson(response.text);
+  } catch (error) {
+    markAdapterAttemptFailure(response.diagnosticAttempt, error);
+    throw error;
+  }
   const fetchedAt = new Date().toISOString();
   return array(payload.products)
     .map((item) => normalizeProductsJsonOffer(item, origin, fetchedAt))
@@ -416,8 +430,15 @@ async function productsJsonProduct(origin: Origin, handle: string, fetcher: Fetc
   const response = await fetchOriginText(origin, `/products/${encodeURIComponent(handle)}.${extension}`, {
     method: "GET",
     headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
-  }, MAX_PRODUCTS_JSON_BYTES, fetcher);
-  const offer = normalizeProductsJsonOffer(safeJson(response.text), origin);
+  }, origin.policy.maxCatalogResponseBytes, fetcher);
+  let payload: Record<string, unknown>;
+  try {
+    payload = safeJson(response.text);
+  } catch (error) {
+    markAdapterAttemptFailure(response.diagnosticAttempt, error);
+    throw error;
+  }
+  const offer = normalizeProductsJsonOffer(payload, origin);
   return offer ? [offer] : [];
 }
 
@@ -458,17 +479,20 @@ export function validateHandles(raw: string | null): string[] {
   return handles;
 }
 
-function fallback(origin: Origin, offers: Offer[]): CatalogResult {
+function fallback(origin: Origin, offers: Offer[], failureReason: OriginFailureReason): CatalogResult {
+  for (const offer of offers) assertOfferAdapterContract(origin, offer);
   return {
     origin: publicOrigin(origin),
     source: "bundled-snapshot",
     live: false,
     offers,
     warning: "The Storefront API and public products JSON were unavailable, so Agentic used the clearly labeled bundled snapshot for this origin.",
+    failureReason,
   };
 }
 
 function result(origin: Origin, source: CatalogSource, live: boolean, offers: Offer[], warning?: string): CatalogResult {
+  for (const offer of offers) assertOfferAdapterContract(origin, offer);
   return {
     origin: publicOrigin(origin),
     source,
@@ -502,10 +526,10 @@ export async function searchProducts(
   try {
     const offers = await productsJsonCatalog(origin, fetcher);
     return result(origin, "shopify-products-json", true, offers.filter((item) => matchesQuery(item, query)).slice(0, limit));
-  } catch {
+  } catch (error) {
     const fetchedAt = new Date().toISOString();
     const offers = FALLBACK_PRODUCTS.map((item) => normalizeSnapshotOffer(item, origin, fetchedAt));
-    return fallback(origin, offers.filter((item) => matchesQuery(item, query)).slice(0, limit));
+    return fallback(origin, offers.filter((item) => matchesQuery(item, query)).slice(0, limit), normalizeFailureReason(error));
   }
 }
 
@@ -530,9 +554,13 @@ export async function getProduct(
   }
   try {
     return result(origin, "shopify-products-json", true, await productsJsonProduct(origin, handle, fetcher));
-  } catch {
+  } catch (error) {
     const product = FALLBACK_PRODUCTS.find((item) => item.handle === handle);
-    return fallback(origin, product ? [normalizeSnapshotOffer(product, origin, new Date().toISOString())] : []);
+    return fallback(
+      origin,
+      product ? [normalizeSnapshotOffer(product, origin, new Date().toISOString())] : [],
+      normalizeFailureReason(error),
+    );
   }
 }
 

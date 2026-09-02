@@ -1,6 +1,18 @@
 import { getProduct, type CatalogEnv, type CatalogSource } from "./catalog";
-import { money, uniformProvenance, type Offer, type Variant } from "./offers";
+import {
+  finalizeOffer,
+  money,
+  reconcileOfferEvidence,
+  singleSourceEvidence,
+  uniformProvenance,
+  type MarketplaceCondition,
+  type MarketplaceEvidence,
+  type Offer,
+  type Variant,
+} from "./offers";
+import { assertOfferAdapterContract } from "./origin-contract";
 import { publicOrigin, validateInterpolatePath, type Origin, type PublicOrigin } from "./origins";
+import { OriginFailure, markAdapterAttemptFailure, normalizeFailureReason, type OriginFailureReason } from "./reliability";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
 export type InterpolateResult = {
@@ -13,9 +25,10 @@ export type InterpolateResult = {
   offer: Offer;
   markdown: string;
   warning?: string;
+  catalogFailureReason?: OriginFailureReason;
+  pageFailureReason?: OriginFailureReason;
 };
 
-const MAX_HTML_BYTES = 256 * 1024;
 const MAX_MARKDOWN_LENGTH = 1200;
 
 function text(value: unknown, maxLength: number): string {
@@ -87,6 +100,71 @@ function jsonLdImage(value: unknown): { url: string; altText: string | null } | 
   return { url: rawUrl.slice(0, 500), altText: null };
 }
 
+function boundedNumber(value: unknown, min: number, max: number): number | null {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
+}
+
+function jsonLdProperties(product: Record<string, unknown>): Map<string, unknown> {
+  const properties = new Map<string, unknown>();
+  for (const item of array(product.additionalProperty)) {
+    const property = record(item);
+    const name = text(property.name, 80).toLocaleLowerCase();
+    if (name) properties.set(name, property.value);
+  }
+  return properties;
+}
+
+function jsonLdMarketplace(
+  product: Record<string, unknown>,
+  offers: Record<string, unknown>[],
+  currencyCode: string,
+  itemPrice: string,
+): MarketplaceEvidence | undefined {
+  const properties = jsonLdProperties(product);
+  const condition = text(properties.get("condition"), 32) as MarketplaceCondition;
+  const conditionDescription = text(properties.get("condition_description"), 320);
+  const seller = record(offers[0]?.seller);
+  const displayName = text(seller.name, 100);
+  const positiveFeedbackPercent = boundedNumber(properties.get("seller_feedback_percent"), 0, 100);
+  const feedbackCount = boundedNumber(properties.get("seller_feedback_count"), 0, 10_000_000);
+  const shippingPriceValue = boundedNumber(properties.get("shipping_price"), 0, 100_000);
+  const method = text(properties.get("shipping_method"), 80);
+  const estimatedMin = boundedNumber(properties.get("shipping_estimated_days_min"), 0, 90);
+  const estimatedMax = boundedNumber(properties.get("shipping_estimated_days_max"), 0, 90);
+  const acceptedValue = properties.get("returns_accepted");
+  const accepted = typeof acceptedValue === "boolean" ? acceptedValue : null;
+  const rawWindow = properties.get("returns_window_days");
+  const windowDays = rawWindow === null ? null : boundedNumber(rawWindow, 1, 365);
+  const paidBy = text(properties.get("returns_paid_by"), 24);
+  if (
+    !["new", "open-box", "excellent", "very-good", "good", "fair"].includes(condition)
+    || !conditionDescription
+    || !displayName
+    || positiveFeedbackPercent === null
+    || feedbackCount === null
+    || shippingPriceValue === null
+    || !method
+    || estimatedMin === null
+    || estimatedMax === null
+    || estimatedMax < estimatedMin
+    || accepted === null
+    || !["buyer", "seller", "not-applicable"].includes(paidBy)
+    || (accepted && (windowDays === null || paidBy === "not-applicable"))
+    || (!accepted && (windowDays !== null || paidBy !== "not-applicable"))
+  ) return undefined;
+  const shippingPrice = money(shippingPriceValue, currencyCode);
+  const deliveredPrice = money(Number(itemPrice) + Number(shippingPrice.amount), currencyCode);
+  return {
+    condition,
+    conditionDescription,
+    seller: { displayName, positiveFeedbackPercent, feedbackCount },
+    shipping: { price: shippingPrice, method, estimatedDays: { min: estimatedMin, max: estimatedMax } },
+    returns: { accepted, windowDays, paidBy: paidBy as MarketplaceEvidence["returns"]["paidBy"] },
+    deliveredPrice,
+  };
+}
+
 export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: Origin, handle: string): Offer | null {
   const title = text(product.name, 160);
   if (!title) return null;
@@ -118,10 +196,19 @@ export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: O
     };
   });
   const available = variants.some((variant) => variant.available);
+  const fetchedAt = new Date().toISOString();
   const vendorNode = record(product.brand);
   const vendor = text(vendorNode.name ?? product.brand, 100);
   const image = jsonLdImage(product.image);
-  return {
+  const marketplace = variants[0] ? jsonLdMarketplace(product, leafOffers, currencyCode, variants[0].price.amount) : undefined;
+  const provenance = uniformProvenance("json-ld");
+  if (marketplace) {
+    provenance.condition = singleSourceEvidence("json-ld");
+    provenance.seller = singleSourceEvidence("json-ld");
+    provenance.shipping = singleSourceEvidence("json-ld");
+    provenance.returns = singleSourceEvidence("json-ld");
+  }
+  return finalizeOffer({
     originId: origin.id,
     handle,
     title,
@@ -132,15 +219,16 @@ export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: O
     priceRange: { min: money(low, currencyCode), max: money(high, currencyCode) },
     variants,
     constraints: { available },
+    ...(marketplace ? { marketplace } : {}),
     ...(image ? { image } : {}),
     source: {
       adapter: "json-ld",
       live: true,
-      fetchedAt: new Date().toISOString(),
+      fetchedAt,
       untrusted: true,
     },
-    provenance: uniformProvenance("json-ld"),
-  };
+    provenance,
+  }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
 }
 
 function strippedPageTextFallback(html: string): string {
@@ -215,24 +303,32 @@ export async function interpolatePage(
   let jsonLdOffer: Offer | null = null;
   let pageLive = false;
   let pageWarning = "";
+  let pageFailureReason: OriginFailureReason | undefined;
+  let pageAttempt: Awaited<ReturnType<typeof fetchOriginText>>["diagnosticAttempt"];
   try {
     const response = await fetchOriginText(origin, path, {
       method: "GET",
       headers: { "Accept": "text/html", "User-Agent": "Agentic-WebMCP/0.1" },
-    }, MAX_HTML_BYTES, fetcher);
+    }, origin.policy.maxPageResponseBytes, fetcher);
+    pageAttempt = response.diagnosticAttempt;
     if (!response.contentType.toLocaleLowerCase().includes("text/html")) {
-      throw new Error("Allowlisted page did not return HTML.");
+      throw new OriginFailure("invalid-response", "Allowlisted page did not return HTML.");
     }
     pageLive = true;
     const jsonLd = extractJsonLd(response.text);
     jsonLdOffer = jsonLd ? normalizeJsonLdOffer(jsonLd, origin, handle) : null;
     pageText = await strippedPageText(response.text);
   } catch (error) {
+    markAdapterAttemptFailure(pageAttempt, error);
     pageWarning = error instanceof Error ? error.message : "Allowlisted page could not be read.";
+    pageFailureReason = normalizeFailureReason(error);
   }
   const structuredOffer = catalog.offers[0];
-  const offer = structuredOffer?.source.live ? structuredOffer : jsonLdOffer ?? structuredOffer;
+  const offer = structuredOffer?.source.live && jsonLdOffer?.source.live
+    ? reconcileOfferEvidence(structuredOffer, jsonLdOffer)
+    : structuredOffer?.source.live ? structuredOffer : jsonLdOffer ?? structuredOffer;
   if (!offer) throw new RangeError("No offer facts were found for the allowlisted path.");
+  assertOfferAdapterContract(origin, offer);
   const live = offer.source.live;
   const warning = [catalog.warning, pageWarning].filter(Boolean).join(" ");
   return {
@@ -245,5 +341,7 @@ export async function interpolatePage(
     offer,
     markdown: markdownFor(offer, pageText, pageLive),
     ...(warning ? { warning } : {}),
+    ...(catalog.failureReason ? { catalogFailureReason: catalog.failureReason } : {}),
+    ...(pageFailureReason ? { pageFailureReason } : {}),
   };
 }

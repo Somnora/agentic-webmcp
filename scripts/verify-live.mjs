@@ -29,6 +29,8 @@ const checks = [
       if (response.headers.get("Origin-Agent-Cluster") !== "?1") throw new Error("missing origin isolation");
       if (!response.headers.get("Permissions-Policy")?.includes("tools=(self)")) throw new Error("missing tools policy");
       if (response.headers.get("X-Frame-Options") !== "DENY") throw new Error("missing framing denial");
+      if (!response.headers.get("X-Agentic-Correlation-Id")) throw new Error("missing correlation id");
+      if (!response.headers.get("Server-Timing")?.includes("app;dur=")) throw new Error("missing server timing");
     },
   },
   {
@@ -48,6 +50,7 @@ const checks = [
       if (body.status !== "live" || body.catalog?.adapter !== "public-products-json" || body.catalog?.live !== true || body.page?.live !== true) {
         throw new Error("controlled origin is not fully live");
       }
+      if (body.handoff?.eligible !== true || body.handoff?.maxAgeSeconds !== 300) throw new Error("controlled origin handoff policy is not ready");
     },
   },
   {
@@ -55,7 +58,23 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/`);
       const html = await response.text();
-      if (response.status !== 200 || !html.includes("Compare the evidence") || !html.includes("recommend-form") || !html.includes("interpolate-form") || !html.includes("presenter-toggle")) throw new Error("workspace unavailable");
+      if (response.status !== 200 || !html.includes("Compare the evidence") || !html.includes("recommend-form") || !html.includes("interpolate-form") || !html.includes("presenter-toggle") || !html.includes("download-dossier")) throw new Error("workspace unavailable");
+      const dossierResponse = await fetch(`${baseUrl}/dossier.js`);
+      const dossierScript = await dossierResponse.text();
+      if (dossierResponse.status !== 200 || !dossierScript.includes("createDecisionDossier")) throw new Error("decision dossier client unavailable");
+    },
+  },
+  {
+    name: "origin reliability diagnostics",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/origins/diagnostics?originId=catalog-lab`);
+      const body = await response.json();
+      if (response.status !== 200 || body.status !== "live" || body.activeAdapter !== "public-products-json") throw new Error("origin diagnostics unavailable");
+      if (body.correlationId !== response.headers.get("X-Agentic-Correlation-Id")) throw new Error("diagnostic correlation mismatch");
+      if (!Array.isArray(body.attempts) || body.attempts.length < 2 || body.attempts.some((attempt) => attempt.outcome !== "success" || typeof attempt.durationMs !== "number")) {
+        throw new Error("adapter timing evidence missing");
+      }
+      if (!response.headers.get("Server-Timing")?.includes("public-products-json")) throw new Error("adapter server timing missing");
     },
   },
   {
@@ -84,9 +103,29 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/api/origins`);
       const body = await response.json();
-      if (response.status !== 200 || body.origins?.length !== 2) throw new Error("unexpected origin list");
-      if (body.origins[0]?.id !== "catalog-lab" || body.origins[0]?.hostname !== "agentic-webmcp-origin.somnora.workers.dev") throw new Error("default origin mismatch");
-      if (body.origins[0]?.mode !== "controlled-demo") throw new Error("demo origin is not labeled");
+      if (response.status !== 200 || !Array.isArray(body.origins) || body.origins.length < 1 || body.origins.length > 2) throw new Error("unexpected origin list");
+      if (body.manifestVersion !== "2026-09-01") throw new Error("origin manifest version mismatch");
+      if (body.origins.some((origin) => !["catalog-lab", "review-shop"].includes(origin.id))) throw new Error("unknown origin was listed");
+      const controlled = body.origins.find((origin) => origin.id === "catalog-lab");
+      const merchant = body.origins.find((origin) => origin.id === "review-shop");
+      if (!controlled || controlled.hostname !== "agentic-webmcp-origin.somnora.workers.dev") throw new Error("default origin mismatch");
+      if (controlled.mode !== "controlled-demo") throw new Error("demo origin is not labeled");
+      if (controlled.authorization?.status !== "first-party-controlled") throw new Error("controlled origin authorization missing");
+      if (merchant && merchant.authorization?.status !== "operator-authorized") throw new Error("merchant origin authorization is invalid");
+      if (merchant && Date.parse(merchant.authorization.reviewAfter) <= Date.now()) throw new Error("expired merchant origin remains discoverable");
+      if (body.origins.some((origin) => origin.capabilities?.checkout !== false || origin.capabilities?.payment !== false)) throw new Error("checkout or payment capability must be disabled");
+    },
+  },
+  {
+    name: "origin conformance contract",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/origins/conformance?originId=catalog-lab`);
+      const body = await response.json();
+      if (response.status !== 200 || body.status !== "pass" || body.checks?.length !== 10) throw new Error("origin conformance failed");
+      if (!body.checks.every((item) => item.status === "pass")) throw new Error("origin conformance contains a non-pass result");
+      if (!body.checks.some((item) => item.id === "provenance" && item.detail.includes("Verified across product JSON and page"))) {
+        throw new Error("origin conformance did not reconcile product JSON and page evidence");
+      }
     },
   },
   {
@@ -106,6 +145,7 @@ const checks = [
         throw new Error("catalog returned no live guitar offer");
       }
       if (!body.offers.every((offer) => offer.provenance?.pricing && offer.provenance?.availability)) throw new Error("offer provenance missing");
+      if (!body.offers.every((offer) => offer.handoff?.eligible === true && offer.handoff?.freshness === "fresh")) throw new Error("offer handoff policy missing");
     },
   },
   {
@@ -115,6 +155,7 @@ const checks = [
       const body = await response.json();
       if (response.status !== 200 || body.live !== true || body.offers?.[0]?.handle !== "sunburst-s-style-electric") throw new Error("guitar listing unavailable");
       if (body.offers[0]?.marketplace?.condition !== "excellent") throw new Error("marketplace evidence unavailable");
+      if (body.offers[0]?.handoff?.eligible !== true) throw new Error("live listing is not handoff eligible");
     },
   },
   {
@@ -135,6 +176,12 @@ const checks = [
       if (body.canonicalUrl !== `${originUrl}/products/sunburst-s-style-electric`) throw new Error("canonical URL mismatch");
       if (typeof body.markdown !== "string" || !body.markdown.includes("Canonical origin")) throw new Error("stripped Markdown missing");
       if (body.markdown.includes("Controlled WebMCP demonstration origin") || body.markdown.includes("Demonstration data only")) throw new Error("page chrome was not stripped");
+      if (body.offer?.handoff?.eligible !== true) throw new Error("interpolated Offer is not handoff eligible");
+      const verification = body.offer?.provenance?.verification;
+      if (verification?.state !== "verified" || verification?.label !== "Verified across product JSON and page") throw new Error("evidence reconciliation missing");
+      for (const field of ["pricing", "availability", "condition", "shipping", "returns"]) {
+        if (!verification.verifiedFields?.includes(field)) throw new Error(`${field} was not reconciled`);
+      }
     },
   },
   {
@@ -148,6 +195,64 @@ const checks = [
       const body = await response.json();
       if (response.status !== 200 || body.confirmation?.status !== "awaiting_human_confirmation" || body.receipt) {
         throw new Error("proposal contract failed");
+      }
+      if (body.offers?.[0]?.handoff?.eligible !== true) throw new Error("proposal did not use an eligible Offer");
+      const line = body.quote?.lines?.[0];
+      const commitBody = {
+        originId: body.quote?.originId,
+        quote: body.quote,
+        handle: line?.handle,
+        variantId: line?.variantId,
+        quantity: line?.quantity,
+      };
+      const blocked = await fetch(`${baseUrl}/api/cart/commit?originId=catalog-lab`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(commitBody),
+      });
+      if (blocked.status !== 400 || (await blocked.json()).code !== "HUMAN_CONFIRMATION_REQUIRED") {
+        throw new Error("commit did not require the human button");
+      }
+      const confirmed = await fetch(`${baseUrl}/api/cart/commit?originId=catalog-lab`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Agentic-Human-Confirm": "true" },
+        body: JSON.stringify(commitBody),
+      });
+      const confirmedBody = await confirmed.json();
+      if (confirmed.status !== 200 || confirmedBody.receipt?.status !== "in_cart") throw new Error("human approval receipt failed");
+      if (confirmedBody.receipt?.quoteId !== body.quote?.quoteId || JSON.stringify(confirmedBody.receipt?.lines) !== JSON.stringify(body.quote?.lines)) {
+        throw new Error("receipt did not preserve the reviewed quote facts");
+      }
+    },
+  },
+  {
+    name: "authorized merchant policy",
+    run: async () => {
+      const originsResponse = await fetch(`${baseUrl}/api/origins`);
+      const origins = await originsResponse.json();
+      const merchant = origins.origins?.find((origin) => origin.id === "review-shop");
+      const healthResponse = await fetch(`${baseUrl}/api/origins/health?originId=review-shop`);
+      const health = await healthResponse.json();
+      if (!merchant) {
+        if (healthResponse.status !== 403 || health.code !== "ORIGIN_AUTHORIZATION_INACTIVE") throw new Error("expired merchant origin did not fail closed");
+        const conformanceResponse = await fetch(`${baseUrl}/api/origins/conformance?originId=review-shop`);
+        const conformance = await conformanceResponse.json();
+        if (conformanceResponse.status !== 200 || conformance.status !== "fail" || !conformance.checks?.some((item) => item.id === "authorization" && item.status === "fail")) {
+          throw new Error("expired merchant conformance report unavailable");
+        }
+        return;
+      }
+      if (healthResponse.status !== 200 || health.origin?.authorization?.status !== "operator-authorized") throw new Error("merchant manifest unavailable");
+      const response = await fetch(`${baseUrl}/api/cart/propose?originId=review-shop`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ originId: "review-shop", handle: "the-complete-snowboard", variantTitle: "Ice", quantity: 1 }),
+      });
+      const body = await response.json();
+      if (health.catalog?.live === true) {
+        if (response.status !== 200 || body.offers?.[0]?.handoff?.eligible !== true) throw new Error("live merchant proposal proof failed");
+      } else if (response.status !== 409 || body.code !== "OFFER_NOT_ELIGIBLE") {
+        throw new Error("fallback merchant proposal was not rejected");
       }
     },
   },

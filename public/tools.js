@@ -105,7 +105,7 @@ export function createAgenticTools(actions) {
     },
     {
       name: "propose_add_to_cart",
-      description: "Stage one available listing as a visible purchase review. Nothing changes until the human clicks Approve for handoff. This never checks out, places an order, or charges.",
+      description: "Stage one fresh, live, eligible listing as a visible purchase review. Fallback or stale offers are rejected. Nothing changes until the human clicks Approve for handoff. This never checks out, places an order, or charges.",
       inputSchema: {
         type: "object",
         properties: {

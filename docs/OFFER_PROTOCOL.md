@@ -36,6 +36,7 @@ export type Vertical = "retail" | "marketplace" | "wholesale" | "travel";
 export type Adapter =
   | "shopify-storefront"      // Storefront GraphQL with a read-only token
   | "shopify-products-json"   // GET https://{host}/products.json and /products/{handle}.js
+  | "public-products-json"    // first-party public catalog JSON
   | "json-ld"                 // Product, Offer, Hotel, TouristTrip on an allowlisted page
   | "html-markdown";          // last-resort strip of an allowlisted page
 
@@ -46,14 +47,45 @@ export type Origin = {
   hostname: string;           // exact hostname, lowercase
   canonicalUrl: string;       // https origin, no path
   adapter: Adapter;
-  productPathPattern?: string; // e.g. "^/products/([a-z0-9-]+)/?$"
-  notes?: string;             // human-visible source label
+  fallbackAdapters: readonly Adapter[];
+  productPathPattern: string; // e.g. "^/products/([a-z0-9-]+)/?$"
+  interpolatePathPatterns: readonly string[];
+  notes: string;              // human-visible source label
+  authorization: {
+    status: "first-party-controlled" | "operator-authorized" | "inactive";
+    evidence: "repository-controlled-worker" | "operator-attestation";
+    dataRights: "first-party-fixture" | "operator-controlled-store";
+    scopes: readonly ("catalog-read" | "page-interpolation" | "video-display")[];
+    attestedAt: string;
+    reviewAfter: string;
+  };
+  capabilities: {
+    catalogRead: true;
+    pageInterpolation: true;
+    merchantHandoff: "live-fresh-offer-only";
+    checkout: false;
+    payment: false;
+  };
+  policy: {
+    maxOfferAgeSeconds: number;
+    upstreamTimeoutMs: number;
+    maxGraphqlResponseBytes: number;
+    maxCatalogResponseBytes: number;
+    maxPageResponseBytes: number;
+  };
 };
 ```
 
-Hostname matching is exact. No wildcard suffix except a documented `*.myshopify.com`
-pattern that still requires the shop to appear in the allowlist. HTTPS only. Do not
-follow redirects off-host. Bound response bytes. Cache briefly. Label `live` vs fallback.
+Hostname matching is exact. Wildcards are not accepted. HTTPS only. Do not
+follow redirects off-host. Bound response time and bytes. Cache briefly. Label `live` vs fallback.
+
+Authorization is also a runtime boundary. Normal origin resolution requires an active status, a valid attestation time, and a current time before `reviewAfter`. At expiration the origin is removed from discovery and all catalog, interpolation, comparison, brief, diagnostics, proposal, and commit routes reject it before upstream access. Conformance may inspect the expired manifest, but it skips the live adapter probe.
+
+Each request receives a new correlation id. Adapter attempts record only the adapter, operation, duration, outcome, HTTP status, byte count, and a normalized failure reason. They never record query text, request bodies, upstream response bodies, tokens, or cookies. The public diagnostics route exposes a compact projection of this evidence for the selected origin.
+
+Normalized failure reasons are `timeout`, `network`, `http-error`, `off-origin-redirect`, `redirect-blocked`, `password-protected`, `response-too-large`, `invalid-response`, `contract-failure`, and `unknown`.
+
+See `docs/ORIGIN_ONBOARDING.md` for the authorization, adapter acceptance, and revocation workflow.
 
 ## Offer graph
 
@@ -99,6 +131,25 @@ export type Offer = {
     fetchedAt: string;
     untrusted: true;
   };
+  provenance: {
+    title: EvidenceClaim;
+    description: EvidenceClaim;
+    pricing: EvidenceClaim;
+    availability: EvidenceClaim;
+    variants: EvidenceClaim;
+    condition?: EvidenceClaim;
+    seller?: EvidenceClaim;
+    shipping?: EvidenceClaim;
+    returns?: EvidenceClaim;
+    verification: EvidenceVerification;
+  };
+  handoff: {
+    eligible: boolean;
+    reason: "eligible" | "source-not-live" | "source-stale" | "source-timestamp-invalid" | "unavailable" | "evidence-conflict";
+    freshness: "fresh" | "stale" | "invalid" | "not-live";
+    freshUntil: string | null;
+    maxAgeSeconds: number;
+  };
   marketplace?: {
     condition: "new" | "open-box" | "excellent" | "very-good" | "good" | "fair";
     conditionDescription: string;
@@ -108,12 +159,31 @@ export type Offer = {
     deliveredPrice: Money;
   };
 };
+
+type EvidenceClaim = {
+  state: "verified" | "single-source" | "conflict";
+  primary: Adapter | "bundled-snapshot";
+  sources: Array<Adapter | "bundled-snapshot">;
+  note?: string;
+};
+
+type EvidenceVerification = {
+  state: "verified" | "single-source" | "conflict";
+  label: string;
+  checkedAt: string | null;
+  sources: Array<Adapter | "bundled-snapshot">;
+  verifiedFields: Array<"pricing" | "availability" | "condition" | "shipping" | "returns">;
+  singleSourceFields: Array<"pricing" | "availability" | "condition" | "shipping" | "returns">;
+  conflictFields: Array<"pricing" | "availability" | "condition" | "shipping" | "returns">;
+};
 ```
 
 Interpolation means: fetch allowlisted origin, extract the richest available structured
 facts, normalize into `Offer`, discard chrome (nav, footer, scripts, forms). Prefer
 Storefront GraphQL, then `products.json`, then JSON-LD, then HTML-to-Markdown. Never
 present HTML interpolation as live inventory if a structured adapter succeeded.
+
+When a structured Offer and page JSON-LD both exist for the same handle, the compiler reconciles price, availability, condition, shipping, and returns. Matching values become `verified`; missing corroboration remains `single-source`; mismatches become `conflict`. The structured adapter remains primary, conflict details remain visible, and a conflicted reconciled Offer is research-only.
 
 ## Purchase review, approval, and decision record
 
@@ -155,7 +225,9 @@ export type Receipt = {
 };
 ```
 
-`propose_add_to_cart` returns a `Quote` plus `awaiting_human_confirmation`. Only a human click on this page may call commit. Commit writes a page-local decision record using the legacy `Receipt` and `in_cart` compatibility names. It does not create a merchant cart, place an order, or pay.
+`propose_add_to_cart` returns a `Quote` plus `awaiting_human_confirmation`. Only a human click on this page may call commit. The button returns the complete reviewed Quote, the Worker rereads the current Offer, and approval fails with `QUOTE_CHANGED` if any line or total differs. A successful receipt copies the exact reviewed facts. Commit writes a page-local decision record using the legacy `Receipt` and `in_cart` compatibility names. It does not create a merchant cart, place an order, or pay.
+
+The Worker rejects a proposal unless the Offer is live, fresh, and available. Bundled snapshots remain usable for clearly labeled research but never enter the merchant handoff flow. The current default freshness window is five minutes and is enforced again when the proposal is created.
 
 ## WebMCP tool surface
 
@@ -199,8 +271,11 @@ The Worker is the only compiler. From one Offer graph it may emit:
 - JSON for tools (bounded, ~1.5K characters at the tool boundary)
 - compact Markdown for briefs and interpolated pages
 - the visible workspace
+- a browser-generated Markdown decision dossier
 
 Do not add a remote MCP server, UCP, or commercial App Proxy to this repository.
+
+The dossier is not a second product model. It is a human-readable projection of the goal, ranked Offers, reconciliation state, canonical URLs, timestamps, selection, and human decision.
 
 ## Default Challenge origins
 

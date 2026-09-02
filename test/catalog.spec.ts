@@ -11,11 +11,11 @@ import {
   validateLimit,
   validateQuery,
 } from "../src/catalog";
-import { getOrigin } from "../src/origins";
+import { inspectOrigin } from "../src/origins";
 import { DEMO_PRODUCTS } from "../src/demo-origin-catalog";
 
-const origin = getOrigin("review-shop");
-const controlledOrigin = getOrigin("catalog-lab");
+const origin = inspectOrigin("review-shop");
+const controlledOrigin = inspectOrigin("catalog-lab");
 
 const rawStorefrontProduct = {
   handle: "the-complete-snowboard",
@@ -63,6 +63,8 @@ describe("offer normalization and validation", () => {
     expect(offer?.priceRange.min.amount).toBe("699.95");
     expect(offer?.variants[0]?.available).toBe(true);
     expect(offer?.source).toMatchObject({ adapter: "shopify-storefront", live: true, untrusted: true });
+    expect(offer?.handoff).toMatchObject({ eligible: true, reason: "eligible", freshness: "fresh", maxAgeSeconds: 300 });
+    expect(Date.parse(offer?.handoff.freshUntil ?? "")).toBeGreaterThan(Date.parse(offer?.source.fetchedAt ?? ""));
   });
 
   it("normalizes public products JSON into the same Offer protocol", () => {
@@ -82,7 +84,11 @@ describe("offer normalization and validation", () => {
       returns: { accepted: true, windowDays: 30 },
       deliveredPrice: { amount: "610.00", currencyCode: "USD" },
     });
-    expect(offer?.provenance).toMatchObject({ condition: "public-products-json", seller: "public-products-json" });
+    expect(offer?.provenance).toMatchObject({
+      condition: { state: "single-source", primary: "public-products-json", sources: ["public-products-json"] },
+      seller: { state: "single-source", primary: "public-products-json", sources: ["public-products-json"] },
+      verification: { state: "single-source" },
+    });
   });
 
   it("drops incomplete marketplace evidence instead of inventing a delivered price", () => {
@@ -146,7 +152,11 @@ describe("catalog adapter chain", () => {
     expect(result.offers[0]?.handle).toBe("selling-plans-ski-wax");
     expect(result.offers[0]?.source.live).toBe(false);
     expect(result.offers[0]?.source.adapter).toBe("bundled-snapshot");
-    expect(result.offers[0]?.provenance).toMatchObject({ pricing: "bundled-snapshot", variants: "bundled-snapshot" });
+    expect(result.offers[0]?.handoff).toMatchObject({ eligible: false, reason: "source-not-live", freshness: "not-live" });
+    expect(result.offers[0]?.provenance).toMatchObject({
+      pricing: { state: "single-source", primary: "bundled-snapshot" },
+      variants: { state: "single-source", primary: "bundled-snapshot" },
+    });
   });
 
   it("returns an exact product through the products JSON adapter", async () => {

@@ -11,9 +11,12 @@ The current origin interpolation change stays entirely inside `agentic-webmcp`. 
 ## Challenge work in this repository
 
 - Standalone top-level WebMCP workspace.
-- Eight imperative `document.modelContext.registerTool(...)` tools.
+- Nine imperative `document.modelContext.registerTool(...)` tools.
 - Origin records stored as data in `src/origins.ts`.
 - One Offer protocol used by controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot projection.
+- Reconciled `verified`, `single-source`, and `conflict` evidence states for price, availability, condition, shipping, and returns.
+- A local Markdown decision dossier containing the goal, ranked options, scoring, sources, conflicts, selection, and human decision.
+- A repeatable origin conformance command for manifest, authorization, hostname, path, redirect, byte limit, adapter, provenance, freshness, and fallback behavior.
 - Exact-host and path allowlists, redirect restrictions, and bounded upstream bodies.
 - Shared origin badge, offer grid, comparison, stripped Markdown, activity, proposal, and in-page cart receipt.
 - Human-confirmed proposal protocol with no registered commit or checkout tool.
@@ -30,9 +33,9 @@ The current origin interpolation change stays entirely inside `agentic-webmcp`. 
 | `c5dfbb7` | August 25, 2026 | Earlier four-tool WebMCP browser evidence |
 | `7b4b81e` | August 25, 2026 | Last commit before the allowlisted origin interpolation WIP |
 
-The older screenshots and four-tool browser evidence do not represent the current eight-tool origin flow. They must not be used as current proof after this branch changes.
+The older screenshots and four-tool browser evidence do not represent the current nine-tool origin flow. They must not be used as current proof after this branch changes.
 
-## Current verification boundary
+## August 26 verification boundary
 
 On August 26, 2026, local strict TypeScript and 40 unit and route tests passed after adding the controlled origin. Both Worker dry-runs passed. All 12 production checks passed against the app and controlled origin Workers, including exact deployment identity, controlled origin health, catalog and page liveness, provenance, proposal isolation, and allowlist rejection.
 
@@ -40,7 +43,15 @@ At 1280 by 720, Chrome loaded the production workspace with exactly eight regist
 
 The presenter release added a nine-phase 2 minute 28 second rehearsal, one smoothly morphing focus frame, a bounded SVG cursor, live tool inputs, and implementation captions. The local 1280 by 720 pass verified edge-safe cursor placement, `AGENT` and `HUMAN` pointer roles, side-switching overlay placement, the required confirmation interruption, a clean rehearsal reset, and no console warnings. All 13 production checks passed after deployment, including the new presenter asset.
 
-## Current origin access evidence
+## September 1 working tree verification
+
+Strict TypeScript, all 79 tests across 13 files, and dry runs for both Workers passed after the evidence reconciliation, decision dossier, origin conformance, reliability, runtime authorization, restrictive path validation, honest health labeling, and quote-bound approval work. At the exact `reviewAfter` timestamp, tests prove that an expired origin disappears from discovery, catalog and proposal requests return 403 before upstream access, and conformance reports the expiry without contacting the origin. A running local pair of Workers returned live product JSON plus live page JSON-LD for `catalog-lab`. The conformance command passed all 10 checks and reported `Verified across product JSON and page` for price, availability, condition, shipping, and returns.
+
+The reliability pass added request correlation, adapter timings, normalized failure reasons, full-body timeouts, and a compact origin diagnostics drawer. Local logs proved that the app Worker and controlled origin received the same correlation id. A fresh in-app browser pass at 1280 by 720 showed the live product and page timings with no console warnings. Selecting `review-shop` changed the drawer to a labeled `password-protected` fallback without claiming live inventory.
+
+This working tree has not been deployed. Treat the September 1 code and browser evidence as local verification until an explicit deployment and public smoke run are completed.
+
+## August 26 origin access evidence
 
 On August 26, 2026, unauthenticated checks against `agentic-app-review-test.myshopify.com` observed:
 

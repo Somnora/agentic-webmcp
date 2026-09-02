@@ -2,7 +2,7 @@
 
 ## Automated checks
 
-The local verification suite covers origin validation, adapter fallback, interpolation, structured errors, deterministic ranking, proposal semantics, and the registered WebMCP surface. Deployment dry runs validate both Workers.
+The local verification suite covers origin validation, adapter fallback, interpolation, cross-source evidence reconciliation, dossier generation, structured errors, deterministic ranking, proposal semantics, correlation propagation, connection and body-stream timeouts, normalized upstream failures, and the registered WebMCP surface. Deployment dry runs validate both Workers.
 
 Run:
 
@@ -11,6 +11,12 @@ npm run verify
 ```
 
 After deployment, run the public smoke suite with `npm run verify:live` and the live URL environment variable shown in the README.
+
+The live suite validates the origin manifest, per-Offer freshness and handoff policy, the complete first-party controlled-origin flow, and the authorized Shopify origin. If Shopify remains password protected, the suite requires its proposal route to fail closed with `OFFER_NOT_ELIGIBLE`. If Shopify becomes publicly readable, the same check requires a live eligible Offer instead.
+
+With the local app running, `npm run check:origin -- catalog-lab` performs the onboarding conformance contract against the runtime. It checks authorization, exact host and paths, redirects, byte limits, adapters, provenance, freshness, and fallback isolation.
+
+Open `Origin diagnostics` after selecting an origin. Pass when the request correlation id matches the response header, the catalog and page adapter attempts show bounded timings, and any failure is one of the documented normalized reasons.
 
 ## Core behavioral evaluations
 
@@ -32,6 +38,8 @@ Prompt: `Interpolate /products/sunburst-s-style-electric into stripped Markdown 
 
 Pass when the result contains the canonical origin URL, compact Markdown, marketplace evidence, and the normalized Offer. Fail if navigation, scripts, forms, or off-host content appears.
 
+The controlled origin must also report `Verified across product JSON and page` with price, availability, condition, shipping, and returns in `verifiedFields`. A price mismatch fixture must produce `conflict`, retain the structured price, and disable handoff.
+
 ### Comparison
 
 Prompt: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
@@ -48,15 +56,26 @@ Pass when the response status is `awaiting_human_confirmation`, no receipt exist
 
 Click `Approve for handoff`.
 
-Pass when an in-page decision record is created with the selected listing, delivered total, source URL, and explicit merchant payment reminder. No WebMCP tool may perform this action.
+Pass when an in-page decision record is created with the selected listing, delivered total, source URL, and explicit merchant payment reminder. The receipt must match the Quote the human reviewed. A changed price, quantity, variant, shipping fact, or total must return `QUOTE_CHANGED` with no receipt. No WebMCP tool may perform this action.
+
+### Decision dossier
+
+Click `Download dossier` after approval.
+
+Pass when the Markdown file includes the research goal, scoring rubric, ranked options, canonical source URLs, reconciliation timestamps and conflicts, selected Offer, human decision, and an explicit statement that no order or payment was created.
 
 ## Security evaluations
 
 - Reject unknown origin ids with 400.
+- Remove expired origins from discovery and reject their read and proposal routes with 403 before upstream access.
+- Preserve a no-fetch conformance report for an expired origin.
 - Reject non-product paths with 400 and `PATH_NOT_ALLOWED`.
+- Reject anchored catch-all and nested product patterns during manifest validation.
 - Reject absolute or off-host interpolation URLs.
 - Reject invalid handles, quantities, limits, and budgets.
 - Reject off-origin redirects and oversized upstream bodies.
+- Abort fetches that stall before headers or while streaming the body.
+- Include a unique correlation id and bounded `Server-Timing` values on every response.
 - Preserve CSP, `tools=(self)`, origin isolation, framing denial, and no-referrer headers.
 - Keep tool descriptions under 500 characters and compact tool results.
 - Render upstream strings as text, never executable HTML.

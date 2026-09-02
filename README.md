@@ -2,7 +2,7 @@
 
 [![Verify](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml/badge.svg)](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml)
 
-Agentic WebMCP converts allowlisted product websites into a shared decision surface for people and agents. The Worker combines public product JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallbacks into one `Offer` protocol. The default experience ranks guitar listings using visible evidence, then stops at a human-controlled merchant handoff.
+Agentic WebMCP converts allowlisted product websites into a shared decision surface for people and agents. The Worker combines public product JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallbacks into one `Offer` protocol. It reconciles decision facts across the structured feed and visible page, then stops at a human-controlled merchant handoff.
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
@@ -38,11 +38,17 @@ The first eight tools are read-only and untrusted-content annotated. `propose_ad
 - page projection: `html-markdown` with JSON-LD extraction
 - mutations: none
 
-The origin is a separate public Worker with live HTTPS JSON and semantic HTML responses. The interface labels it as controlled demonstration data. It is not eBay and it is not presented as inventory from an unrelated merchant. The secondary `review-shop` record preserves the Shopify adapter and labeled snapshot fallback.
+The origin is a separate public Worker with live HTTPS JSON and semantic HTML responses. The interface labels it as first-party controlled demonstration data. It is not eBay and it is not presented as inventory from an unrelated merchant. The secondary `review-shop` record preserves the operator-authorized Shopify adapter and a labeled research-only snapshot fallback.
 
-Every offer includes field-level provenance. Marketplace listings also include condition, seller feedback, shipping, returns, and delivered price. The deterministic recommender exposes its score factors instead of hiding them inside a model response.
+Each origin is an authorization manifest with exact host and path rules, adapter capabilities, an upstream time budget, byte limits, freshness policy, and a review date. See [Origin onboarding](docs/ORIGIN_ONBOARDING.md). Anchored catch-all and nested product patterns are rejected during registry validation. Runtime requests fail closed at `reviewAfter`, expired origins disappear from selection, and conformance reports the expiry without contacting the origin. Offer contract validation checks every normalized Offer against its manifest before it reaches an API response.
 
-`CATALOG_STOREFRONT_TOKEN` is optional and applies only to the secondary Shopify origin. Store it as a Wrangler secret or in an ignored `.dev.vars` file. If it is absent, the Worker tries public Shopify product JSON and then a clearly labeled bundled snapshot.
+Every offer includes field-level provenance. Price, availability, condition, shipping, and returns are labeled `verified`, `single-source`, or `conflict`. A conflict remains visible, preserves the primary structured value, and disables handoff for that reconciled Offer. Marketplace listings also include seller feedback and delivered price. The deterministic recommender exposes its score factors instead of hiding them inside a model response.
+
+The activity rail can download a Markdown decision dossier containing the research goal, ranking rubric, source URLs, reconciliation state, timestamps, selected Offer, and human decision. The dossier is generated in the browser and is not uploaded or stored by the application. Human approval returns a receipt only when a fresh reread still matches the exact quote shown for review.
+
+The origin card also contains a compact diagnostics drawer. It reports the active adapter, product and page timings, evidence state, configured timeout, normalized failure reason, and the short form of the request correlation id. Every response includes the full `X-Agentic-Correlation-Id` and `Server-Timing` headers, and the same correlation id is forwarded to the controlled origin.
+
+`CATALOG_STOREFRONT_TOKEN` is optional and applies only to the secondary Shopify origin. Store it as a Wrangler secret or in an ignored `.dev.vars` file. If it is absent, the Worker tries public Shopify product JSON and then a clearly labeled bundled snapshot. Snapshot, stale, invalid-timestamp, and unavailable Offers are research-only and cannot enter the proposal flow.
 
 ## Security boundary
 
@@ -53,10 +59,12 @@ The Worker never accepts an arbitrary upstream URL. Every upstream request must 
 - Product path match against the selected origin record.
 - No off-origin redirects or redirects to disallowed paths.
 - Bounded request bodies and upstream response bytes.
+- A manifest-defined timeout that covers both response headers and body streaming.
 - Strict handles, limits, origin ids, and comparison counts.
 - Untrusted origin strings rendered with `textContent`.
 - Short Cache API entries keyed by validated same-origin request URLs.
 - Structured API errors with stable codes and retry guidance.
+- Normalized origin failure reasons without exposing upstream response bodies.
 
 Responses preserve a restrictive CSP, `Permissions-Policy: tools=(self)`, `Origin-Agent-Cluster: ?1`, framing denial, MIME-sniffing protection, and no-referrer behavior. The build has no checkout, payment, Admin API, accounts, cookies, analytics identifiers, or commercial application integration.
 
@@ -93,6 +101,14 @@ npm run verify
 
 `npm run verify` runs strict TypeScript, Vitest, and deployment dry runs for both Workers. It does not deploy.
 
+With the local Worker running, validate an authorized origin end to end:
+
+```bash
+npm run check:origin -- catalog-lab
+```
+
+The command checks the manifest, current authorization, exact hostname, path allowlist, redirect rejection, response bounds, active adapters, Offer provenance, freshness, and labeled fallback or fail-closed behavior. Pass a deployed app URL as the second argument when checking production.
+
 After an explicit deployment, run:
 
 ```bash
@@ -110,8 +126,9 @@ Top-level browser document
   -> controlled public product JSON or Shopify adapter chain
   -> optional allowlisted HTML and JSON-LD interpolation
   -> one normalized Offer graph
+  -> cross-source evidence reconciliation
   -> deterministic evidence ranking
-  -> visible comparison, stripped view, purchase review, and decision record
+  -> visible comparison, stripped view, purchase review, decision record, and downloadable dossier
 ```
 
 See the [judge guide](docs/JUDGE_GUIDE.md), [demo script](docs/DEMO_SCRIPT.md), [evaluation plan](docs/EVALS.md), [threat model](docs/THREAT_MODEL.md), [offer protocol](docs/OFFER_PROTOCOL.md), and [submission draft](docs/SUBMISSION_COPY.md).

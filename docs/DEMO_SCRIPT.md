@@ -19,6 +19,8 @@ Show the restrained workspace and the nine-tool status. Establish that this is a
 Ask: `List the allowlisted origins and select catalog-lab.`
 
 Point out the exact hostname, live adapter, and controlled demonstration label.
+Point out the first-party authorization and `HANDOFF READY` trust state.
+Open `Origin diagnostics` briefly. Show that the product JSON and page were fetched as separate timed attempts under one request trace, then close the drawer.
 
 ### Rank the options
 
@@ -30,7 +32,7 @@ Show the ranked cards and visible factor scores. Explain that the ranking is det
 
 Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
 
-Show the canonical HTTPS URL, stripped Markdown, provenance, and structured facts. Explain exact-host and path validation before the Worker fetches the page.
+Show the canonical HTTPS URL, stripped Markdown, provenance, freshness, handoff eligibility, and structured facts. Pause on `Verified across product JSON and page`. Explain that price, availability, condition, shipping, and returns were reconciled before the Offer was shown. Explain exact-host and path validation before the Worker fetches the page.
 
 ### Compare
 
@@ -42,11 +44,13 @@ Show delivered price, condition, seller confidence, shipping, and return evidenc
 
 Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
 
-Pause on the review. Read the sentence that nothing has been ordered or charged. Click `Approve for handoff` yourself and show the page-local decision record with its merchant source link.
+Pause on the review. Explain that fallback or stale data cannot reach this step. Read the sentence that nothing has been ordered or charged. Click `Approve for handoff` yourself. Explain that the Worker rereads the Offer and refuses approval if the facts changed after review. Show the page-local decision record with its merchant source link.
+
+Download the decision dossier. Explain that it gives the person a portable record of the goal, scoring rationale, canonical sources, evidence conflicts, selected Offer, and human decision without storing it on the server.
 
 ### Close
 
-End on the trust boundary: the agent can discover, convert, rank, compare, and prepare a decision. The person approves the selection and completes any payment on the merchant site.
+End on the trust boundary: the agent can discover, convert, verify, rank, compare, and prepare a decision. The person keeps the dossier, approves the selection, and completes any payment on the merchant site.
 
 ## Narration timing
 

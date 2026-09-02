@@ -1,5 +1,18 @@
 import { registerAgenticTools } from "./tools.js";
 import { createPresenter } from "./presenter.js";
+import { createDecisionDossier, dossierFilename } from "./dossier.js";
+
+function emptyDecision() {
+  return {
+    goal: null,
+    rubric: null,
+    rankedOptions: [],
+    evidence: {},
+    comparedHandles: [],
+    selection: null,
+    humanDecision: null,
+  };
+}
 
 const state = {
   originId: "catalog-lab",
@@ -12,6 +25,10 @@ const state = {
   proposal: null,
   receipts: [],
   returnFocus: null,
+  conversionComplete: new Set(),
+  conversionActive: null,
+  activeAdapter: null,
+  decision: emptyDecision(),
 };
 
 let presenter;
@@ -37,6 +54,9 @@ const elements = {
   originSelect: document.querySelector("#origin-select"),
   originMeta: document.querySelector("#origin-meta"),
   originHealth: document.querySelector("#origin-health"),
+  originDiagnostics: document.querySelector("#origin-diagnostics"),
+  originDiagnosticsStatus: document.querySelector("#origin-diagnostics-status"),
+  originDiagnosticsBody: document.querySelector("#origin-diagnostics-body"),
   interpolateForm: document.querySelector("#interpolate-form"),
   interpolatePath: document.querySelector("#interpolate-path"),
   interpolateView: document.querySelector("#interpolate-view"),
@@ -53,9 +73,11 @@ const elements = {
   cartEmpty: document.querySelector("#cart-empty"),
   cartList: document.querySelector("#cart-list"),
   cartPanel: document.querySelector("#cart-panel"),
-  copyTrace: document.querySelector("#copy-trace"),
+  downloadDossier: document.querySelector("#download-dossier"),
   deploymentId: document.querySelector("#deployment-id"),
   promptButtons: [...document.querySelectorAll("[data-query]")],
+  conversionStatus: document.querySelector("#conversion-path-status"),
+  conversionStages: [...document.querySelectorAll("[data-conversion-stage]")],
 };
 
 function node(tag, className, text) {
@@ -63,6 +85,58 @@ function node(tag, className, text) {
   if (className) element.className = className;
   if (text !== undefined) element.textContent = text;
   return element;
+}
+
+function renderConversionPath(status) {
+  for (const element of elements.conversionStages) {
+    const stage = element.dataset.conversionStage;
+    const active = stage === state.conversionActive;
+    element.dataset.state = active ? "active" : state.conversionComplete.has(stage) ? "complete" : "idle";
+    if (active) element.setAttribute("aria-current", "step"); else element.removeAttribute("aria-current");
+  }
+  if (status) elements.conversionStatus.textContent = status;
+}
+
+function updateConversionPath(tool) {
+  const complete = (...stages) => stages.forEach((stage) => state.conversionComplete.add(stage));
+  if (tool === "tool_error") {
+    renderConversionPath("The latest tool call needs attention");
+    return;
+  }
+  if (tool === "list_origins" || tool === "select_origin") {
+    complete("source");
+    state.conversionActive = "source";
+    renderConversionPath("Exact host and adapter verified");
+    return;
+  }
+  if (tool === "interpolate_page") {
+    complete("source", "markdown", "offer", "tool");
+    state.conversionActive = "tool";
+    renderConversionPath("Page converted into Markdown and a normalized Offer");
+    return;
+  }
+  if (["search_products", "find_best_options", "get_product", "compare_products", "create_catalog_brief"].includes(tool)) {
+    complete("source", "offer", "tool");
+    state.conversionActive = "tool";
+    renderConversionPath("Source-grounded result visible to agent and human");
+    return;
+  }
+  if (tool === "propose_add_to_cart") {
+    complete("source", "offer", "tool");
+    state.conversionActive = "human";
+    renderConversionPath("Agent stopped for human approval");
+    return;
+  }
+  if (tool === "human_approval_button") {
+    complete("human");
+    state.conversionActive = "human";
+    renderConversionPath("Human approval recorded | payment remains with merchant");
+    return;
+  }
+  if (tool === "human_dismiss_review") {
+    state.conversionActive = "human";
+    renderConversionPath("Human dismissed the proposed handoff");
+  }
 }
 
 function price(offer) {
@@ -73,25 +147,74 @@ function price(offer) {
     : `${min.amount}-${max.amount} ${min.currencyCode}`;
 }
 
-function compactOffer(offer, withVariants = false) {
-  const summary = {
-    originId: offer.originId,
+function currentHandoff(offer) {
+  const policy = offer?.handoff;
+  if (!policy || policy.eligible !== true) {
+    return { eligible: false, reason: policy?.reason || "policy-unavailable", freshUntil: policy?.freshUntil || null };
+  }
+  const freshUntil = Date.parse(policy.freshUntil || "");
+  if (!Number.isFinite(freshUntil) || freshUntil <= Date.now()) {
+    return { eligible: false, reason: "source-stale", freshUntil: policy.freshUntil || null };
+  }
+  return { eligible: true, reason: "eligible", freshUntil: policy.freshUntil };
+}
+
+function handoffReason(reason) {
+  const labels = {
+    eligible: "live and fresh",
+    "source-not-live": "fallback source",
+    "source-stale": "source data expired",
+    "source-timestamp-invalid": "source time invalid",
+    unavailable: "listing unavailable",
+    "evidence-conflict": "source evidence conflicts",
+    "policy-unavailable": "eligibility unknown",
+  };
+  return labels[reason] || "not eligible";
+}
+
+function suggestedActions(actions, offers) {
+  const unique = [...new Set(actions)];
+  return offers.some((offer) => currentHandoff(offer).eligible)
+    ? [...unique, "propose_add_to_cart"]
+    : unique;
+}
+
+function compactListingOffer(offer) {
+  const verification = offer.provenance?.verification;
+  return {
     handle: offer.handle,
     title: offer.title,
-    description: offer.description.slice(0, 140),
     price: price(offer),
     available: offer.constraints.available,
-    adapter: offer.source.adapter,
-    live: offer.source.live,
-    provenance: offer.provenance,
+    handoff: {
+      eligible: offer.handoff.eligible,
+      reason: offer.handoff.reason,
+    },
+    evidence: verification ? { state: verification.state, label: verification.label } : { state: "single-source" },
     ...(offer.marketplace ? {
       marketplace: {
         condition: offer.marketplace.condition,
         deliveredPrice: `${offer.marketplace.deliveredPrice.amount} ${offer.marketplace.deliveredPrice.currencyCode}`,
-        seller: `${offer.marketplace.seller.displayName} | ${offer.marketplace.seller.positiveFeedbackPercent}% positive`,
+        sellerConfidence: `${offer.marketplace.seller.positiveFeedbackPercent}% positive`,
         returns: offer.marketplace.returns.accepted ? `${offer.marketplace.returns.windowDays} days` : "not accepted",
       },
     } : {}),
+  };
+}
+
+function compactOffer(offer, withVariants = false) {
+  const summary = {
+    ...compactListingOffer(offer),
+    description: offer.description.slice(0, 100),
+    adapter: offer.source.adapter,
+    live: offer.source.live,
+    fetchedAt: offer.source.fetchedAt,
+    handoff: {
+      eligible: offer.handoff.eligible,
+      reason: offer.handoff.reason,
+      freshUntil: offer.handoff.freshUntil,
+    },
+    sourceFields: Object.keys(offer.provenance).filter((field) => field !== "verification"),
   };
   if (withVariants) {
     summary.variants = offer.variants.slice(0, 5).map((variant) => ({
@@ -111,12 +234,20 @@ function compactOrigin(origin) {
     hostname: origin.hostname,
     adapter: origin.adapter,
     fallbackAdapters: origin.fallbackAdapters,
+    authorization: origin.authorization.status,
+    handoffPolicy: origin.capabilities.merchantHandoff,
   };
 }
 
 function boundedJson(value) {
   let output = JSON.stringify(value);
   if (output.length <= 1450) return output;
+  if (value.offer) {
+    value.markdown = typeof value.markdown === "string" ? value.markdown.slice(0, 240) : value.markdown;
+    if (Array.isArray(value.offer.variants)) value.offer.variants = value.offer.variants.slice(0, 2);
+    if (Array.isArray(value.offer.sourceFields)) value.offer.sourceFields = value.offer.sourceFields.slice(0, 6);
+    output = JSON.stringify(value);
+  }
   if (Array.isArray(value.offers)) {
     while (output.length > 1450 && value.offers.length > 1) {
       value.offers.pop();
@@ -136,10 +267,13 @@ function boundedJson(value) {
 
 function compactCatalog(payload, withVariants = false) {
   return boundedJson({
-    origin: compactOrigin(payload.origin),
+    origin: {
+      id: payload.origin.id,
+      authorization: payload.origin.authorization.status,
+    },
     source: payload.source,
     live: payload.live,
-    offers: payload.offers.map((offer) => compactOffer(offer, withVariants)),
+    offers: payload.offers.map((offer) => withVariants ? compactOffer(offer, true) : compactListingOffer(offer)),
     suggestedNextActions: payload.suggestedNextActions,
     ...(payload.warning ? { warning: payload.warning.slice(0, 180) } : {}),
   });
@@ -151,11 +285,17 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
   const payload = await response.json();
+  const correlationId = response.headers.get("X-Agentic-Correlation-Id");
   if (!response.ok) {
     const error = new Error(payload.error || `Request failed with HTTP ${response.status}.`);
     error.code = payload.code;
     error.retryable = payload.retryable === true;
+    error.reason = payload.reason;
+    error.correlationId = payload.correlationId || correlationId;
     throw error;
+  }
+  if (payload && typeof payload === "object" && !Array.isArray(payload) && correlationId && !payload.correlationId) {
+    payload.correlationId = correlationId;
   }
   return payload;
 }
@@ -173,10 +313,12 @@ function updateOrigin(origin, live, source) {
   if (!state.origin) return;
   const mode = live === undefined ? "status pending" : live ? "live" : "fallback";
   const sourceMode = state.origin.mode === "controlled-demo" ? "controlled demo" : "merchant";
+  const authorization = state.origin.authorization.status.replaceAll("-", " ");
   const activeSource = source || state.origin.adapter;
-  elements.originMeta.textContent = `${state.origin.displayName} | ${state.origin.hostname} | ${sourceMode} | ${state.origin.adapter} with ${state.origin.fallbackAdapters.join(", ")} fallback | ${mode}`;
+  elements.originMeta.textContent = `${state.origin.displayName} | ${state.origin.hostname} | ${sourceMode} | ${authorization} | ${state.origin.adapter} with ${state.origin.fallbackAdapters.join(", ")} fallback | ${mode}`;
   elements.source.textContent = `${live === undefined ? "PENDING" : live ? state.origin.mode === "controlled-demo" ? "CONTROLLED LIVE" : "LIVE" : "FALLBACK"} | ${activeSource}`;
   elements.source.classList.toggle("fallback", live === false);
+  elements.source.classList.remove("research-only");
   if (origin?.demo) {
     elements.promptButtons.forEach((button, index) => {
       const query = origin.demo.queries[index];
@@ -194,8 +336,16 @@ function updateOrigin(origin, live, source) {
 
 function updateSource(payload) {
   updateOrigin(payload.origin, payload.live, payload.source);
-  const count = payload.offers?.length ?? (payload.offer ? 1 : 0);
-  elements.message.textContent = payload.warning || `${count} offer result${count === 1 ? "" : "s"}. External origin content is treated as untrusted.`;
+  state.activeAdapter = payload.source || state.activeAdapter;
+  const offers = payload.offers ?? (payload.offer ? [payload.offer] : []);
+  const ready = offers.filter((offer) => currentHandoff(offer).eligible).length;
+  const count = offers.length;
+  elements.source.textContent = `${elements.source.textContent} | ${ready > 0 ? "HANDOFF READY" : "RESEARCH ONLY"}`;
+  elements.source.classList.toggle("research-only", ready === 0 && payload.live !== false);
+  const policy = ready > 0
+    ? `${ready} offer${ready === 1 ? " is" : "s are"} live, fresh, and eligible for handoff.`
+    : "No offer is currently eligible for merchant handoff.";
+  elements.message.textContent = payload.warning || `${count} offer result${count === 1 ? "" : "s"}. ${policy} External origin content is treated as untrusted.`;
 }
 
 async function loadOriginHealth(signal) {
@@ -204,11 +354,54 @@ async function loadOriginHealth(signal) {
   try {
     const health = await api(`/api/origins/health?${originQuery()}`, { signal });
     const page = health.page.live ? "page live" : "page unavailable";
-    elements.originHealth.textContent = `${health.status} | catalog ${health.catalog.adapter} | ${page} | checked ${new Date(health.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    const handoff = health.handoff.eligible ? "handoff ready" : `research only: ${handoffReason(health.handoff.reason)}`;
+    elements.originHealth.textContent = `${health.status} | catalog ${health.catalog.adapter} | ${page} | ${handoff} | checked ${new Date(health.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
     elements.originHealth.classList.add(health.status === "live" ? "live" : "fallback");
   } catch (error) {
     elements.originHealth.textContent = `health check unavailable | ${error instanceof Error ? error.message : "unknown error"}`;
     elements.originHealth.classList.add("fallback");
+  }
+}
+
+function renderOriginDiagnostics(diagnostics) {
+  elements.originDiagnostics.dataset.status = diagnostics.status;
+  const adapter = diagnostics.activeAdapter || "no active adapter";
+  elements.originDiagnosticsStatus.textContent = `${diagnostics.status} | ${adapter}`;
+  const facts = node("div", "origin-diagnostics-facts");
+  const verification = diagnostics.verification?.label || "Verification unavailable";
+  const correlation = diagnostics.correlationId ? diagnostics.correlationId.slice(0, 8) : "unavailable";
+  facts.append(
+    node("span", "", `Evidence: ${verification}`),
+    node("span", "", `Trace: ${correlation}`),
+    node("span", "", `Timeout: ${diagnostics.policy.timeoutMs} ms`),
+    node("span", "", `Failure: ${diagnostics.failureReason || "none"}`),
+  );
+  const attempts = node("div", "origin-attempts");
+  for (const attempt of diagnostics.attempts || []) {
+    const outcome = attempt.outcome === "success" ? `${attempt.durationMs} ms` : attempt.failureReason || "failed";
+    const item = node("div", "origin-attempt");
+    item.append(node("strong", "", attempt.adapter), node("span", "", `${attempt.operation} | ${outcome}`));
+    attempts.append(item);
+  }
+  if (!attempts.childElementCount) attempts.append(node("div", "origin-attempt", "No adapter attempt completed."));
+  elements.originDiagnosticsBody.replaceChildren(facts, attempts);
+}
+
+async function loadOriginDiagnostics(signal) {
+  elements.originDiagnostics.dataset.status = "checking";
+  elements.originDiagnosticsStatus.textContent = "Checking...";
+  try {
+    renderOriginDiagnostics(await api(`/api/origins/diagnostics?${originQuery()}`, { signal }));
+  } catch (error) {
+    renderOriginDiagnostics({
+      status: "failed",
+      activeAdapter: null,
+      correlationId: error?.correlationId,
+      failureReason: error?.reason || "unknown",
+      verification: null,
+      policy: { timeoutMs: state.origin?.policy?.upstreamTimeoutMs || "unknown" },
+      attempts: [],
+    });
   }
 }
 
@@ -223,11 +416,142 @@ async function loadDeploymentIdentity() {
   }
 }
 
-function recordActivity(tool, args, actor, resultText) {
+function parseResult(resultText) {
+  try {
+    return JSON.parse(resultText);
+  } catch {
+    return { message: resultText };
+  }
+}
+
+function resultFact(label, value) {
+  const wrapper = node("div", "result-fact");
+  wrapper.append(node("span", "", label), node("strong", "", String(value)));
+  return wrapper;
+}
+
+function moneyLabel(value) {
+  if (!value || typeof value !== "object") return "Not supplied";
+  return `${value.amount} ${value.currencyCode}`;
+}
+
+function offerResultList(offers) {
+  const list = node("ul", "result-list");
+  for (const offer of offers.slice(0, 4)) {
+    const item = node("li");
+    const title = node("strong", "", offer.title || offer.handle || "Untitled offer");
+    const details = [offer.price, offer.marketplace?.deliveredPrice, offer.marketplace?.condition]
+      .filter(Boolean)
+      .join(" | ");
+    const handoff = offer.handoff?.eligible ? "Handoff ready" : `Research only: ${handoffReason(offer.handoff?.reason)}`;
+    item.append(title, node("span", "", [details || (offer.available ? "Available" : "Availability not supplied"), handoff].join(" | ")));
+    list.append(item);
+  }
+  return list;
+}
+
+function recommendationResultList(recommendations) {
+  const list = node("ol", "result-list ranked");
+  for (const recommendation of recommendations.slice(0, 4)) {
+    const item = node("li");
+    const title = node("strong", "", `Option ${recommendation.rank} | ${recommendation.score}/100`);
+    const factorText = recommendation.factors
+      ? Object.entries(recommendation.factors).map(([name, value]) => `${name} ${value}`).join(" | ")
+      : recommendation.handle;
+    item.append(title, node("span", "", factorText));
+    list.append(item);
+  }
+  return list;
+}
+
+function appendGenericFacts(container, payload) {
+  const entries = Object.entries(payload).filter(([, value]) => ["string", "number", "boolean"].includes(typeof value)).slice(0, 5);
+  if (entries.length === 0) {
+    container.append(node("p", "", "The compact result is available in the raw JSON below."));
+    return;
+  }
+  const facts = node("div", "result-facts");
+  for (const [label, value] of entries) facts.append(resultFact(label.replaceAll(/([A-Z])/g, " $1"), value));
+  container.append(facts);
+}
+
+function renderAgentResult(tool, actor, resultText, displayPayload) {
+  const rawPayload = parseResult(resultText);
+  const payload = displayPayload || rawPayload;
+  const heading = node("div", "result-heading");
+  const title = node("div");
+  title.append(node("span", "kicker", "Agent result"), node("code", "result-tool", tool));
+  const status = node("span", `result-status${tool === "tool_error" ? " attention" : ""}`, tool === "tool_error" ? "Needs attention" : "Source grounded");
+  heading.append(title, status);
+
+  const meta = node("p", "result-meta", `${actor} | ${state.originId}`);
+  const content = node("div", "result-content");
+
+  if (Array.isArray(payload.origins)) {
+    content.append(node("p", "result-lead", `${payload.origins.length} allowlisted origins are available.`));
+    const list = node("ul", "result-list");
+    for (const origin of payload.origins) {
+      const item = node("li");
+      item.append(node("strong", "", origin.displayName || origin.id), node("span", "", `${origin.hostname} | ${origin.adapter}`));
+      list.append(item);
+    }
+    content.append(list);
+  } else if (payload.selected) {
+    content.append(
+      node("p", "result-lead", `${payload.selected.displayName || payload.selected.id} is now the active origin.`),
+      resultFact("Exact host", payload.selected.hostname),
+    );
+  } else if (Array.isArray(payload.recommendations)) {
+    content.append(
+      node("p", "result-lead", `${payload.recommendations.length} options ranked with a deterministic evidence rubric.`),
+      recommendationResultList(payload.recommendations),
+    );
+  } else if (payload.canonicalUrl && payload.offer) {
+    content.append(node("p", "result-lead", payload.offer.evidence?.label || "One allowlisted page is now available as Markdown and a normalized Offer."));
+    const facts = node("div", "result-facts");
+    facts.append(
+      resultFact("Page", payload.pageLive ? "Live" : "Unavailable"),
+      resultFact("Offer", payload.live ? "Live" : "Labeled fallback"),
+      resultFact("Title", payload.offer.title || payload.offer.handle),
+    );
+    content.append(facts, node("p", "result-url", payload.canonicalUrl));
+  } else if (Array.isArray(payload.offers)) {
+    content.append(
+      node(
+        "p",
+        "result-lead",
+        payload.truncated
+          ? `${payload.offers.length} normalized offer${payload.offers.length === 1 ? "" : "s"} shown in the compact response. The full result remains visible in the workspace.`
+          : `${payload.offers.length} normalized offer${payload.offers.length === 1 ? "" : "s"} returned from the selected source.`,
+      ),
+      offerResultList(payload.offers),
+    );
+  } else if (payload.brief) {
+    content.append(node("p", "result-lead", "A compact decision brief was created from selected source facts."), node("pre", "result-brief", payload.brief));
+  } else if (payload.status === "awaiting_human_confirmation") {
+    content.append(node("p", "result-lead", "The agent prepared a purchase handoff and stopped for human approval."));
+    const facts = node("div", "result-facts");
+    facts.append(resultFact("Status", "Awaiting human"), resultFact("Total", moneyLabel(payload.total)), resultFact("Cart changed", "No"));
+    content.append(facts);
+  } else if (payload.status === "in_cart") {
+    content.append(node("p", "result-lead", "The human approved this selection for merchant handoff."));
+    const facts = node("div", "result-facts");
+    facts.append(resultFact("Status", "Approved"), resultFact("Total", moneyLabel(payload.total)), resultFact("Order created", "No"));
+    content.append(facts);
+  } else {
+    appendGenericFacts(content, payload);
+  }
+
+  const raw = node("details", "result-raw");
+  raw.append(node("summary", "", "Raw JSON"), node("pre", "", JSON.stringify(rawPayload, null, 2)));
+  elements.result.replaceChildren(heading, meta, content, raw);
+}
+
+function recordActivity(tool, args, actor, resultText, displayPayload) {
   state.activity.unshift({ tool, args, actor, originId: state.originId, time: new Date(), result: resultText });
-  state.activity = state.activity.slice(0, 7);
+  state.activity = state.activity.slice(0, 20);
   elements.activity.replaceChildren();
-  for (const item of state.activity) {
+  for (const item of state.activity.slice(0, 7)) {
     const row = node("li", "activity-item");
     const header = node("header");
     header.append(
@@ -237,7 +561,9 @@ function recordActivity(tool, args, actor, resultText) {
     row.append(header, node("span", "activity-origin", `${item.actor} | ${item.originId}`), node("p", "", JSON.stringify(item.args)));
     elements.activity.append(row);
   }
-  elements.result.replaceChildren(node("span", "kicker", "LATEST RESULT"), node("pre", "", resultText));
+  updateConversionPath(tool);
+  renderAgentResult(tool, actor, resultText, displayPayload);
+  elements.downloadDossier.disabled = state.activity.length === 0;
   presenter?.toolEvent(tool, args, actor);
 }
 
@@ -264,10 +590,24 @@ function marketplaceFacts(offer) {
 }
 
 function provenanceLabel(offer) {
-  const entries = Object.entries(offer.provenance || {});
-  return entries.length
-    ? `${entries.length} source fields grounded by ${offer.source.adapter}`
-    : `Source evidence: ${offer.source.adapter}`;
+  const verification = offer.provenance?.verification;
+  if (verification?.label) {
+    const detail = verification.state === "verified" && verification.verifiedFields?.length
+      ? ` | ${verification.verifiedFields.join(", ")}`
+      : verification.state === "conflict" && verification.conflictFields?.length
+        ? ` | review ${verification.conflictFields.join(", ")}`
+        : "";
+    return `${verification.label}${detail}`;
+  }
+  return `Source evidence: ${offer.source.adapter}`;
+}
+
+function handoffLine(offer) {
+  const policy = currentHandoff(offer);
+  const label = policy.eligible
+    ? `Handoff ready | fresh until ${new Date(policy.freshUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+    : `Research only | ${handoffReason(policy.reason)}`;
+  return node("p", `handoff-line ${policy.eligible ? "eligible" : "ineligible"}`, label);
 }
 
 function renderOffers(offers) {
@@ -307,7 +647,9 @@ function renderOffers(offers) {
     inspect.addEventListener("click", () => runGetProduct({ handle: offer.handle }, "human preview").catch(showError));
     const propose = node("button", "", "Prepare review");
     propose.type = "button";
-    propose.disabled = !offer.constraints.available;
+    const handoff = currentHandoff(offer);
+    propose.disabled = !handoff.eligible;
+    propose.title = handoff.eligible ? "Prepare a human-reviewed merchant handoff" : `Unavailable for handoff: ${handoffReason(handoff.reason)}`;
     propose.addEventListener("click", () => runProposeCart({ handle: offer.handle, quantity: 1 }, "human preview").catch(showError));
     actions.append(label, inspect, propose);
     if (recommendation) {
@@ -327,6 +669,7 @@ function renderOffers(offers) {
     card.append(
       node("p", "", recommendation?.summary || offer.description || "No origin description supplied."),
       node("p", "provenance-line", provenanceLabel(offer)),
+      handoffLine(offer),
       actions,
     );
     elements.grid.append(card);
@@ -345,6 +688,7 @@ function renderComparison(offers) {
       node("div", "product-meta", offer.marketplace ? `${offer.marketplace.deliveredPrice.amount} ${offer.marketplace.deliveredPrice.currencyCode} delivered` : price(offer)),
       node("p", "", recommendation?.summary || offer.description),
       node("p", "provenance-line", provenanceLabel(offer)),
+      handoffLine(offer),
     );
     elements.grid.append(card);
   }
@@ -362,6 +706,7 @@ async function runListOrigins(_args = {}, actor = "agent", signal, record = true
   }
   updateOrigin(payload.origins.find((origin) => origin.id === state.originId) || payload.origins[0]);
   const output = boundedJson({
+    manifestVersion: payload.manifestVersion,
     defaultOriginId: payload.defaultOriginId,
     origins: payload.origins.map(compactOrigin),
     suggestedNextActions: ["select_origin", "search_products"],
@@ -374,10 +719,12 @@ async function runSelectOrigin({ originId }, actor = "agent", signal) {
   const payload = await api("/api/origins/select", { method: "POST", signal, body: JSON.stringify({ originId }) });
   state.selected.clear();
   state.recommendations.clear();
+  state.decision = emptyDecision();
+  state.activeAdapter = null;
   updateOrigin(payload.selected);
   updateSelection();
   hideInterpolate();
-  await loadOriginHealth(signal);
+  await Promise.all([loadOriginHealth(signal), loadOriginDiagnostics(signal)]);
   const output = boundedJson({ ...payload, suggestedNextActions: ["search_products", "interpolate_page"] });
   recordActivity("select_origin", { originId }, actor, output);
   return output;
@@ -389,7 +736,7 @@ async function runSearch({ query = "", maxResults = 6 }, actor = "agent", signal
   hideInterpolate();
   state.recommendations.clear();
   renderOffers(payload.offers);
-  payload.suggestedNextActions = ["get_product", "compare_products", "propose_add_to_cart"];
+  payload.suggestedNextActions = suggestedActions(["get_product", "compare_products"], payload.offers);
   const output = compactCatalog(payload);
   recordActivity("search_products", { query, maxResults }, actor, output);
   return output;
@@ -401,13 +748,25 @@ async function runRecommend({ query, maxDeliveredPrice, maxResults = 4 }, actor 
   updateSource(payload);
   hideInterpolate();
   state.recommendations = new Map(payload.recommendations.map((item) => [item.handle, item]));
+  const offersByHandle = new Map(payload.offers.map((offer) => [offer.handle, offer]));
+  state.decision.goal = payload.goal;
+  state.decision.rubric = payload.rubric;
+  state.decision.rankedOptions = payload.recommendations.map((item) => {
+    const offer = offersByHandle.get(item.handle);
+    return {
+      ...item,
+      title: offer?.title || item.handle,
+      url: offer?.url,
+      deliveredPrice: offer?.marketplace?.deliveredPrice || offer?.priceRange?.min,
+    };
+  });
   renderOffers(payload.offers);
   const output = boundedJson({
     origin: compactOrigin(payload.origin),
     goal: payload.goal,
     rubric: payload.rubric,
     recommendations: payload.recommendations.map((item) => ({ rank: item.rank, handle: item.handle, score: item.score, factors: item.factors })),
-    suggestedNextActions: ["get_product", "interpolate_page", "propose_add_to_cart"],
+    suggestedNextActions: suggestedActions(["get_product", "interpolate_page"], payload.offers),
   });
   recordActivity("find_best_options", { query, maxDeliveredPrice, maxResults }, actor, output);
   return output;
@@ -418,7 +777,7 @@ async function runGetProduct({ handle }, actor = "agent", signal) {
   updateSource(payload);
   hideInterpolate();
   renderOffers(payload.offers);
-  payload.suggestedNextActions = ["interpolate_page", "compare_products", "propose_add_to_cart"];
+  payload.suggestedNextActions = suggestedActions(["interpolate_page", "compare_products"], payload.offers);
   const output = compactCatalog(payload, true);
   recordActivity("get_product", { handle }, actor, output);
   return output;
@@ -430,7 +789,8 @@ async function runCompare({ handles }, actor = "agent", signal) {
   updateSource(payload);
   hideInterpolate();
   renderComparison(payload.offers);
-  payload.suggestedNextActions = ["create_catalog_brief", "propose_add_to_cart"];
+  state.decision.comparedHandles = payload.offers.map((offer) => offer.handle);
+  payload.suggestedNextActions = suggestedActions(["create_catalog_brief"], payload.offers);
   const output = compactCatalog(payload);
   recordActivity("compare_products", { handles: normalized }, actor, output);
   return output;
@@ -455,7 +815,20 @@ async function runInterpolate({ path }, actor = "agent", signal) {
   elements.interpolateMarkdown.textContent = payload.markdown;
   elements.interpolateOffer.textContent = JSON.stringify(compactOffer(payload.offer, true), null, 2);
   elements.interpolatePageStatus.textContent = payload.pageLive ? "LIVE PAGE MARKDOWN" : "PAGE UNAVAILABLE";
-  elements.interpolateOfferStatus.textContent = payload.live ? "LIVE STRUCTURED OFFER" : "LABELED FALLBACK OFFER";
+  const interpolateHandoff = currentHandoff(payload.offer);
+  const verification = payload.offer.provenance?.verification;
+  state.decision.evidence[payload.offer.handle] = {
+    handle: payload.offer.handle,
+    title: payload.offer.title,
+    url: payload.offer.url,
+    state: verification?.state || "single-source",
+    label: verification?.label || `Single source: ${payload.offer.source.adapter}`,
+    checkedAt: verification?.checkedAt || payload.offer.source.fetchedAt,
+    conflicts: verification?.conflictFields || [],
+  };
+  elements.interpolateOfferStatus.textContent = interpolateHandoff.eligible
+    ? `${verification?.state === "verified" ? "EVIDENCE VERIFIED" : "LIVE OFFER"} | HANDOFF READY`
+    : `RESEARCH ONLY | ${handoffReason(interpolateHandoff.reason).toLocaleUpperCase()}`;
   elements.interpolateProvenance.textContent = provenanceLabel(payload.offer);
   elements.interpolateView.hidden = false;
   elements.interpolateView.scrollIntoView({ block: "center" });
@@ -465,12 +838,18 @@ async function runInterpolate({ path }, actor = "agent", signal) {
     canonicalUrl: payload.canonicalUrl,
     live: payload.live,
     pageLive: payload.pageLive,
-    offer: compactOffer(payload.offer, true),
-    markdown: payload.markdown.slice(0, 520),
-    suggestedNextActions: ["compare_products", "propose_add_to_cart"],
+    offer: compactOffer(payload.offer),
+    verification: payload.offer.provenance?.verification,
+    markdown: payload.markdown.slice(0, 420),
+    suggestedNextActions: suggestedActions(["compare_products"], [payload.offer]),
     ...(payload.warning ? { warning: payload.warning.slice(0, 180) } : {}),
   });
-  recordActivity("interpolate_page", { path: normalizedPath }, actor, output);
+  recordActivity("interpolate_page", { path: normalizedPath }, actor, output, {
+    canonicalUrl: payload.canonicalUrl,
+    pageLive: payload.pageLive,
+    live: payload.live,
+    offer: { title: payload.offer.title, handle: payload.offer.handle, handoff: payload.offer.handoff, evidence: payload.offer.provenance?.verification },
+  });
   return output;
 }
 
@@ -484,7 +863,7 @@ async function runBrief({ goal, handles }, actor = "agent", signal) {
   updateSource(payload);
   hideInterpolate();
   renderComparison(payload.offers);
-  const output = boundedJson({ brief: payload.brief.slice(0, 1100), suggestedNextActions: ["propose_add_to_cart"] });
+  const output = boundedJson({ brief: payload.brief.slice(0, 1100), suggestedNextActions: suggestedActions([], payload.offers) });
   recordActivity("create_catalog_brief", { goal, handles: normalized }, actor, output);
   return output;
 }
@@ -500,6 +879,16 @@ async function runProposeCart({ handle, variantTitle, quantity = 1 }, actor = "a
   state.proposal = payload.quote;
   const line = payload.quote.lines[0];
   const evidence = payload.offers[0].marketplace;
+  const proposedOffer = payload.offers[0];
+  state.decision.selection = {
+    title: proposedOffer.title,
+    handle: line.handle,
+    quantity: line.quantity,
+    total: payload.quote.total,
+    url: line.sourceUrl || proposedOffer.url,
+    evidence: state.decision.evidence[line.handle]?.label || proposedOffer.provenance?.verification?.label || `Single source: ${proposedOffer.source.adapter}`,
+  };
+  state.decision.humanDecision = null;
   const sellerText = line.seller ? ` from ${line.seller.replace(/[.]+$/, "")}` : "";
   elements.confirmCopy.textContent = `${payload.offers[0].title}, ${evidence?.condition?.replaceAll("-", " ") || line.variantTitle}, ${payload.quote.total.amount} ${payload.quote.total.currencyCode} delivered${sellerText}. Nothing has been ordered or charged.`;
   elements.confirmPanel.hidden = false;
@@ -543,14 +932,14 @@ async function confirmCart() {
     headers: { "X-Agentic-Human-Confirm": "true" },
     body: JSON.stringify({
       originId: quote.originId,
-      quoteId: quote.quoteId,
-      expiresAt: quote.expiresAt,
+      quote,
       handle: line.handle,
       variantId: line.variantId,
       quantity: line.quantity,
     }),
   });
   state.receipts.unshift(payload.receipt);
+  state.decision.humanDecision = { status: "approved for merchant handoff", recordedAt: payload.receipt.confirmedAt };
   state.proposal = null;
   elements.confirmPanel.hidden = true;
   renderCart();
@@ -563,25 +952,54 @@ function dismissCart() {
   if (!state.proposal) return;
   const quoteId = state.proposal.quoteId;
   state.proposal = null;
+  state.decision.humanDecision = { status: "dismissed", recordedAt: new Date().toISOString() };
   elements.confirmPanel.hidden = true;
   recordActivity("human_dismiss_review", { quoteId }, "human button", JSON.stringify({ quoteId, status: "dismissed", cartChanged: false }));
   if (state.returnFocus instanceof HTMLElement) state.returnFocus.focus();
   state.returnFocus = null;
 }
 
-async function copyTrace() {
-  const trace = state.activity.slice().reverse().map((item) => ({
-    time: item.time.toISOString(),
-    tool: item.tool,
-    actor: item.actor,
-    originId: item.originId,
-    args: item.args,
-    result: item.result,
-  }));
-  const text = JSON.stringify({ exportedAt: new Date().toISOString(), trace }, null, 2);
-  await navigator.clipboard.writeText(text);
-  elements.copyTrace.textContent = "Trace copied";
-  setTimeout(() => { elements.copyTrace.textContent = "Copy trace"; }, 1600);
+function decisionSnapshot() {
+  const generatedAt = new Date().toISOString();
+  return {
+    generatedAt,
+    origin: state.origin ? {
+      id: state.origin.id,
+      displayName: state.origin.displayName,
+      hostname: state.origin.hostname,
+      authorization: state.origin.authorization.status,
+      adapter: state.origin.adapter,
+    } : null,
+    activeAdapter: state.activeAdapter,
+    goal: state.decision.goal,
+    rubric: state.decision.rubric,
+    rankedOptions: state.decision.rankedOptions,
+    evidence: Object.values(state.decision.evidence),
+    comparedHandles: state.decision.comparedHandles,
+    selection: state.decision.selection,
+    humanDecision: state.decision.humanDecision,
+    activity: state.activity.filter((item) => item.originId === state.originId).slice().reverse().map((item) => ({
+      time: item.time.toISOString(),
+      tool: item.tool,
+      actor: item.actor,
+      originId: item.originId,
+    })),
+  };
+}
+
+function downloadDecisionDossier() {
+  const snapshot = decisionSnapshot();
+  const markdown = createDecisionDossier(snapshot);
+  const objectUrl = URL.createObjectURL(new Blob([markdown], { type: "text/markdown;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = dossierFilename(state.originId, snapshot.generatedAt);
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  elements.downloadDossier.textContent = "Dossier downloaded";
+  setTimeout(() => { elements.downloadDossier.textContent = "Download dossier"; }, 1600);
 }
 
 async function registerWebMcpTools() {
@@ -647,14 +1065,16 @@ elements.briefForm.addEventListener("submit", (event) => {
 
 elements.confirmCart.addEventListener("click", () => confirmCart().catch(showError));
 elements.dismissCart.addEventListener("click", dismissCart);
-elements.copyTrace.addEventListener("click", () => copyTrace().catch(showError));
+elements.downloadDossier.addEventListener("click", downloadDecisionDossier);
 
 function showError(error) {
   const message = error instanceof Error ? error.message : "The tool request failed.";
   const code = error && typeof error === "object" && "code" in error ? error.code : "UNKNOWN_ERROR";
+  const reason = error && typeof error === "object" && error.reason ? ` | ${error.reason}` : "";
+  const trace = error && typeof error === "object" && error.correlationId ? ` | trace ${error.correlationId.slice(0, 8)}` : "";
   const retry = error && typeof error === "object" && error.retryable === true ? " Retry is reasonable." : " Check the input or origin status.";
-  elements.message.textContent = `${code}: ${message}${retry}`;
-  recordActivity("tool_error", {}, "system", JSON.stringify({ code, message, retryable: error?.retryable === true }));
+  elements.message.textContent = `${code}${reason}${trace}: ${message}${retry}`;
+  recordActivity("tool_error", {}, "system", JSON.stringify({ code, message, reason: error?.reason, correlationId: error?.correlationId, retryable: error?.retryable === true }));
 }
 
 function resetWorkspaceForRehearsal() {
@@ -663,9 +1083,19 @@ function resetWorkspaceForRehearsal() {
   state.proposal = null;
   state.receipts = [];
   state.returnFocus = null;
+  state.activeAdapter = null;
+  state.decision = emptyDecision();
+  state.conversionComplete.clear();
+  state.conversionActive = null;
   elements.activity.replaceChildren();
   elements.confirmPanel.hidden = true;
-  elements.result.replaceChildren(node("span", "kicker", "LATEST RESULT"), node("p", "", "The guided demo is ready for its first tool call."));
+  elements.downloadDossier.disabled = true;
+  const resultHeading = node("div", "result-heading");
+  const resultTitle = node("div");
+  resultTitle.append(node("span", "kicker", "Agent result"), node("strong", "", "Guided demo ready"));
+  resultHeading.append(resultTitle, node("span", "result-status", "Ready"));
+  elements.result.replaceChildren(resultHeading, node("p", "", "The first tool call will appear here as a readable result."));
+  renderConversionPath("Waiting for an allowlisted source");
   renderCart();
   updateSelection();
   hideInterpolate();
@@ -683,6 +1113,6 @@ presenter = createPresenter({
 });
 
 await runListOrigins({}, "page initialization", undefined, false).catch(showError);
-await Promise.all([loadOriginHealth(), loadDeploymentIdentity()]);
+await Promise.all([loadOriginHealth(), loadOriginDiagnostics(), loadDeploymentIdentity()]);
 await registerWebMcpTools().catch(showError);
 await runSearch({ query: "", maxResults: 6 }, "page initialization").catch(showError);

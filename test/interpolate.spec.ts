@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { normalizeJsonLdOffer } from "../src/interpolate";
-import { getOrigin } from "../src/origins";
+import { inspectOrigin } from "../src/origins";
 
-const origin = getOrigin("review-shop");
+const origin = inspectOrigin("review-shop");
 
 describe("JSON-LD Offer interpolation", () => {
   it("normalizes ProductGroup aggregate and leaf offers", () => {
@@ -27,7 +27,10 @@ describe("JSON-LD Offer interpolation", () => {
       title: "Configurable Snowboard",
       priceRange: { min: { amount: "650.00" }, max: { amount: "700.00" } },
       source: { adapter: "json-ld", live: true },
-      provenance: { pricing: "json-ld", variants: "json-ld" },
+      provenance: {
+        pricing: { state: "single-source", primary: "json-ld" },
+        variants: { state: "single-source", primary: "json-ld" },
+      },
     });
     expect(offer?.variants).toHaveLength(2);
     expect(offer?.variants[0]).toMatchObject({ title: "Ice", available: true });

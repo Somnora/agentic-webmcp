@@ -52,11 +52,32 @@
           <span id="source-badge" class="source-badge">Loading source...</span>
         </div>
 
+        <section id="conversion-path" class="conversion-path" aria-labelledby="conversion-path-title">
+          <div class="conversion-path-heading">
+            <div>
+              <span class="kicker">Agentic conversion path</span>
+              <strong id="conversion-path-title">From public page to human decision</strong>
+            </div>
+            <span id="conversion-path-status" class="conversion-path-status" aria-live="polite">Waiting for an allowlisted source</span>
+          </div>
+          <ol>
+            <li data-conversion-stage="source"><span>01</span><strong>Allowlisted page</strong></li>
+            <li data-conversion-stage="markdown"><span>02</span><strong>Stripped Markdown</strong></li>
+            <li data-conversion-stage="offer"><span>03</span><strong>Normalized Offer</strong></li>
+            <li data-conversion-stage="tool"><span>04</span><strong>Agent tool</strong></li>
+            <li data-conversion-stage="human"><span>05</span><strong>Human approval</strong></li>
+          </ol>
+        </section>
+
         <div class="origin-control">
           <label for="origin-select">Allowlisted source</label>
           <select id="origin-select" aria-describedby="origin-meta"></select>
           <p id="origin-meta">Loading allowlisted origin...</p>
           <p id="origin-health" class="origin-health">Checking adapter and page access...</p>
+          <details id="origin-diagnostics" class="origin-diagnostics">
+            <summary><span>Origin diagnostics</span><span id="origin-diagnostics-status">Checking...</span></summary>
+            <div id="origin-diagnostics-body" class="origin-diagnostics-body" aria-live="polite"></div>
+          </details>
         </div>
 
         <form id="recommend-form" class="recommend-form">
@@ -130,7 +151,7 @@
             <h2 id="activity-title">Research activity</h2>
           </div>
           <div class="panel-actions">
-            <button id="copy-trace" type="button" class="trace-button">Copy trace</button>
+            <button id="download-dossier" type="button" class="trace-button" disabled>Download dossier</button>
             <span class="read-only">Human approval required</span>
           </div>
         </div>
@@ -150,8 +171,14 @@
         </section>
         <ol id="activity-list" class="activity-list" aria-live="polite"></ol>
         <section id="result-panel" class="result-panel" aria-live="polite">
-          <span class="kicker">LATEST RESULT</span>
-          <p>Invoke a tool to inspect its compact, source-grounded result.</p>
+          <div class="result-heading">
+            <div>
+              <span class="kicker">Agent result</span>
+              <strong>Waiting for a tool call</strong>
+            </div>
+            <span class="result-status">Ready</span>
+          </div>
+          <p>Invoke a tool to inspect a readable, source-grounded result.</p>
         </section>
         <div class="trust-note">
           <strong>Trust boundary</strong>

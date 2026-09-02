@@ -15,6 +15,7 @@
     "deploy": "node scripts/deploy.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "check:origin": "node scripts/check-origin.mjs",
     "verify": "npm run typecheck && npm test && wrangler deploy --dry-run && wrangler deploy --config wrangler.origin.jsonc --dry-run",
     "verify:live": "node scripts/verify-live.mjs"
   },

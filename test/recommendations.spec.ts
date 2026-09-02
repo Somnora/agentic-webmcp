@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { normalizeProductsJsonOffer } from "../src/catalog";
 import { DEMO_PRODUCTS } from "../src/demo-origin-catalog";
-import { getOrigin } from "../src/origins";
+import { inspectOrigin } from "../src/origins";
 import { findBestOptions, rankOffers, validateBudget } from "../src/recommendations";
 
-const origin = getOrigin("catalog-lab");
+const origin = inspectOrigin("catalog-lab");
 
 function response(data: unknown): Response {
   return new Response(JSON.stringify(data), { headers: { "Content-Type": "application/json" } });
