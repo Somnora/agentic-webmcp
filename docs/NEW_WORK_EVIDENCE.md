@@ -43,13 +43,15 @@ At 1280 by 720, Chrome loaded the production workspace with exactly eight regist
 
 The presenter release added a nine-phase 2 minute 28 second rehearsal, one smoothly morphing focus frame, a bounded SVG cursor, live tool inputs, and implementation captions. The local 1280 by 720 pass verified edge-safe cursor placement, `AGENT` and `HUMAN` pointer roles, side-switching overlay placement, the required confirmation interruption, a clean rehearsal reset, and no console warnings. All 13 production checks passed after deployment, including the new presenter asset.
 
-## September 1 working tree verification
+## September 1 release verification
 
 Strict TypeScript, all 79 tests across 13 files, and dry runs for both Workers passed after the evidence reconciliation, decision dossier, origin conformance, reliability, runtime authorization, restrictive path validation, honest health labeling, and quote-bound approval work. At the exact `reviewAfter` timestamp, tests prove that an expired origin disappears from discovery, catalog and proposal requests return 403 before upstream access, and conformance reports the expiry without contacting the origin. A running local pair of Workers returned live product JSON plus live page JSON-LD for `catalog-lab`. The conformance command passed all 10 checks and reported `Verified across product JSON and page` for price, availability, condition, shipping, and returns.
 
-The reliability pass added request correlation, adapter timings, normalized failure reasons, full-body timeouts, and a compact origin diagnostics drawer. Local logs proved that the app Worker and controlled origin received the same correlation id. A fresh in-app browser pass at 1280 by 720 showed the live product and page timings with no console warnings. Selecting `review-shop` changed the drawer to a labeled `password-protected` fallback without claiming live inventory.
+The reliability pass added request correlation, adapter timings, normalized failure reasons, full-body timeouts, and a compact origin diagnostics drawer. Local logs proved that the app Worker and controlled origin received the same correlation id. Selecting `review-shop` changed the drawer to a labeled `password-protected` fallback without claiming live inventory.
 
-This working tree has not been deployed. Treat the September 1 code and browser evidence as local verification until an explicit deployment and public smoke run are completed.
+The release was committed to `main`, pushed to the public repository, and deployed to both Workers. All 17 production checks passed, including deployment identity, controlled origin health, catalog and page liveness, verified provenance, proposal isolation, quote-bound human approval, receipt integrity, and allowlist rejection.
+
+A fresh in-app browser pass at 2560 by 1440 with device pixel ratio 2 showed nine registered WebMCP tools and no console warnings. The browser called `list_origins`, `select_origin`, `find_best_options`, `interpolate_page`, `compare_products`, and `propose_add_to_cart` through WebMCP. The visible workspace showed `Verified across product JSON and page`, blocked mutation before human approval, then recorded the exact reviewed Quote after the visible button was used. The dossier control generated the page-local Markdown export. The browser sandbox did not expose its download directory for a filesystem-level file check.
 
 ## August 26 origin access evidence
 

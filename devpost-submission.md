@@ -113,10 +113,12 @@ Video outline:
 ## Submission Readiness Notes
 
 - Project creation began during the submission period on August 25, 2026 at 5:41 PM Pacific.
-- Strict TypeScript, 79 automated tests across 13 files, and both Worker dry runs pass on the current release candidate.
+- Strict TypeScript, 79 automated tests across 13 files, and both Worker dry runs pass on the deployed release.
 - The repository is public and contains an MIT license.
 - The public URL and public repository are known.
-- Final public deployment verification, WebMCP browser rehearsal, screenshots, and the required public video must be completed before the final Devpost check.
+- All 17 public smoke checks pass against the deployed Workers.
+- The no-credential judge flow passed in the in-app browser at 2560 by 1440 with nine registered tools, live cross-source verification, quote-bound approval, a receipt, and the dossier export action.
+- Final gallery screenshots and the required public video must be completed before the final Devpost check.
 
 ## Known Limitations
 
