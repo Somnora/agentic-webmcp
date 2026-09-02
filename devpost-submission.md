@@ -14,7 +14,7 @@ Visual commerce pages force agents to infer controls, reconstruct facts from pre
 
 Agentic WebMCP lets an authorized website expose a bounded agent interface. Nine WebMCP tools discover origins, search and rank offers, compare products, convert an allowlisted page into compact Markdown plus a structured Offer, create a brief, and prepare a purchase review.
 
-The agent and the person share one visible workspace. Product JSON and page JSON-LD are reconciled into verified, single-source, or conflict evidence for price, availability, condition, shipping, and returns. The agent can prepare a short-lived Quote, but only the visible human button can create a page-local decision record. The Worker rereads the Offer and rejects approval if the facts changed after review.
+The agent and the person share one visible workspace. Product JSON and page JSON-LD are reconciled into verified, single-source, or conflict evidence for price, availability, condition, shipping, and returns. When credible options win on different evidence, the agent asks one bounded refinement question and shows exactly how the answer affects the ranking. The agent can prepare a short-lived Quote, but only the visible human button can create a page-local decision record. The Worker rereads the Offer and rejects approval if the facts changed after review.
 
 ## Why This Matters
 
@@ -57,13 +57,14 @@ The default origin is `catalog-lab` at `agentic-webmcp-origin.somnora.workers.de
 1. Open https://agentic-webmcp.somnora.workers.dev/ in ChatGPT's in-app browser or Chrome with WebMCP enabled.
 2. Confirm the page reports nine registered tools.
 3. Ask: `List the allowlisted origins and select catalog-lab.`
-4. Ask: `Find the best electric guitars under 900 USD. Rank them by condition, delivered price, seller confidence, and returns.`
-5. Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
-6. Confirm the result says `Verified across product JSON and page`.
-7. Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
-8. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
-9. Click `Approve for handoff` yourself and inspect the page-local receipt.
-10. Download the decision dossier.
+4. Ask: `Find the best electric guitars under 900 USD as a gift. Let me explore. The recipient prefers single-coil pickups. Emphasize taste, condition, and price.`
+5. Choose one of the returned priorities at the decision checkpoint and inspect the resolved ranking.
+6. Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
+7. Confirm the result says `Verified across product JSON and page`.
+8. Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
+9. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
+10. Click `Approve for handoff` yourself and inspect the page-local receipt.
+11. Download the decision dossier.
 
 No credentials are required. Payment remains on the source merchant and is not part of this build.
 
@@ -96,7 +97,7 @@ Video outline:
 
 1. Show an agent tool call and shared workspace change in the first 10 to 15 seconds.
 2. Establish the controlled origin, live adapter, and authorization boundary.
-3. Rank electric guitars under 900 USD.
+3. Rank electric guitars under 900 USD and resolve one evidence-derived uncertainty checkpoint.
 4. Interpolate a product page and pause on cross-source verification.
 5. Compare two listings.
 6. Prepare a purchase review and stop at the human boundary.
@@ -104,11 +105,13 @@ Video outline:
 
 ## Screenshot Shot List
 
-1. Full workspace with origin badge, nine-tool status, and recommendation form.
-2. Ranked guitar options with factor evidence and activity rail.
-3. Interpolated Markdown, structured Offer, canonical URL, and verified evidence state.
-4. Purchase review banner before human approval.
-5. Approved decision record with merchant source link and dossier control.
+Five 2560 by 1440 PNGs were captured from the deployed release and stored outside the public repository under `Agentic WebMCP Gallery/2560x1440`.
+
+1. `01-origin.png`: full workspace with origin badge, nine-tool status, recommendation form, and shared activity rail.
+2. `02-recommend.png`: uncertainty checkpoint with evidence-derived choices, followed by ranked guitar options with deterministic factor evidence.
+3. `03-interpolate.png`: stripped Markdown, structured Offer, canonical URL, and `Verified across product JSON and page` evidence.
+4. `04-proposal.png`: purchase review banner showing that nothing has been ordered or charged before human approval.
+5. `05-confirmed.png`: approved decision record with source link, `Order Created: No`, activity evidence, and dossier control.
 
 ## Submission Readiness Notes
 
@@ -118,7 +121,8 @@ Video outline:
 - The public URL and public repository are known.
 - All 17 public smoke checks pass against the deployed Workers.
 - The no-credential judge flow passed in the in-app browser at 2560 by 1440 with nine registered tools, live cross-source verification, quote-bound approval, a receipt, and the dossier export action.
-- Final gallery screenshots and the required public video must be completed before the final Devpost check.
+- Five gallery screenshots were captured at a true 2560 by 1440 and visually reviewed.
+- The required public video must be completed before the final Devpost check.
 
 ## Known Limitations
 
@@ -137,7 +141,7 @@ Video outline:
 - Live URL: https://agentic-webmcp.somnora.workers.dev/
 - Testing instructions: Use the no-credential flow above.
 - Public repository: https://github.com/Somnora/agentic-webmcp
-- Tested agents or clients: TODO replace with the exact WebMCP client and version after final public rehearsal
+- Tested agents or clients: OpenAI Codex in-app browser using the page-defined WebMCP tools, plus Google Chrome 152.0.7977.65 with WebMCP feature flags for the repeatable high-resolution gallery flow.
 - AI tools used: OpenAI Codex. Add Gemini only if the final narration uses Gemini text-to-speech.
 - Learning level: TODO confirm one of None, Moderate, or Significant
 - Career AI value: TODO confirm Yes or No

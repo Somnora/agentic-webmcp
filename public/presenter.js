@@ -12,8 +12,8 @@ const TOOL_STORIES = Object.freeze({
     detail: "The adapter fetches bounded product JSON over HTTPS and normalizes every result into the shared Offer protocol.",
   },
   find_best_options: {
-    selector: "#product-grid",
-    detail: "A deterministic rubric scores relevance, condition, delivered price, seller confidence, and returns. Every factor remains visible to the human.",
+    selector: "#refinement-panel",
+    detail: "Session-only taste and intent rebalance a deterministic seven-factor rubric. When credible options win on different evidence, the agent pauses for one human priority before finalizing the ranking.",
   },
   get_product: {
     selector: "#product-grid",
@@ -71,15 +71,16 @@ const REHEARSAL_STEPS = Object.freeze([
     action: "selectOrigin",
   },
   {
-    phase: "04 / 09  SEARCH",
+    phase: "04 / 09  DECIDE",
     tool: "find_best_options",
     selector: "#recommend-form",
-    resultSelector: "#product-grid",
+    resultSelector: "#refinement-panel",
     duration: 18000,
-    args: { query: "electric guitar", maxDeliveredPrice: 900, maxResults: 4 },
-    caption: "A shopping goal becomes a scored shortlist grounded in condition, delivered price, seller confidence, and returns.",
+    args: { query: "electric guitar", maxDeliveredPrice: 900, maxResults: 4, shoppingFor: "gift", mode: "explore", priorities: ["taste", "condition", "price"], tasteContext: "single coil pickups" },
+    caption: "The strongest options win on different evidence, so the agent asks one useful question instead of pretending the ranking is certain. Choose the priority that should settle it.",
     detail: TOOL_STORIES.find_best_options.detail,
     action: "recommend",
+    waitForRefinement: true,
   },
   {
     phase: "05 / 09  INTERPOLATE",
@@ -163,6 +164,7 @@ export function createPresenter(actions) {
   let remaining = 0;
   let activeTarget;
   let waitingForHuman = false;
+  let waitingKind = null;
   let cursorRole = "AGENT";
 
   function setCursor(x, y, label = "AGENT") {
@@ -230,8 +232,13 @@ export function createPresenter(actions) {
           cursorRole = "HUMAN";
           document.body.classList.add("presenter-waiting");
           elements.pause.disabled = true;
-          elements.detail.textContent = "The agent has stopped. Only the visible human button can approve the selection for handoff.";
-          focusSelector("#confirm-cart").catch(() => undefined);
+          if (waitingKind === "refinement") {
+            elements.detail.textContent = "The agent has stopped at genuine uncertainty. Choose one visible priority to finalize the ranking.";
+            focusSelector("#refinement-panel").catch(() => undefined);
+          } else {
+            elements.detail.textContent = "The agent has stopped. Only the visible human button can approve the selection for handoff.";
+            focusSelector("#confirm-cart").catch(() => undefined);
+          }
         } else {
           advance().catch(showPresenterError);
         }
@@ -240,7 +247,8 @@ export function createPresenter(actions) {
   }
 
   async function showStep(step) {
-    waitingForHuman = step.waitForHuman === true;
+    waitingKind = step.waitForRefinement === true ? "refinement" : step.waitForHuman === true ? "approval" : null;
+    waitingForHuman = waitingKind !== null;
     cursorRole = step.humanResult === true ? "HUMAN" : "AGENT";
     elements.next.disabled = waitingForHuman;
     document.body.classList.toggle("presenter-waiting", false);
@@ -308,6 +316,7 @@ export function createPresenter(actions) {
     running = false;
     paused = false;
     waitingForHuman = false;
+    waitingKind = null;
     stepIndex = -1;
     activeTarget = undefined;
     elements.layer.hidden = true;
@@ -327,6 +336,7 @@ export function createPresenter(actions) {
     running = true;
     paused = false;
     waitingForHuman = false;
+    waitingKind = null;
     stepIndex = -1;
     elements.rehearse.disabled = true;
     elements.pause.disabled = false;
@@ -364,8 +374,19 @@ export function createPresenter(actions) {
   }
 
   function humanConfirmed() {
-    if (!running || !waitingForHuman) return;
+    if (!running || !waitingForHuman || waitingKind !== "approval") return;
     waitingForHuman = false;
+    waitingKind = null;
+    paused = false;
+    elements.next.disabled = false;
+    document.body.classList.remove("presenter-waiting");
+    advance().catch(showPresenterError);
+  }
+
+  function humanRefined() {
+    if (!running || !waitingForHuman || waitingKind !== "refinement") return;
+    waitingForHuman = false;
+    waitingKind = null;
     paused = false;
     elements.next.disabled = false;
     document.body.classList.remove("presenter-waiting");
@@ -390,5 +411,5 @@ export function createPresenter(actions) {
 
   if (new URLSearchParams(location.search).get("present") === "1") enable();
 
-  return { toolEvent, humanConfirmed, enable, exit };
+  return { toolEvent, humanConfirmed, humanRefined, enable, exit };
 }

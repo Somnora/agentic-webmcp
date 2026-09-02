@@ -265,7 +265,71 @@ describe("Worker routes", () => {
     expect(response.status).toBe(200);
     expect(body.recommendations).toHaveLength(3);
     expect(body.recommendations[0]).toMatchObject({ handle: "sunburst-s-style-electric", score: expect.any(Number) });
-    expect(body.rubric).toMatchObject({ relevance: 30, condition: 25, deliveredPrice: 25 });
+    expect(body.rubric).toMatchObject({ relevance: 25, preferenceFit: 10, condition: 20, deliveredPrice: 20, delivery: 5 });
+  });
+
+  it("ranks session-only taste and intent without caching personal context", async () => {
+    mockMarketplaceUpstream();
+    const response = await handleRequest(jsonRequest("https://example.test/api/recommendations?originId=catalog-lab", {
+      originId: "catalog-lab",
+      query: "electric guitar",
+      maxDeliveredPrice: 900,
+      maxResults: 3,
+      shoppingFor: "gift",
+      mode: "explore",
+      priorities: ["taste", "condition", "price"],
+      tasteContext: "single coil fitted case",
+      mustHave: "single coil",
+      avoid: "final sale",
+    }), env);
+    const body = await response.json() as {
+      goal: { intent: { shoppingFor: string; tasteContext: string } };
+      recommendations: Array<{ label: string; handle: string; why: string }>;
+      rubric: Record<string, number>;
+      refinement: { status: string; choices: Array<{ id: string }> };
+    };
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(body.goal.intent).toMatchObject({ shoppingFor: "gift", tasteContext: "single coil fitted case" });
+    expect(body.recommendations).toEqual([
+      expect.objectContaining({ label: "Best fit", handle: "sunburst-s-style-electric", why: expect.stringContaining("recipient context") }),
+    ]);
+    expect(Object.values(body.rubric).reduce((sum, value) => sum + value, 0)).toBe(100);
+    expect(body.refinement).toMatchObject({ status: "not-needed", choices: [] });
+  });
+
+  it("returns and resolves a no-store refinement checkpoint", async () => {
+    mockMarketplaceUpstream();
+    const input = {
+      originId: "catalog-lab",
+      query: "electric guitar",
+      maxDeliveredPrice: 900,
+      maxResults: 3,
+      shoppingFor: "gift",
+      mode: "explore",
+      priorities: ["taste", "condition", "price"],
+      tasteContext: "single coil pickups",
+    };
+    const initial = await handleRequest(jsonRequest("https://example.test/api/recommendations?originId=catalog-lab", input), env);
+    const initialBody = await initial.json() as { refinement: { status: string; choices: Array<{ id: string }> } };
+    expect(initial.headers.get("Cache-Control")).toBe("no-store");
+    expect(initialBody.refinement.status).toBe("needs-clarification");
+    expect(initialBody.refinement.choices.map((choice) => choice.id)).toContain("price");
+
+    const resolved = await handleRequest(jsonRequest("https://example.test/api/recommendations?originId=catalog-lab", { ...input, refinementChoice: "price" }), env);
+    expect(await resolved.json()).toMatchObject({
+      goal: { intent: { refinementChoice: "price" } },
+      refinement: { status: "resolved", selectedChoice: { id: "price" } },
+    });
+  });
+
+  it("rejects recommendation origin mismatches before ranking", async () => {
+    const response = await handleRequest(jsonRequest("https://example.test/api/recommendations?originId=review-shop", {
+      originId: "catalog-lab",
+      query: "electric guitar",
+    }), env);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: expect.stringContaining("does not match") });
   });
 
   it("rejects unknown origins and configured hostname mismatches", async () => {

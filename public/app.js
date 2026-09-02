@@ -7,6 +7,7 @@ function emptyDecision() {
     goal: null,
     rubric: null,
     rankedOptions: [],
+    refinement: null,
     evidence: {},
     comparedHandles: [],
     selection: null,
@@ -29,6 +30,7 @@ const state = {
   conversionActive: null,
   activeAdapter: null,
   decision: emptyDecision(),
+  recommendationRequest: null,
 };
 
 let presenter;
@@ -46,6 +48,17 @@ const elements = {
   recommendForm: document.querySelector("#recommend-form"),
   recommendInput: document.querySelector("#recommend-input"),
   recommendBudget: document.querySelector("#recommend-budget"),
+  recommendShoppingFor: document.querySelector("#recommend-shopping-for"),
+  recommendMode: document.querySelector("#recommend-mode"),
+  recommendTaste: document.querySelector("#recommend-taste"),
+  recommendMustHave: document.querySelector("#recommend-must-have"),
+  recommendAvoid: document.querySelector("#recommend-avoid"),
+  recommendPriorities: [...document.querySelectorAll('input[name="recommend-priority"]')],
+  refinementPanel: document.querySelector("#refinement-panel"),
+  refinementKicker: document.querySelector("#refinement-kicker"),
+  refinementQuestion: document.querySelector("#refinement-question"),
+  refinementExplanation: document.querySelector("#refinement-explanation"),
+  refinementChoices: document.querySelector("#refinement-choices"),
   compareButton: document.querySelector("#compare-button"),
   selectionCount: document.querySelector("#selection-count"),
   briefForm: document.querySelector("#brief-form"),
@@ -255,6 +268,13 @@ function boundedJson(value) {
       output = JSON.stringify(value);
     }
   }
+  if (Array.isArray(value.recommendations)) {
+    while (output.length > 1450 && value.recommendations.length > 1) {
+      value.recommendations.pop();
+      value.truncated = true;
+      output = JSON.stringify(value);
+    }
+  }
   if (output.length > 1450) {
     return JSON.stringify({
       originId: state.originId,
@@ -450,15 +470,19 @@ function offerResultList(offers) {
   return list;
 }
 
-function recommendationResultList(recommendations) {
+function recommendationResultList(recommendations, factorOrder = []) {
   const list = node("ol", "result-list ranked");
   for (const recommendation of recommendations.slice(0, 4)) {
     const item = node("li");
-    const title = node("strong", "", `Option ${recommendation.rank} | ${recommendation.score}/100`);
-    const factorText = recommendation.factors
-      ? Object.entries(recommendation.factors).map(([name, value]) => `${name} ${value}`).join(" | ")
-      : recommendation.handle;
-    item.append(title, node("span", "", factorText));
+    const title = node("strong", "", `${recommendation.label || `Option ${recommendation.rank}`} | ${recommendation.score}/100`);
+    const reason = recommendation.why || recommendation.handle;
+    const tradeoff = recommendation.tradeoff ? `Tradeoff: ${recommendation.tradeoff}` : "";
+    const confidenceValue = recommendation.evidenceConfidence || recommendation.evidence;
+    const confidence = confidenceValue ? `Evidence: ${confidenceValue}` : "";
+    const factorText = Array.isArray(recommendation.scores)
+      ? recommendation.scores.map((score, index) => `${factorOrder[index] || index + 1} ${score}`).join(" | ")
+      : recommendation.factors ? Object.entries(recommendation.factors).map(([name, score]) => `${name} ${score}`).join(" | ") : "";
+    item.append(title, node("span", "", reason), node("span", "", [tradeoff, confidence].filter(Boolean).join(" | ")), node("span", "", factorText));
     list.append(item);
   }
   return list;
@@ -502,9 +526,12 @@ function renderAgentResult(tool, actor, resultText, displayPayload) {
       resultFact("Exact host", payload.selected.hostname),
     );
   } else if (Array.isArray(payload.recommendations)) {
+    const refinementLead = payload.refinement?.status === "needs-clarification"
+      ? " The leading options have competing strengths, so one human preference is requested."
+      : payload.refinement?.status === "resolved" ? ` ${payload.refinement.explanation}` : "";
     content.append(
-      node("p", "result-lead", `${payload.recommendations.length} options ranked with a deterministic evidence rubric.`),
-      recommendationResultList(payload.recommendations),
+      node("p", "result-lead", `${payload.recommendations.length} options ranked with a deterministic evidence rubric.${refinementLead}`),
+      recommendationResultList(payload.recommendations, payload.factorOrder),
     );
   } else if (payload.canonicalUrl && payload.offer) {
     content.append(node("p", "result-lead", payload.offer.evidence?.label || "One allowlisted page is now available as Markdown and a normalized Offer."));
@@ -576,6 +603,68 @@ function updateSelection() {
 
 function hideInterpolate() {
   elements.interpolateView.hidden = true;
+}
+
+function hideRefinement() {
+  elements.refinementPanel.hidden = true;
+  elements.refinementPanel.classList.remove("resolved");
+  elements.refinementChoices.replaceChildren();
+}
+
+function refinementExplanation(refinement) {
+  let explanation = refinement.explanation;
+  for (const option of state.decision.rankedOptions) {
+    explanation = explanation.replaceAll(option.handle, option.title);
+  }
+  return explanation;
+}
+
+function renderRefinement(refinement) {
+  if (!refinement || refinement.status === "not-needed") {
+    hideRefinement();
+    return;
+  }
+  elements.refinementPanel.hidden = false;
+  elements.refinementPanel.classList.toggle("resolved", refinement.status === "resolved");
+  elements.refinementKicker.textContent = refinement.status === "resolved" ? "REFINEMENT APPLIED" : "DECISION CHECKPOINT";
+  elements.refinementQuestion.textContent = refinement.status === "resolved"
+    ? refinement.selectedChoice?.label || "Human priority applied"
+    : refinement.question;
+  elements.refinementExplanation.textContent = refinementExplanation(refinement);
+  elements.refinementChoices.replaceChildren();
+  if (refinement.status === "needs-clarification") {
+    for (const choice of refinement.choices) {
+      const button = node("button", "refinement-choice");
+      button.type = "button";
+      button.append(node("strong", "", choice.label), node("span", "", choice.impact));
+      button.addEventListener("click", () => {
+        if (!state.recommendationRequest) return;
+        for (const option of elements.refinementChoices.querySelectorAll("button")) option.disabled = true;
+        runRecommend({ ...state.recommendationRequest, refinementChoice: choice.id }, "human refinement")
+          .then(() => {
+            elements.refinementPanel.focus();
+            presenter?.humanRefined();
+          })
+          .catch((error) => {
+            renderRefinement(refinement);
+            showError(error);
+          });
+      });
+      elements.refinementChoices.append(button);
+    }
+  } else {
+    const reconsider = node("button", "refinement-choice", "Reconsider this priority");
+    reconsider.type = "button";
+    reconsider.addEventListener("click", () => {
+      if (!state.recommendationRequest) return;
+      runRecommend({ ...state.recommendationRequest, refinementChoice: null }, "human refinement")
+        .then(() => elements.refinementPanel.focus())
+        .catch(showError);
+    });
+    elements.refinementChoices.append(reconsider);
+  }
+  elements.refinementPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+  elements.refinementPanel.focus({ preventScroll: true });
 }
 
 function marketplaceFacts(offer) {
@@ -654,7 +743,7 @@ function renderOffers(offers) {
     actions.append(label, inspect, propose);
     if (recommendation) {
       const rank = node("div", "recommendation-rank");
-      rank.append(node("span", "", `Option ${recommendation.rank}`), node("strong", "", `${recommendation.score}/100`));
+      rank.append(node("span", "", `${recommendation.label} | Option ${recommendation.rank}`), node("strong", "", `${recommendation.score}/100`));
       card.append(rank);
     }
     card.append(node("h3", "", offer.title), meta);
@@ -666,12 +755,18 @@ function renderOffers(offers) {
       }
       card.append(evidence);
     }
-    card.append(
-      node("p", "", recommendation?.summary || offer.description || "No origin description supplied."),
-      node("p", "provenance-line", provenanceLabel(offer)),
-      handoffLine(offer),
-      actions,
-    );
+    card.append(node("p", "", recommendation?.summary || offer.description || "No origin description supplied."));
+    if (recommendation) {
+      const decision = node("div", "recommendation-copy");
+      decision.append(
+        node("strong", "", recommendation.why),
+        node("span", "", `Tradeoff: ${recommendation.tradeoff}`),
+        node("span", "", `Evidence: ${recommendation.evidenceConfidence}`),
+        node("span", "", `Factors: ${Object.entries(recommendation.factors).map(([name, score]) => `${name.replaceAll(/([A-Z])/g, " $1").toLocaleLowerCase()} ${score}`).join(" | ")}`),
+      );
+      card.append(decision);
+    }
+    card.append(node("p", "provenance-line", provenanceLabel(offer)), handoffLine(offer), actions);
     elements.grid.append(card);
   }
   updateSelection();
@@ -683,10 +778,11 @@ function renderComparison(offers) {
     const recommendation = state.recommendations.get(offer.handle);
     const card = node("article", "product-card selected");
     card.append(
-      node("span", "kicker", recommendation ? `Option ${recommendation.rank} | ${recommendation.score}/100` : "Comparison"),
+      node("span", "kicker", recommendation ? `${recommendation.label} | ${recommendation.score}/100` : "Comparison"),
       node("h3", "", offer.title),
       node("div", "product-meta", offer.marketplace ? `${offer.marketplace.deliveredPrice.amount} ${offer.marketplace.deliveredPrice.currencyCode} delivered` : price(offer)),
       node("p", "", recommendation?.summary || offer.description),
+      ...(recommendation ? [node("p", "", `${recommendation.why} Tradeoff: ${recommendation.tradeoff}`)] : []),
       node("p", "provenance-line", provenanceLabel(offer)),
       handoffLine(offer),
     );
@@ -720,10 +816,12 @@ async function runSelectOrigin({ originId }, actor = "agent", signal) {
   state.selected.clear();
   state.recommendations.clear();
   state.decision = emptyDecision();
+  state.recommendationRequest = null;
   state.activeAdapter = null;
   updateOrigin(payload.selected);
   updateSelection();
   hideInterpolate();
+  hideRefinement();
   await Promise.all([loadOriginHealth(signal), loadOriginDiagnostics(signal)]);
   const output = boundedJson({ ...payload, suggestedNextActions: ["search_products", "interpolate_page"] });
   recordActivity("select_origin", { originId }, actor, output);
@@ -735,6 +833,8 @@ async function runSearch({ query = "", maxResults = 6 }, actor = "agent", signal
   updateSource(payload);
   hideInterpolate();
   state.recommendations.clear();
+  state.recommendationRequest = null;
+  hideRefinement();
   renderOffers(payload.offers);
   payload.suggestedNextActions = suggestedActions(["get_product", "compare_products"], payload.offers);
   const output = compactCatalog(payload);
@@ -742,15 +842,41 @@ async function runSearch({ query = "", maxResults = 6 }, actor = "agent", signal
   return output;
 }
 
-async function runRecommend({ query, maxDeliveredPrice, maxResults = 4 }, actor = "agent", signal) {
-  const budget = maxDeliveredPrice === undefined || maxDeliveredPrice === null || maxDeliveredPrice === "" ? "" : String(maxDeliveredPrice);
-  const payload = await api(`/api/recommendations?query=${encodeURIComponent(query)}&maxDeliveredPrice=${encodeURIComponent(budget)}&limit=${encodeURIComponent(maxResults)}&${originQuery()}`, { signal });
+async function runRecommend({
+  query,
+  maxDeliveredPrice,
+  maxResults = 4,
+  shoppingFor = "self",
+  mode = "decide",
+  priorities = [],
+  tasteContext = "",
+  mustHave = "",
+  avoid = "",
+  refinementChoice = null,
+}, actor = "agent", signal) {
+  elements.recommendInput.value = query;
+  elements.recommendBudget.value = maxDeliveredPrice ?? "";
+  elements.recommendShoppingFor.value = shoppingFor;
+  elements.recommendMode.value = mode;
+  elements.recommendTaste.value = tasteContext;
+  elements.recommendMustHave.value = mustHave;
+  elements.recommendAvoid.value = avoid;
+  for (const input of elements.recommendPriorities) input.checked = priorities.includes(input.value);
+  updatePriorityAvailability();
+  const request = { originId: state.originId, query, maxDeliveredPrice, maxResults, shoppingFor, mode, priorities, tasteContext, mustHave, avoid, refinementChoice };
+  state.recommendationRequest = request;
+  const payload = await api(`/api/recommendations?${originQuery()}`, {
+    method: "POST",
+    signal,
+    body: JSON.stringify(request),
+  });
   updateSource(payload);
   hideInterpolate();
   state.recommendations = new Map(payload.recommendations.map((item) => [item.handle, item]));
   const offersByHandle = new Map(payload.offers.map((offer) => [offer.handle, offer]));
   state.decision.goal = payload.goal;
   state.decision.rubric = payload.rubric;
+  state.decision.refinement = payload.refinement;
   state.decision.rankedOptions = payload.recommendations.map((item) => {
     const offer = offersByHandle.get(item.handle);
     return {
@@ -761,14 +887,34 @@ async function runRecommend({ query, maxDeliveredPrice, maxResults = 4 }, actor 
     };
   });
   renderOffers(payload.offers);
+  renderRefinement(payload.refinement);
+  const factorOrder = Object.keys(payload.rubric);
   const output = boundedJson({
-    origin: compactOrigin(payload.origin),
-    goal: payload.goal,
-    rubric: payload.rubric,
-    recommendations: payload.recommendations.map((item) => ({ rank: item.rank, handle: item.handle, score: item.score, factors: item.factors })),
-    suggestedNextActions: suggestedActions(["get_product", "interpolate_page"], payload.offers),
+    originId: payload.origin.id,
+    goal: {
+      query: payload.goal.query,
+      budget: payload.goal.maxDeliveredPrice,
+      for: payload.goal.intent.shoppingFor,
+      mode: payload.goal.intent.mode,
+      priorities: payload.goal.intent.priorities,
+      ...(payload.goal.intent.tasteContext ? { taste: payload.goal.intent.tasteContext } : {}),
+    },
+    scoring: { order: ["match", "taste", "condition", "price", "seller", "returns", "delivery"], weights: Object.values(payload.rubric) },
+    refinement: payload.refinement.status === "needs-clarification"
+      ? { status: payload.refinement.status, question: payload.refinement.question, choices: payload.refinement.choices.map(({ id, label }) => ({ id, label })) }
+      : { status: payload.refinement.status, selectedChoice: payload.refinement.selectedChoice?.id, changed: payload.refinement.changed, explanation: payload.refinement.explanation },
+    recommendations: payload.recommendations.map((item) => ({
+      rank: item.rank,
+      label: item.label,
+      handle: item.handle,
+      score: item.score,
+      why: item.why,
+      tradeoff: item.tradeoff,
+      evidence: item.evidenceConfidence.startsWith("Verified") ? "verified" : item.evidenceConfidence.startsWith("Single source") ? "single-source" : "conflict",
+      scores: Object.values(item.factors),
+    })),
   });
-  recordActivity("find_best_options", { query, maxDeliveredPrice, maxResults }, actor, output);
+  recordActivity("find_best_options", request, actor, output, { ...payload, factorOrder });
   return output;
 }
 
@@ -973,6 +1119,7 @@ function decisionSnapshot() {
     activeAdapter: state.activeAdapter,
     goal: state.decision.goal,
     rubric: state.decision.rubric,
+    refinement: state.decision.refinement,
     rankedOptions: state.decision.rankedOptions,
     evidence: Object.values(state.decision.evidence),
     comparedHandles: state.decision.comparedHandles,
@@ -1033,12 +1180,29 @@ elements.searchForm.addEventListener("submit", (event) => {
   runSearch({ query: elements.searchInput.value, maxResults: 6 }, "human preview").catch(showError);
 });
 
+function selectedPriorities() {
+  return elements.recommendPriorities.filter((input) => input.checked).map((input) => input.value);
+}
+
+function updatePriorityAvailability() {
+  const atLimit = selectedPriorities().length >= 3;
+  for (const input of elements.recommendPriorities) input.disabled = atLimit && !input.checked;
+}
+
+for (const input of elements.recommendPriorities) input.addEventListener("change", updatePriorityAvailability);
+
 elements.recommendForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runRecommend({
     query: elements.recommendInput.value,
     maxDeliveredPrice: elements.recommendBudget.value,
     maxResults: 4,
+    shoppingFor: elements.recommendShoppingFor.value,
+    mode: elements.recommendMode.value,
+    priorities: selectedPriorities(),
+    tasteContext: elements.recommendTaste.value,
+    mustHave: elements.recommendMustHave.value,
+    avoid: elements.recommendAvoid.value,
   }, "human preview").catch(showError);
 });
 
@@ -1085,6 +1249,7 @@ function resetWorkspaceForRehearsal() {
   state.returnFocus = null;
   state.activeAdapter = null;
   state.decision = emptyDecision();
+  state.recommendationRequest = null;
   state.conversionComplete.clear();
   state.conversionActive = null;
   elements.activity.replaceChildren();
@@ -1099,6 +1264,7 @@ function resetWorkspaceForRehearsal() {
   renderCart();
   updateSelection();
   hideInterpolate();
+  hideRefinement();
 }
 
 presenter = createPresenter({

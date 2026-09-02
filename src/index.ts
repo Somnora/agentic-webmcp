@@ -143,6 +143,13 @@ function optionalString(body: Record<string, unknown>, key: string): string | un
   return value;
 }
 
+function optionalScalar(body: Record<string, unknown>, key: string): string | null {
+  const value = body[key];
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" && typeof value !== "number") throw new RangeError(`${key} must be a string or number.`);
+  return String(value);
+}
+
 function bindingString(env: Env, name: string): string | undefined {
   const value = Reflect.get(env, name);
   return typeof value === "string" ? value : undefined;
@@ -355,17 +362,33 @@ async function routeRequest(
     }
 
     if (url.pathname === "/api/recommendations") {
-      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
-      const origin = selectedOrigin(url);
-      const originFetcher = fetcherForOrigin(env, origin, reliability);
-      const query = url.searchParams.get("query") ?? "";
-      const limit = url.searchParams.get("limit");
-      const maxDeliveredPrice = url.searchParams.get("maxDeliveredPrice");
-      return await cachedJson(
-        request,
-        ctx,
-        () => findBestOptions(query, limit, maxDeliveredPrice, origin, originFetcher, runtimeCatalogEnv),
-      );
+      if (request.method === "GET") {
+        const origin = selectedOrigin(url);
+        const originFetcher = fetcherForOrigin(env, origin, reliability);
+        const query = url.searchParams.get("query") ?? "";
+        const limit = url.searchParams.get("limit");
+        const maxDeliveredPrice = url.searchParams.get("maxDeliveredPrice");
+        return await cachedJson(
+          request,
+          ctx,
+          () => findBestOptions(query, limit, maxDeliveredPrice, origin, originFetcher, runtimeCatalogEnv),
+        );
+      }
+      if (request.method === "POST") {
+        const body = await readBoundedJson(request);
+        const origin = bodyOrigin(url, body);
+        const originFetcher = fetcherForOrigin(env, origin, reliability);
+        return jsonResponse(await findBestOptions(
+          stringField(body, "query"),
+          optionalScalar(body, "maxResults"),
+          optionalScalar(body, "maxDeliveredPrice"),
+          origin,
+          originFetcher,
+          runtimeCatalogEnv,
+          body,
+        ));
+      }
+      return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
     }
 
     if (url.pathname.startsWith("/api/products/")) {

@@ -13,3 +13,5 @@ worker-startup.cpuprofile
 devpost-submission.md
 docs/demo-qa/
 build/demo-voiceover/
+.firecrawl/
+output/

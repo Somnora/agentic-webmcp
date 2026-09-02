@@ -14,7 +14,7 @@ Visual websites make agents infer controls and reconstruct product facts from pr
 
 ## What it does
 
-Agentic WebMCP exposes nine WebMCP tools over explicitly allowlisted product origins. It converts public product JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options by visible evidence, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review.
+Agentic WebMCP exposes nine WebMCP tools over explicitly allowlisted product origins. It converts public product JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options against session-only taste and intent, ask one evidence-derived refinement when credible choices have competing strengths, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review.
 
 The final decision stays human-controlled. The agent cannot place an order or pay. A visible button creates only a page-local approved selection and links back to the merchant. Before recording it, the Worker rereads the Offer and requires every line and total to match the Quote the person reviewed.
 
@@ -25,7 +25,9 @@ The final decision stays human-controlled. The agent cannot place an order or pa
 - All adapters normalize into the same `Offer` structure.
 - Every normalized Offer is checked against its origin manifest and exposes provenance, freshness, and live-only handoff eligibility.
 - Product JSON and page JSON-LD reconcile price, availability, condition, shipping, and returns into verified, single-source, or conflict evidence states.
-- The recommender uses deterministic factor scores for relevance, condition, delivered price, seller confidence, and returns.
+- The recommender uses session-only taste and intent plus deterministic factor scores for relevance, preference fit, condition, delivered price, seller confidence, returns, and delivery.
+- Ranked output distinguishes Best fit, Best value, Worth a look, and Strong alternative with a reason, tradeoff, and evidence confidence.
+- The uncertainty checkpoint exposes competing evidence, accepts only a returned priority, applies a visible rubric adjustment, and reports whether the human answer changed Best fit.
 - The interpolation route validates the origin and path, extracts structured facts, removes page chrome, and returns compact Markdown.
 - Browser tools call the same actions as the manual UI and update the shared workspace.
 - The browser generates a portable Markdown decision dossier with the goal, ranked evidence, canonical sources, conflicts, selected Offer, and human decision.
@@ -43,7 +45,7 @@ The main challenge was making a useful live-web demonstration without claiming a
 - Exact-host and restrictive path allowlisting with bounded fetches and redirect checks.
 - Fail-closed rejection of fallback, stale, or unavailable Offers before purchase review.
 - Cross-source evidence verification with visible conflict handling.
-- A downloadable decision dossier that remains local to the browser.
+- A downloadable decision dossier with the goal, taste and intent, ranking rationale, tradeoffs, evidence, selection, and human decision that remains local to the browser.
 - A polished shared workspace with source-visible ranking and smooth presentation focus.
 - A quote-bound, human-only purchase handoff with no agent checkout or payment capability.
 
@@ -59,12 +61,13 @@ With merchant permission, the same protocol can support additional real origins 
 
 1. Confirm nine tools are registered.
 2. Ask: `List the allowlisted origins and select catalog-lab.`
-3. Ask: `Find the best electric guitars under 900 USD. Rank them by condition, delivered price, seller confidence, and returns.`
-4. Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
-5. Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
-6. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
-7. Click `Approve for handoff` as the human and show the decision record.
-8. Download the decision dossier and show the portable evidence record.
+3. Ask: `Find the best electric guitars under 900 USD as a gift. Let me explore. The recipient prefers single-coil pickups. Emphasize taste, condition, and price.`
+4. Choose one priority at the decision checkpoint and show the resolved ranking.
+5. Ask: `Interpolate /products/sunburst-s-style-electric into stripped Markdown and a structured Offer.`
+6. Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
+7. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
+8. Click `Approve for handoff` as the human and show the decision record.
+9. Download the decision dossier and show the portable evidence record.
 
 ## Disclosure
 

@@ -28,9 +28,15 @@ Pass when the visible workspace selects `Independent Gear Exchange`, displays th
 
 ### Explainable recommendation
 
-Prompt: `Find the best electric guitars under 900 USD. Rank them by condition, delivered price, seller confidence, and returns.`
+Prompt: `Find the best electric guitars under 900 USD as a gift. Let me explore. The recipient prefers single-coil pickups. Emphasize taste, condition, and price.`
 
-Pass when only budget-eligible listings are returned, the ranking is stable, and the response exposes all five factor scores and delivered price.
+Pass when only budget-eligible listings are returned, the ranking is stable, and the response exposes all seven factor scores, a 100-point intent-adjusted rubric, Best fit, Best value, Worth a look, tradeoffs, evidence confidence, and delivered price. The request must use `POST` with `Cache-Control: no-store`, and the personal context must not appear in the URL or persist on the server.
+
+### Uncertainty-aware refinement
+
+Run the explainable recommendation prompt without `refinementChoice`, then answer with one of the returned choices.
+
+Pass when the first result asks exactly one question only because an eligible challenger is within the configured margin and stronger on at least one scored factor. Choices must be derived from actual factor differences. The follow-up must accept only one returned choice, keep the rubric total at 100, show the explicit 10-point adjustment, report the before and after Best fit handles, and record whether the ranking changed. A clear leader, single eligible result, unknown choice, or unavailable choice must not create a refinement.
 
 ### Allowlisted interpolation
 

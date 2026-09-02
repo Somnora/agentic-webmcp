@@ -15,7 +15,7 @@ The top-level document calls `document.modelContext.registerTool` for exactly ni
 1. `list_origins`: list the exact HTTPS origins the Worker may read.
 2. `select_origin`: select one origin in page-local state.
 3. `search_products`: search normalized offers on the selected origin.
-4. `find_best_options`: rank matching offers by relevance, condition, delivered price, seller confidence, and returns.
+4. `find_best_options`: rank matching offers with session-only taste, intent, constraints, visible evidence, tradeoffs, and one uncertainty checkpoint when needed.
 5. `get_product`: inspect one offer and its sampled variants.
 6. `compare_products`: compare two to four handles on one origin.
 7. `interpolate_page`: strip an allowlisted product path into compact Markdown plus an `Offer`.
@@ -43,6 +43,8 @@ The origin is a separate public Worker with live HTTPS JSON and semantic HTML re
 Each origin is an authorization manifest with exact host and path rules, adapter capabilities, an upstream time budget, byte limits, freshness policy, and a review date. See [Origin onboarding](docs/ORIGIN_ONBOARDING.md). Anchored catch-all and nested product patterns are rejected during registry validation. Runtime requests fail closed at `reviewAfter`, expired origins disappear from selection, and conformance reports the expiry without contacting the origin. Offer contract validation checks every normalized Offer against its manifest before it reaches an API response.
 
 Every offer includes field-level provenance. Price, availability, condition, shipping, and returns are labeled `verified`, `single-source`, or `conflict`. A conflict remains visible, preserves the primary structured value, and disables handoff for that reconciled Offer. Marketplace listings also include seller feedback and delivered price. The deterministic recommender exposes its score factors instead of hiding them inside a model response.
+
+The recommendation form adds a session-only Taste and Intent layer without changing the Offer model. A shopper can choose self or gift, decide or explore, emphasize up to three factors, and add taste, must-have, or avoid context. Personal context is sent in a bounded `POST /api/recommendations` request with `no-store`, is never placed in the request URL, and is not retained by the Worker. Results are formatted as Best fit, Best value, Worth a look, or Strong alternative with a reason, a tradeoff, and source evidence confidence. When credible candidates win on different evidence, the result asks one bounded refinement question. A returned choice applies a visible 10-point rubric boost, reports whether Best fit changed, and is recorded in the dossier. Clear leaders and single eligible results skip the question.
 
 The activity rail can download a Markdown decision dossier containing the research goal, ranking rubric, source URLs, reconciliation state, timestamps, selected Offer, and human decision. The dossier is generated in the browser and is not uploaded or stored by the application. Human approval returns a receipt only when a fresh reread still matches the exact quote shown for review.
 
@@ -87,7 +89,7 @@ Click `Presenter mode` or add `?present=1`. At 1280 by 720 or higher, presenter 
 - A precise SVG pointer that follows real input and tool results.
 - A compact overlay with validated input and an implementation note.
 - A guided sequence with pause and next controls, with no countdown or voiceover text on screen.
-- A required stop at human approval. The sequence cannot approve on the presenter's behalf.
+- Required stops for an uncertainty refinement and human approval. The sequence cannot choose a preference or approve on the presenter's behalf.
 
 Presenter mode invokes the same application actions. It does not fabricate calls, register another tool, or weaken the human boundary. Record the silent screen sequence, then add the prepared Lapetus narration in post-production.
 
@@ -127,7 +129,8 @@ Top-level browser document
   -> optional allowlisted HTML and JSON-LD interpolation
   -> one normalized Offer graph
   -> cross-source evidence reconciliation
-  -> deterministic evidence ranking
+  -> session-only intent plus deterministic evidence ranking
+  -> one human refinement when credible options have competing strengths
   -> visible comparison, stripped view, purchase review, decision record, and downloadable dossier
 ```
 

@@ -41,13 +41,20 @@ export function createAgenticTools(actions) {
     },
     {
       name: "find_best_options",
-      description: "Rank marketplace offers by query relevance, condition, delivered price, seller confidence, and returns. Show the scored shortlist in the shared interface.",
+      description: "Rank marketplace offers with session-only taste and priorities. If strong options depend on different tradeoffs, ask one refinement question before presenting the final ranking.",
       inputSchema: {
         type: "object",
         properties: {
           query: { type: "string", description: "What the shopper wants, such as electric guitar." },
           maxDeliveredPrice: { type: "number", minimum: 25, maximum: 100000, description: "Optional budget including listed shipping." },
           maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum ranked options to return." },
+          shoppingFor: { type: "string", enum: ["self", "gift"], description: "Whether this decision is for the shopper or a gift recipient." },
+          mode: { type: "string", enum: ["decide", "explore"], description: "Choose a narrow decision or a broader set worth exploring." },
+          priorities: { type: "array", maxItems: 3, uniqueItems: true, items: { type: "string", enum: ["match", "taste", "condition", "price", "returns", "delivery"] }, description: "Up to three factors to emphasize in the visible rubric." },
+          tasteContext: { type: "string", maxLength: 120, description: "Optional taste or recipient context matched against source facts." },
+          mustHave: { type: "string", maxLength: 80, description: "Optional source-backed words every result must include." },
+          avoid: { type: "string", maxLength: 80, description: "Optional source-backed words that exclude a result." },
+          refinementChoice: { type: "string", enum: ["match", "taste", "condition", "price", "returns", "delivery"], description: "Answer to a returned refinement checkpoint. Omit on the first pass." },
         },
         required: ["query"],
       },

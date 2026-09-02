@@ -63,4 +63,22 @@ describe("recording presenter", () => {
     expect(app).toContain("RESEARCH ONLY");
     expect(styles).toContain(".handoff-line.eligible");
   });
+
+  it("shows session-only taste and intent with formatted recommendation results", () => {
+    for (const id of ["recommend-shopping-for", "recommend-mode", "recommend-taste", "recommend-must-have", "recommend-avoid"]) {
+      expect(page).toContain(`id="${id}"`);
+    }
+    expect(page).toContain('id="refinement-panel"');
+    expect(page).toContain("Session only");
+    expect(app).toContain('method: "POST"');
+    expect(app).toContain("recommendation.evidenceConfidence");
+    expect(app).toContain("recommendation.tradeoff");
+    expect(app).toContain("renderRefinement(payload.refinement)");
+    expect(app).toContain('refinementChoice: choice.id');
+    expect(app).toContain("presenter?.humanRefined()");
+    expect(presenter).toContain('shoppingFor: "gift"');
+    expect(presenter).toContain("waitForRefinement: true");
+    expect(presenter).toContain('waitingKind === "refinement"');
+    expect(styles).toContain(".recommendation-copy");
+  });
 });

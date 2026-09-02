@@ -48,6 +48,13 @@ export function createDecisionDossier(snapshot) {
   const goal = snapshot.goal || {};
   lines.push(`Goal: ${clean(goal.query || "No ranked research goal recorded.", 300)}`);
   lines.push(`Maximum delivered price: ${goal.maxDeliveredPrice === null || goal.maxDeliveredPrice === undefined ? "Not set" : `${clean(goal.maxDeliveredPrice, 24)} USD`}`);
+  const intent = goal.intent || {};
+  lines.push(`Shopping for: ${clean(intent.shoppingFor === "gift" ? "Someone else" : "Myself", 40)}`);
+  lines.push(`Experience: ${clean(intent.mode === "explore" ? "Explore" : "Decide", 40)}`);
+  lines.push(`Priorities: ${Array.isArray(intent.priorities) && intent.priorities.length ? intent.priorities.map((item) => clean(item, 24)).join(", ") : "Default evidence balance"}`);
+  lines.push(`Taste or recipient context: ${clean(intent.tasteContext || "Not set", 160)}`);
+  lines.push(`Must include: ${clean(intent.mustHave || "Not set", 100)}`);
+  lines.push(`Avoid: ${clean(intent.avoid || "Not set", 100)}`);
 
   addSection(lines, "Ranking rubric");
   const rubric = snapshot.rubric || {};
@@ -56,13 +63,32 @@ export function createDecisionDossier(snapshot) {
     ? rubricEntries.map(([name, score]) => `${clean(name, 40)} ${clean(score, 12)}`).join(" | ")
     : "No ranking rubric was used.");
 
+  addSection(lines, "Refinement checkpoint");
+  const refinement = snapshot.refinement;
+  if (!refinement) {
+    lines.push("No refinement checkpoint was recorded.");
+  } else {
+    lines.push(`Status: ${clean(refinement.status, 40)}`);
+    lines.push(`Reason: ${clean(refinement.reason, 80)}`);
+    lines.push(`Score margin: ${refinement.margin === null || refinement.margin === undefined ? "Not available" : clean(refinement.margin, 12)}`);
+    if (refinement.question) lines.push(`Question: ${clean(refinement.question, 300)}`);
+    const choices = Array.isArray(refinement.choices) ? refinement.choices : [];
+    if (choices.length) lines.push(`Choices: ${choices.map((choice) => clean(choice.label || choice.id, 80)).join(" | ")}`);
+    if (refinement.selectedChoice) lines.push(`Human answer: ${clean(refinement.selectedChoice.label || refinement.selectedChoice.id, 80)}`);
+    lines.push(`Ranking changed: ${refinement.changed ? "Yes" : "No"}`);
+    lines.push(`Outcome: ${clean(refinement.explanation || "Not supplied", 400)}`);
+  }
+
   addSection(lines, "Ranked options");
   const rankedOptions = Array.isArray(snapshot.rankedOptions) ? snapshot.rankedOptions : [];
   if (!rankedOptions.length) lines.push("No ranked options were recorded.");
   for (const option of rankedOptions.slice(0, 8)) {
-    lines.push(`${clean(option.rank, 4)}. ${clean(option.title || option.handle, 180)} | score ${clean(option.score, 12)} | ${money(option.deliveredPrice)} delivered`);
+    lines.push(`${clean(option.rank, 4)}. ${clean(option.label || "Ranked option", 40)} | ${clean(option.title || option.handle, 180)} | score ${clean(option.score, 12)} | ${money(option.deliveredPrice)} delivered`);
     lines.push(`   Handle: ${clean(option.handle, 100)}`);
     lines.push(`   Source: ${sourceUrl(option.url)}`);
+    if (option.why) lines.push(`   Why: ${clean(option.why, 300)}`);
+    if (option.tradeoff) lines.push(`   Tradeoff: ${clean(option.tradeoff, 300)}`);
+    if (option.evidenceConfidence) lines.push(`   Evidence confidence: ${clean(option.evidenceConfidence, 240)}`);
     if (option.factors) lines.push(`   Factors: ${Object.entries(option.factors).map(([name, score]) => `${clean(name, 40)} ${clean(score, 12)}`).join(" | ")}`);
   }
 

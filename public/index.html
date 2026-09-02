@@ -87,8 +87,38 @@
             <label class="budget-field" for="recommend-budget"><span>Maximum delivered price</span><input id="recommend-budget" name="budget" type="number" min="25" max="100000" step="25" value="900"></label>
             <button type="submit">Rank options</button>
           </div>
-          <p class="rubric-note">Scored from source evidence: relevance 30, condition 25, delivered price 25, seller confidence 10, returns 10.</p>
+          <details class="intent-panel" open>
+            <summary><span>Taste and intent</span><span>Session only</span></summary>
+            <div class="intent-selects">
+              <label for="recommend-shopping-for"><span>Shopping for</span><select id="recommend-shopping-for"><option value="self">Myself</option><option value="gift">Someone else</option></select></label>
+              <label for="recommend-mode"><span>Experience</span><select id="recommend-mode"><option value="decide">Help me decide</option><option value="explore">Let me explore</option></select></label>
+              <label for="recommend-taste"><span>Taste or recipient context</span><input id="recommend-taste" maxlength="120" placeholder="Warm tone, classic shape" autocomplete="off"></label>
+            </div>
+            <div class="intent-constraints">
+              <label for="recommend-must-have"><span>Must include</span><input id="recommend-must-have" maxlength="80" placeholder="single coil" autocomplete="off"></label>
+              <label for="recommend-avoid"><span>Avoid</span><input id="recommend-avoid" maxlength="80" placeholder="final sale" autocomplete="off"></label>
+            </div>
+            <fieldset class="priority-field">
+              <legend>Emphasize up to three</legend>
+              <div class="priority-options">
+                <label><input type="checkbox" name="recommend-priority" value="match"> Match</label>
+                <label><input type="checkbox" name="recommend-priority" value="taste"> Taste</label>
+                <label><input type="checkbox" name="recommend-priority" value="condition"> Condition</label>
+                <label><input type="checkbox" name="recommend-priority" value="price"> Price</label>
+                <label><input type="checkbox" name="recommend-priority" value="returns"> Returns</label>
+                <label><input type="checkbox" name="recommend-priority" value="delivery"> Delivery</label>
+              </div>
+            </fieldset>
+          </details>
+          <p class="rubric-note">Every option is scored from normalized Offer evidence. Your selected priorities rebalance the visible 100-point rubric.</p>
         </form>
+
+        <section id="refinement-panel" class="refinement-panel" hidden aria-live="polite" tabindex="-1">
+          <span id="refinement-kicker" class="kicker">DECISION CHECKPOINT</span>
+          <h3 id="refinement-question">One choice would sharpen this ranking</h3>
+          <p id="refinement-explanation"></p>
+          <div id="refinement-choices" class="refinement-choices"></div>
+        </section>
 
         <form id="search-form" class="search-form secondary-search">
           <label for="search-input">Or search listing facts directly</label>

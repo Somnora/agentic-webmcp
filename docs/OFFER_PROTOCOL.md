@@ -238,7 +238,7 @@ Read-only (`readOnlyHint: true`, `untrustedContentHint: true`):
 1. `list_origins` : show allowlisted real websites the agent may use.
 2. `select_origin` : `{ originId }` : bind subsequent tools to that origin; update the UI.
 3. `search_products` : `{ query, maxResults? }` : search the selected origin.
-4. `find_best_options` : `{ query, maxDeliveredPrice?, maxResults? }` : rank marketplace offers using visible deterministic evidence.
+4. `find_best_options` : `{ query, maxDeliveredPrice?, maxResults?, shoppingFor?, mode?, priorities?, tasteContext?, mustHave?, avoid?, refinementChoice? }` : rank marketplace offers using session-only intent and visible deterministic evidence. `refinementChoice` must match a choice that the same bounded inputs produce.
 5. `get_product` : `{ handle }` : inspect one offer and sampled variants.
 6. `compare_products` : `{ handles }` : two to four handles on the selected origin.
 7. `interpolate_page` : `{ path }` : strip one allowlisted path on the selected origin
@@ -275,7 +275,11 @@ The Worker is the only compiler. From one Offer graph it may emit:
 
 Do not add a remote MCP server, UCP, or commercial App Proxy to this repository.
 
-The dossier is not a second product model. It is a human-readable projection of the goal, ranked Offers, reconciliation state, canonical URLs, timestamps, selection, and human decision.
+The dossier is not a second product model. It is a human-readable projection of the goal, session-only intent, ranked Offers, recommendation reasons and tradeoffs, reconciliation state, canonical URLs, timestamps, selection, and human decision.
+
+Taste and intent are decision inputs, not Offer fields. They are accepted only through the bounded no-store recommendation request and remain in browser state long enough to render and optionally download the decision dossier. The Worker does not create a shopper profile, account, cookie, or persistent preference record.
+
+Uncertainty refinement extends the recommendation projection, not the Offer model. The Worker first computes the deterministic baseline. It asks one question only when at least two eligible candidates exist, the relevant challenger is within 25 points, and that challenger is stronger on at least one scored factor. Up to three choices are derived from the actual factor differences. The answer must match one returned choice and adds an explicit 10-point boost to that factor while keeping the rubric total at 100. The result reports the before and after handles, whether Best fit changed, and the applied choice. Clear leaders and insufficient option sets reject unsolicited refinement answers.
 
 ## Default Challenge origins
 

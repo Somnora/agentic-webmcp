@@ -39,7 +39,9 @@
 
 - Controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
 - Marketplace evidence is accepted only when condition, seller, shipping, returns, and delivered price form a complete bounded record.
-- Recommendation scores are deterministic and expose relevance, condition, delivered price, seller confidence, and returns factors.
+- Recommendation scores are deterministic and expose relevance, preference fit, condition, delivered price, seller confidence, returns, and delivery factors.
+- Taste, recipient context, priorities, must-have terms, and avoid terms are bounded decision inputs. They use a no-store POST request, never enter the request URL, and are not retained by the Worker.
+- A refinement answer is accepted only when the same bounded inputs produce a genuine competing-tradeoff checkpoint and the answer matches one of its evidence-derived choices. Clear leaders, insufficient candidates, unknown choices, and unavailable choices fail closed.
 - Each Offer records structured field provenance. Price, availability, condition, shipping, and returns carry `verified`, `single-source`, or `conflict` evidence states.
 - Reconciliation keeps the structured adapter as primary. A page mismatch is recorded rather than silently replacing the primary value, and the reconciled Offer becomes ineligible for handoff.
 - Each Offer exposes live status, fetch time, freshness expiry, and handoff eligibility. Adapter output is checked against the selected origin manifest before it reaches an API response.
@@ -72,7 +74,7 @@
 - Framing is denied by CSP and `X-Frame-Options: DENY`.
 - MIME sniffing is disabled and referrers are suppressed.
 - Request bodies, query length, result count, handles, comparison size, brief goals, quantities, and quote ids are bounded in Worker code.
-- Validated read responses use short Cloudflare Cache API entries. Cache keys remain same-origin and include the selected origin and bounded query parameters.
+- Validated catalog and legacy recommendation GET responses use short Cloudflare Cache API entries. Cache keys remain same-origin and include the selected origin and bounded query parameters. Taste and intent recommendations are POST-only and return `Cache-Control: no-store`.
 - Errors expose stable codes, normalized failure reasons, retry guidance, and a correlation id. Operational records include only correlation id, route path, status, duration, adapter timing, byte count, failure category, code, and retryability. Search terms, request bodies, upstream bodies, and secrets are not logged.
 - `Server-Timing` reports total request time and bounded adapter timings. `X-Agentic-Correlation-Id` links the app request to the controlled origin without carrying visitor identity.
 - Decision dossiers are assembled and downloaded in the browser. They are not posted to the Worker or stored by the application.

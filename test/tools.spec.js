@@ -64,6 +64,16 @@ describe("WebMCP tool contract", () => {
     expect(handlers.search).toHaveBeenCalledWith({ query: "wax" }, signal);
   });
 
+  it("exposes bounded taste and intent without requiring a profile", () => {
+    const recommendation = createAgenticTools(actions()).find((tool) => tool.name === "find_best_options");
+    expect(recommendation.inputSchema.required).toEqual(["query"]);
+    expect(recommendation.inputSchema.properties.shoppingFor.enum).toEqual(["self", "gift"]);
+    expect(recommendation.inputSchema.properties.mode.enum).toEqual(["decide", "explore"]);
+    expect(recommendation.inputSchema.properties.priorities).toMatchObject({ maxItems: 3, uniqueItems: true });
+    expect(recommendation.inputSchema.properties.tasteContext.maxLength).toBe(120);
+    expect(recommendation.inputSchema.properties.refinementChoice.enum).toEqual(["match", "taste", "condition", "price", "returns", "delivery"]);
+  });
+
   it("does not register a cart commit or checkout tool", () => {
     expect(createAgenticTools(actions()).map((tool) => tool.name)).not.toContain("commit_add_to_cart");
     expect(createAgenticTools(actions()).map((tool) => tool.name)).not.toContain("checkout");
