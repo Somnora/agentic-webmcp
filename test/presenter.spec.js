@@ -40,6 +40,8 @@ describe("recording presenter", () => {
     expect(page).toContain('id="presenter-cursor"');
     expect(styles).toContain("pointer-events: none");
     expect(styles).toContain("cubic-bezier(0.22, 1, 0.36, 1)");
+    expect(styles).toContain(".presenter-cursor.clicking svg { animation: presenter-click 220ms ease-out; }");
+    expect(styles).not.toContain(".presenter-cursor.clicking { animation:");
     expect(styles).toContain("body.presenter-active, body.presenter-active * { cursor: none !important; }");
   });
 
