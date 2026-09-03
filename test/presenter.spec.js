@@ -81,4 +81,9 @@ describe("recording presenter", () => {
     expect(presenter).toContain('waitingKind === "refinement"');
     expect(styles).toContain(".recommendation-copy");
   });
+
+  it("keeps the itinerary conflict panel out of the layout when no conflicts exist", () => {
+    expect(page).toContain('id="itinerary-conflicts" class="itinerary-conflicts" hidden');
+    expect(styles).toContain(".itinerary-conflicts[hidden] { display: none; }");
+  });
 });

@@ -232,6 +232,7 @@ input:focus, select:focus { border-color: var(--forest); box-shadow: 0 0 0 3px r
 .itinerary-price { color: #70532f; font-size: 0.63rem; font-weight: 750; text-align: right; }
 .itinerary-empty { margin: 10px 0 0; color: var(--muted); font-size: 0.65rem; }
 .itinerary-conflicts { display: grid; gap: 7px; margin-top: 11px; padding: 12px; border: 1px solid #d9bbb7; border-radius: 10px; background: #fbefed; }
+.itinerary-conflicts[hidden] { display: none; }
 .itinerary-conflicts strong { color: var(--danger); font-size: 0.68rem; }
 .itinerary-conflicts ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; }
 .itinerary-conflicts li { color: #6f504b; font-size: 0.62rem; line-height: 1.45; }
