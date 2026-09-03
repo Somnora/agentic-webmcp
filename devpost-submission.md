@@ -1,6 +1,6 @@
 # Title
 
-Agentic WebMCP
+Ribband
 
 ## One-line Summary
 
@@ -10,9 +10,11 @@ An explainable market decision layer where agents convert authorized product pag
 
 Visual commerce pages force agents to infer controls, reconstruct facts from presentation markup, and hide their reasoning from the person making the decision. Arbitrary scraping also creates authorization, provenance, freshness, and reliability problems.
 
+The name nods to the Blue Riband, the historic distinction associated with transatlantic passenger speed records. Ribband applies that spirit to surfing the web: move quickly across authorized sources while keeping the evidence and human decision visible.
+
 ## Solution
 
-Agentic WebMCP lets an authorized website expose a bounded agent interface. Ten WebMCP tools discover origins, search and rank Offers, compare products or services, convert an allowlisted page into compact Markdown plus a structured Offer, build a constraint-aware activity itinerary, create a brief, and prepare a purchase review.
+Ribband lets an authorized website expose a bounded agent interface. Ten WebMCP tools discover origins, search and rank Offers, compare products or services, convert an allowlisted page into compact Markdown plus a structured Offer, build a constraint-aware activity itinerary, create a brief, and prepare a purchase review.
 
 The agent and the person share one visible workspace. Product JSON and page JSON-LD are reconciled into verified, single-source, or conflict evidence for price, availability, condition, shipping, and returns. When credible options win on different evidence, the agent asks one bounded refinement question and shows exactly how the answer affects the ranking. The agent can prepare a short-lived Quote, but only the visible human button can create a page-local decision record. The Worker rereads the Offer and rejects approval if the facts changed after review.
 
@@ -94,7 +96,7 @@ https://github.com/Somnora/agentic-webmcp
 
 ## Demo Video
 
-TODO: Add the public YouTube URL after the final under-three-minute recording and Lapetus narration are complete.
+TODO: Upload and link the approved public YouTube copy. A fresh local Ribband recording is now synchronized to the Sadachbia narration in a 2:45 final MP4. The 14-beat video covers goods, services, and the Oahu planner, including the required human refinement, goods approval, and both dossier downloads. It passed representative-frame review, full decode validation, and stream inspection. James still needs to watch the complete export with sound. These local updates have not been uploaded to YouTube or Devpost.
 
 Video outline:
 
@@ -105,10 +107,13 @@ Video outline:
 5. Compare two listings.
 6. Prepare a purchase review and stop at the human boundary.
 7. Approve with the visible button and download the decision dossier.
+8. Select the controlled services directory and interpolate the surf lesson evidence.
+9. Build the constraint-aware Oahu day for two: 450 USD planned total, 50 USD remaining, proposed times only.
+10. Offer the itinerary dossier and close on source evidence and human control, without claiming booking or payment.
 
 ## Screenshot Shot List
 
-Five 2560 by 1440 PNGs were captured from the deployed release and stored outside the public repository under `Agentic WebMCP Gallery/2560x1440`.
+Previous notes record five 2560 by 1440 PNGs under `Agentic WebMCP Gallery/2560x1440`. Those are legacy assets, not new Ribband captures. Recapture the renamed interface before using the gallery in the final submission.
 
 1. `01-origin.png`: full workspace with origin badge, registered-tool status, recommendation form, and shared activity rail.
 2. `02-recommend.png`: uncertainty checkpoint with evidence-derived choices, followed by ranked guitar options with deterministic factor evidence.
@@ -119,13 +124,13 @@ Five 2560 by 1440 PNGs were captured from the deployed release and stored outsid
 ## Submission Readiness Notes
 
 - Project creation began during the submission period on August 25, 2026 at 5:41 PM Pacific.
-- Strict TypeScript, 79 automated tests across 13 files, and both Worker dry runs pass on the deployed release.
+- Rerun `npm run verify` against the final Ribband revision and record the actual test count before publishing.
 - The repository is public and contains an MIT license.
 - The public URL and public repository are known.
 - All 22 public smoke checks pass against the deployed Workers, including the controlled services scope, service provenance, itinerary constraints, and the no-booking boundary.
 - The no-credential judge flow exposes ten registered tools, live cross-source verification, quote-bound goods approval, a page-local receipt, the dossier export action, and a planning-only Oahu itinerary with canonical source links.
-- Five gallery screenshots were captured at a true 2560 by 1440 and visually reviewed.
-- The required public video must be completed before the final Devpost check.
+- Legacy gallery screenshots need a Ribband recapture and visual review.
+- A complete 2:45 local video exists and needs James's full sound review, public YouTube upload, and Devpost link update.
 
 ## Known Limitations
 

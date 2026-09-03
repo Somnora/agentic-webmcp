@@ -2,13 +2,15 @@
 
 ## What to verify
 
-Agentic WebMCP turns allowlisted public product pages into structured, source-visible decisions. The default origin is a controlled public guitar marketplace served over real HTTPS. It is clearly labeled demonstration data and does not impersonate eBay or another merchant.
+Ribband turns allowlisted public product pages into structured, source-visible decisions. The default origin is a controlled public guitar marketplace served over real HTTPS. It is clearly labeled demonstration data and does not impersonate eBay or another merchant.
 
 The key interaction is not a chatbot transcript. Each WebMCP call updates the same visible workspace the human is viewing. Ranking factors, canonical source links, normalized offers, and the approval boundary remain inspectable.
 
 ## No-credential flow
 
 Open [the live app](https://agentic-webmcp.somnora.workers.dev/) in a WebMCP-capable client. Presenter mode is optional and changes only the recording layout.
+
+The updated guided presentation follows the goods flow below, then the services and Oahu proof. It uses the same application actions but is not an autonomous agent session. Its nominal 2:45 sequence pauses for genuine human decisions. See [the recording guide](DEMO_SCRIPT.md) for timing and controls.
 
 1. Confirm the page reports ten registered tools.
 2. Ask: `List the allowlisted origins and select catalog-lab.`

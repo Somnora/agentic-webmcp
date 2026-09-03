@@ -1,6 +1,6 @@
 # Origin onboarding contract
 
-Agentic reads only merchant origins that are declared in `src/origins.ts`. Adding a record is a code-reviewed authorization step, not an open URL submission feature.
+Ribband reads only merchant origins that are declared in `src/origins.ts`. Adding a record is a code-reviewed authorization step, not an open URL submission feature.
 
 ## Eligibility
 

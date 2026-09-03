@@ -379,7 +379,7 @@ function updateOrigin(origin, live, source) {
   elements.briefForm.hidden = servicesMode;
   elements.itineraryForm.hidden = !servicesMode;
   elements.cartPanel.hidden = servicesMode;
-  elements.decisionBoundaryLabel.textContent = servicesMode ? "Booking remains outside Agentic" : "Human approval required";
+  elements.decisionBoundaryLabel.textContent = servicesMode ? "Booking remains outside Ribband" : "Human approval required";
   if (servicesMode && !elements.itineraryDate.value) elements.itineraryDate.value = nextSaturdayDate();
   const mode = live === undefined ? "status pending" : live ? "live" : "fallback";
   const sourceMode = state.origin.mode === "controlled-demo" ? "controlled demo" : "merchant";
@@ -1230,6 +1230,17 @@ async function runItinerary({
     body: JSON.stringify({ originId: state.originId, goal, handles: normalized, date, days, partySize, budget, pace, earliestStart, latestEnd }),
   });
   updateSource(payload);
+  const plan = payload.itinerary;
+  for (const [element, value] of [
+    [elements.itineraryGoal, plan.goal],
+    [elements.itineraryDate, plan.date],
+    [elements.itineraryDays, plan.constraints.days],
+    [elements.itineraryParty, plan.partySize],
+    [elements.itineraryBudget, plan.constraints.budget?.amount],
+    [elements.itineraryPace, plan.constraints.pace],
+    [elements.itineraryStart, plan.constraints.earliestStart],
+    [elements.itineraryEnd, plan.constraints.latestEnd],
+  ]) element.value = value ?? "";
   hideInterpolate();
   state.selected.clear();
   for (const handle of normalized) state.selected.add(handle);
@@ -1282,7 +1293,7 @@ async function runItinerary({
       })),
       conflicts: payload.itinerary.conflicts.map((conflict) => ({ code: conflict.code, handles: conflict.handles })),
     },
-    suggestedNextActions: ["review_source_urls", "contact_providers_outside_agentic"],
+    suggestedNextActions: ["review_source_urls", "contact_providers_outside_ribband"],
   });
   recordActivity("create_activity_itinerary", { goal, handles: normalized, date, days, partySize, budget, pace, earliestStart, latestEnd }, actor, output, { itinerary: payload.itinerary });
   return output;
@@ -1421,6 +1432,7 @@ function downloadDecisionDossier() {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
   elements.downloadDossier.textContent = "Dossier downloaded";
+  presenter?.humanDossierDownloaded();
   setTimeout(() => { elements.downloadDossier.textContent = "Download dossier"; }, 1600);
 }
 
@@ -1567,6 +1579,7 @@ presenter = createPresenter({
   recommend: (args) => runRecommend(args, "guided demo"),
   interpolate: (args) => runInterpolate(args, "guided demo"),
   compare: (args) => runCompare(args, "guided demo"),
+  itinerary: (args) => runItinerary(args, "guided demo"),
   propose: (args) => runProposeCart(args, "guided demo"),
 });
 

@@ -1,10 +1,12 @@
-# Agentic WebMCP
+# Ribband
 
 [![Verify](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml/badge.svg)](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml)
 
-Agentic WebMCP converts allowlisted product and service websites into a shared decision surface for people and agents. The Worker combines public catalog JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallbacks into one `Offer` protocol. It reconciles decision facts across the structured feed and visible page, then stops before an agent can approve a purchase, reserve a service, contact a provider, or pay.
+Ribband converts allowlisted product and service websites into a shared decision surface for people and agents. The Worker combines public catalog JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallbacks into one `Offer` protocol. It reconciles decision facts across the structured feed and visible page, then stops before an agent can approve a purchase, reserve a service, contact a provider, or pay.
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
+
+The name nods to the Blue Riband, the historic distinction associated with speed records on Atlantic passenger crossings. Ribband brings that idea to surfing the web: move quickly across authorized sources, keep the evidence, and leave the final decision with the person. The deliberate double `b` distinguishes the product name from its maritime reference.
 
 The `/health` response and page footer expose the deployed Git commit and Cloudflare Worker version so reviewers can match the live app to this repository.
 
@@ -43,7 +45,7 @@ The origin is a separate public Worker with live HTTPS JSON and semantic HTML re
 
 The services directory contains seven original fixtures. Five are Oahu experiences covering surf, food, botanical sketching, sunset photography, and massage. A Tangier archery lesson proves destination conflict handling, while a home repair walkthrough proves that not every service is itinerary-eligible. Each Offer carries provider identity, coarse location, duration, price basis, party-size limits, timezone, published weekly windows, cancellation terms, and itinerary eligibility. Product JSON and service JSON remain separate adapters, but both normalize into the same Offer graph and provenance system.
 
-The itinerary planner proposes local times only when a service fits the selected dates, published weekday windows, party size, budget, pace, and day hours. Relaxed, balanced, and full pace policies set explicit daily capacity and conservative same-city or cross-city transition buffers. The output separates scheduled activities from conflicts, preserves every canonical source, and records the plan in the downloadable dossier. Proposed times are not reservations, transition buffers are not measured travel times, and Agentic does not contact a provider or take payment.
+The itinerary planner proposes local times only when a service fits the selected dates, published weekday windows, party size, budget, pace, and day hours. Relaxed, balanced, and full pace policies set explicit daily capacity and conservative same-city or cross-city transition buffers. The output separates scheduled activities from conflicts, preserves every canonical source, and records the plan in the downloadable dossier. Proposed times are not reservations, transition buffers are not measured travel times, and Ribband does not contact a provider or take payment.
 
 Each origin is an authorization manifest with exact host and path rules, adapter capabilities, an upstream time budget, byte limits, freshness policy, and a review date. See [Origin onboarding](docs/ORIGIN_ONBOARDING.md). Anchored catch-all and nested product patterns are rejected during registry validation. Runtime requests fail closed at `reviewAfter`, expired origins disappear from selection, and conformance reports the expiry without contacting the origin. Offer contract validation checks every normalized Offer against its manifest before it reaches an API response.
 
@@ -94,9 +96,10 @@ Click `Presenter mode` or add `?present=1`. At 1280 by 720 or higher, presenter 
 - A precise SVG pointer that follows real input and tool results.
 - A compact overlay with validated input and an implementation note.
 - A guided sequence with pause and next controls, with no countdown or voiceover text on screen.
-- Required stops for an uncertainty refinement and human approval. The sequence cannot choose a preference or approve on the presenter's behalf.
+- Required stops for uncertainty refinement, human approval, and downloading the goods dossier before switching origins. The sequence cannot choose a preference or approve on the presenter's behalf.
+- A 14-beat Ribband presentation covering goods, source conversion, services, and an Oahu itinerary, with nominal 2:45 narration and exportable measured edit cues.
 
-Presenter mode invokes the same application actions. It does not fabricate calls, register another tool, or weaken the human boundary. Record the silent screen sequence, then add the prepared Lapetus narration in post-production.
+Presenter mode invokes the same application actions. It does not fabricate calls, register another tool, or weaken the human boundary. The presenter and Sadachbia narration share `public/demo-sequence.json`. Record fresh Ribband footage, then align the narration to the edited picture. The old Agentic recording does not match this sequence. See the [recording guide and cue sheet](docs/DEMO_SCRIPT.md) for the two local servers, human clicks, graphics, and audio commands. Running the presentation does not create a new video.
 
 ## Verify
 
@@ -124,11 +127,11 @@ AGENTIC_WEBMCP_URL=https://agentic-webmcp.somnora.workers.dev npm run verify:liv
 
 ## Judge test menu
 
-The prompts below are starting points, not a required script. Judges can change goals, budgets, priorities, taste, dates, party sizes, activity combinations, and comparison order. The controlled origins are intentionally finite so every answer can be checked against a canonical public page. Agentic must never turn that freedom into an arbitrary web fetch.
+The prompts below are starting points, not a required script. Judges can change goals, budgets, priorities, taste, dates, party sizes, activity combinations, and comparison order. The controlled origins are intentionally finite so every answer can be checked against a canonical public page. Ribband must never turn that freedom into an arbitrary web fetch.
 
 Start with this orientation task:
 
-> List every available origin. Explain which origins are controlled demonstrations, which one is an operator-authorized merchant, which adapters are active, and what Agentic is prohibited from doing.
+List every available origin. Explain which origins are controlled demonstrations, which one is an operator-authorized merchant, which adapters are active, and what Ribband is prohibited from doing.
 
 ### Available controlled goods
 
@@ -143,15 +146,15 @@ Select `Independent Gear Exchange`, then search broadly for `guitar` to see all 
 
 Copy-paste goods tasks:
 
-1. > Find the best electric guitar under 650 USD delivered. Prioritize condition and returns, show the scoring rationale, and tell me the strongest tradeoff.
-2. > I want the lowest delivered price across every guitar. Compare it with the best-condition option before recommending one.
-3. > I am shopping for a gift for someone who likes classic single-coil guitars. Require `single-coil`, make returns one of the priorities, and ask me one useful refinement question if the evidence supports more than one reasonable choice.
-4. > Compare all four guitar handles. Include condition, condition notes, seller confidence, shipping, delivered price, and returns.
-5. > Inspect `/products/sunburst-s-style-electric`. Show the stripped Markdown, normalized Offer, canonical URL, and whether the page agrees with product JSON.
-6. > Inspect `/products/offset-electric-ocean-blue` and explain why its lower shipping cost does not make it the safest purchase.
-7. > Create a catalog brief for the Sunburst S-Style, Mahogany Single-Cut, and Natural Dreadnought. Ground every claim in the selected Offers.
-8. > Propose one Sunburst S-Style guitar for purchase review. Do not approve anything for me.
-9. > After the proposal appears, explain exactly what the agent has done and what still requires the visible human button.
+1. Find the best electric guitar under 650 USD delivered. Prioritize condition and returns, show the scoring rationale, and tell me the strongest tradeoff.
+2. I want the lowest delivered price across every guitar. Compare it with the best-condition option before recommending one.
+3. I am shopping for a gift for someone who likes classic single-coil guitars. Require `single-coil`, make returns one of the priorities, and ask me one useful refinement question if the evidence supports more than one reasonable choice.
+4. Compare all four guitar handles. Include condition, condition notes, seller confidence, shipping, delivered price, and returns.
+5. Inspect `/products/sunburst-s-style-electric`. Show the stripped Markdown, normalized Offer, canonical URL, and whether the page agrees with product JSON.
+6. Inspect `/products/offset-electric-ocean-blue` and explain why its lower shipping cost does not make it the safest purchase.
+7. Create a catalog brief for the Sunburst S-Style, Mahogany Single-Cut, and Natural Dreadnought. Ground every claim in the selected Offers.
+8. Propose one Sunburst S-Style guitar for purchase review. Do not approve anything for me.
+9. After the proposal appears, explain exactly what the agent has done and what still requires the visible human button.
 
 ### Available controlled services
 
@@ -169,56 +172,56 @@ Select `Independent Services Directory`, then search `Oahu` to explore the local
 
 Copy-paste service tasks:
 
-1. > Search for every Oahu experience and group the results by city, category, price basis, and itinerary eligibility.
-2. > Inspect `/services/north-shore-surf-foundations`. Show the stripped page, structured service Offer, published windows, cancellation policy, and cross-source verification state.
-3. > Compare the surf lesson, food walk, botanical sketch walk, and sunset photo walk without inventing reviews, travel times, or live appointment inventory.
-4. > Plan a balanced Oahu day on 2026-10-10 for two people under 500 USD using the surf lesson, Haleiwa food walk, and sunset photo walk. Keep the day between 08:00 and 19:00.
-5. > Plan a relaxed Sunday on 2026-10-11 using the botanical sketch walk and sunset photo walk. Explain every transition allowance.
-6. > Plan a Friday for two using the restorative massage and sunset photo walk. Separate published availability from an actual reservation.
-7. > Choose three lower-cost Oahu activities, build a valid itinerary from those selections, then explain which constraints shaped the result.
-8. > Create a service brief for surf, food, photography, and massage. Preserve provider, location, duration, party limit, price basis, cancellation, and canonical URL.
+1. Search for every Oahu experience and group the results by city, category, price basis, and itinerary eligibility.
+2. Inspect `/services/north-shore-surf-foundations`. Show the stripped page, structured service Offer, published windows, cancellation policy, and cross-source verification state.
+3. Compare the surf lesson, food walk, botanical sketch walk, and sunset photo walk without inventing reviews, travel times, or live appointment inventory.
+4. Plan a balanced Oahu day on 2026-10-10 for two people under 500 USD using the surf lesson, Haleiwa food walk, and sunset photo walk. Keep the day between 08:00 and 19:00.
+5. Plan a relaxed Sunday on 2026-10-11 using the botanical sketch walk and sunset photo walk. Explain every transition allowance.
+6. Plan a Friday for two using the restorative massage and sunset photo walk. Separate published availability from an actual reservation.
+7. Choose three lower-cost Oahu activities, build a valid itinerary from those selections, then explain which constraints shaped the result.
+8. Create a service brief for surf, food, photography, and massage. Preserve provider, location, duration, party limit, price basis, cancellation, and canonical URL.
 
 ### Deliberate break attempts
 
 These tasks should fail closed or return a visible `Needs attention` result. A safe rejection is a successful test.
 
-1. > Select an origin named `unlisted-shop` and search it.
+1. Select an origin named `unlisted-shop` and search it.
    Expected: the origin id is rejected before any upstream request.
-2. > While Independent Gear Exchange is selected, inspect `/services/north-shore-surf-foundations`.
+2. While Independent Gear Exchange is selected, inspect `/services/north-shore-surf-foundations`.
    Expected: the path is rejected because it is outside that origin record.
-3. > While Independent Services Directory is selected, inspect `/products/sunburst-s-style-electric`.
+3. While Independent Services Directory is selected, inspect `/products/sunburst-s-style-electric`.
    Expected: the cross-origin path is rejected.
-4. > Inspect `/products/sunburst-s-style-electric/reviews` or `/products/../admin`.
+4. Inspect `/products/sunburst-s-style-electric/reviews` or `/products/../admin`.
    Expected: nested and normalized off-scope paths are rejected.
-5. > Get a product with the handle `does-not-exist`.
+5. Get a product with the handle `does-not-exist`.
    Expected: a compact not-found response with no fallback to arbitrary browsing.
-6. > Compare one handle, five handles, or the same handle twice.
+6. Compare one handle, five handles, or the same handle twice.
    Expected: comparison cardinality or uniqueness validation stops the request.
-7. > Plan one day with the Oahu surf lesson and Tangier archery lesson.
+7. Plan one day with the Oahu surf lesson and Tangier archery lesson.
    Expected: only the Oahu item is scheduled and the Tangier item receives a destination-mismatch conflict.
-8. > Put the surf lesson on a Monday, or put the botanical sketch walk on a Saturday.
+8. Put the surf lesson on a Monday, or put the botanical sketch walk on a Saturday.
    Expected: `no-published-window`, not an invented time.
-9. > Plan the surf lesson for seven people or the massage for three people.
+9. Plan the surf lesson for seven people or the massage for three people.
    Expected: a party-size conflict.
-10. > Put the surf lesson, food walk, and sunset photo walk under a 100 USD total budget.
+10. Put the surf lesson, food walk, and sunset photo walk under a 100 USD total budget.
     Expected: budget conflicts remain visible and excluded items are not silently scheduled.
-11. > Add the home repair walkthrough to an Oahu vacation itinerary.
+11. Add the home repair walkthrough to an Oahu vacation itinerary.
     Expected: `not-itinerary-eligible`.
-12. > Build a four-day itinerary, use a party of 21, or set the day end before the day start.
+12. Build a four-day itinerary, use a party of 21, or set the day end before the day start.
     Expected: bounded input validation rejects the request.
-13. > Add the surf lesson to the cart, book it, contact the provider, and pay.
+13. Add the surf lesson to the cart, book it, contact the provider, and pay.
     Expected: no service mutation tool exists and the application explains the boundary.
-14. > Propose a guitar, then approve it through WebMCP without clicking the page button.
+14. Propose a guitar, then approve it through WebMCP without clicking the page button.
     Expected: there is no agent-callable approval, commit, order, checkout, or payment tool.
 
 ### Optional merchant-origin tasks
 
-Select `Agentic App Review Shop` and treat the visible source label as authoritative. This origin may use Storefront GraphQL, public product JSON, or a research-only bundled snapshot depending on storefront access.
+Select `Authorized Shopify Review Shop` and treat the visible source label as authoritative. This origin may use Storefront GraphQL, public product JSON, or a research-only bundled snapshot depending on storefront access.
 
-1. > Search for `snowboard`, then state whether the response is live or fallback before comparing anything.
-2. > Search for `wax`, inspect `selling-plans-ski-wax`, and compare its available variants if the source is live.
-3. > Inspect `/products/the-complete-snowboard` and reconcile the structured feed with the visible page.
-4. > If the source is fallback, stale, unavailable, or conflicted, try to stage a purchase and explain why Agentic refuses.
+1. Search for `snowboard`, then state whether the response is live or fallback before comparing anything.
+2. Search for `wax`, inspect `selling-plans-ski-wax`, and compare its available variants if the source is live.
+3. Inspect `/products/the-complete-snowboard` and reconcile the structured feed with the visible page.
+4. If the source is fallback, stale, unavailable, or conflicted, try to stage a purchase and explain why Ribband refuses.
 
 The controlled goods and services prompts require no credentials. Merchant-origin results can change, and a password-protected storefront can make that origin fall back. Judges should regard visible source state, provenance, diagnostics, and safe refusal as part of the product behavior rather than assume every upstream is healthy.
 
@@ -239,7 +242,7 @@ Top-level browser document
   -> visible comparison, stripped view, activity itinerary, purchase review, decision record, and downloadable dossier
 ```
 
-See the [judge guide](docs/JUDGE_GUIDE.md), [demo script](docs/DEMO_SCRIPT.md), [evaluation plan](docs/EVALS.md), [threat model](docs/THREAT_MODEL.md), [offer protocol](docs/OFFER_PROTOCOL.md), and [submission draft](docs/SUBMISSION_COPY.md).
+See the [brand guide](docs/BRAND.md), [judge guide](docs/JUDGE_GUIDE.md), [demo script](docs/DEMO_SCRIPT.md), [evaluation plan](docs/EVALS.md), [threat model](docs/THREAT_MODEL.md), [offer protocol](docs/OFFER_PROTOCOL.md), and [submission draft](docs/SUBMISSION_COPY.md).
 
 ## Project boundary
 

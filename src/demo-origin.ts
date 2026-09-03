@@ -215,7 +215,7 @@ function routeDemoOriginRequest(request: Request): Response {
   if (url.pathname === "/") {
     const links = DEMO_PRODUCTS.map((product) => `<li><a href="/products/${product.handle}">${escapeHtml(product.title)}</a></li>`).join("");
     const serviceLinks = DEMO_SERVICES.map((service) => `<li><a href="/services/${service.handle}">${escapeHtml(service.title)}</a></li>`).join("");
-    return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Agentic Controlled Origin</title></head><body><main><h1>Agentic Controlled Origin</h1><p>Original public marketplace and services fixtures for WebMCP evaluation.</p><h2>Goods</h2><ul>${links}</ul><h2>Services</h2><ul>${serviceLinks}</ul></main></body></html>`, { headers: headers(HTML_HEADERS) });
+    return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Ribband Controlled Origin</title></head><body><main><h1>Ribband Controlled Origin</h1><p>Original public marketplace and services fixtures for WebMCP evaluation.</p><h2>Goods</h2><ul>${links}</ul><h2>Services</h2><ul>${serviceLinks}</ul></main></body></html>`, { headers: headers(HTML_HEADERS) });
   }
   return json({ error: "Not found." }, 404);
 }

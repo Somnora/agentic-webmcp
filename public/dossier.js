@@ -28,14 +28,14 @@ function addSection(lines, title) {
 export function dossierFilename(originId, generatedAt = new Date().toISOString()) {
   const origin = clean(originId, 64).toLocaleLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "origin";
   const date = clean(generatedAt, 32).slice(0, 10) || "undated";
-  return `agentic-decision-dossier-${origin}-${date}.md`;
+  return `ribband-decision-dossier-${origin}-${date}.md`;
 }
 
 export function createDecisionDossier(snapshot) {
   const generatedAt = clean(snapshot.generatedAt || new Date().toISOString(), 40);
   const origin = snapshot.origin || {};
   const lines = [
-    "# Agentic decision dossier",
+    "# Ribband decision dossier",
     "",
     `Generated: ${generatedAt}`,
     `Origin: ${clean(origin.displayName || origin.id || "Not selected", 120)}`,
@@ -168,6 +168,6 @@ export function createDecisionDossier(snapshot) {
   }
 
   addSection(lines, "Trust boundary");
-  lines.push("This dossier records research, itinerary planning, and a human decision. Agentic did not create an order or booking, contact a provider, access an account, process payment, or operate merchant checkout.");
+  lines.push("This dossier records research, itinerary planning, and a human decision. Ribband did not create an order or booking, contact a provider, access an account, process payment, or operate merchant checkout.");
   return `${lines.join("\n").trim()}\n`;
 }

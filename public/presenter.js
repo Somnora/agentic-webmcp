@@ -31,6 +31,14 @@ const TOOL_STORIES = Object.freeze({
     selector: "#product-grid",
     detail: "The brief is compact Markdown grounded only in the selected offers and their visible provenance.",
   },
+  create_activity_itinerary: {
+    selector: "#itinerary-view",
+    detail: "The same Offer protocol supplies service evidence. The planner checks destination, published windows, party size, budget, pace, and transition allowances without booking or contacting providers.",
+  },
+  human_download_button: {
+    selector: "#download-dossier",
+    detail: "The human downloads a browser-generated decision dossier. No agent tool, account, or server storage is needed.",
+  },
   propose_add_to_cart: {
     selector: "#confirm-panel",
     detail: "The proposal creates a short-lived review with awaiting_human_confirmation status. It cannot create an order or charge.",
@@ -41,100 +49,23 @@ const TOOL_STORIES = Object.freeze({
   },
 });
 
-const REHEARSAL_STEPS = Object.freeze([
-  {
-    phase: "01 / 09  THE IDEA",
-    tool: "document.modelContext.registerTool",
-    selector: ".status-cluster",
-    duration: 12000,
-    caption: "Most websites make agents reverse engineer a visual interface. Agentic adds an explicit capability layer while keeping the human on the same page.",
-    detail: "The top-level document registers ten bounded tools. Nine are read-only, including activity itinerary planning, and one can only stage a goods proposal.",
-  },
-  {
-    phase: "02 / 09  ALLOWLIST",
-    tool: "list_origins",
-    selector: ".origin-control",
-    duration: 10000,
-    args: {},
-    caption: "The agent begins by discovering the exact public origins and adapters this page permits.",
-    detail: TOOL_STORIES.list_origins.detail,
-    action: "listOrigins",
-  },
-  {
-    phase: "03 / 09  SELECT",
-    tool: "select_origin",
-    selector: ".origin-control",
-    duration: 8000,
-    args: { originId: "catalog-lab" },
-    caption: "It selects the controlled public catalog. The source mode and live adapter remain visible to the human.",
-    detail: TOOL_STORIES.select_origin.detail,
-    action: "selectOrigin",
-  },
-  {
-    phase: "04 / 09  DECIDE",
-    tool: "find_best_options",
-    selector: "#recommend-form",
-    resultSelector: "#refinement-panel",
-    duration: 18000,
-    args: { query: "electric guitar", maxDeliveredPrice: 900, maxResults: 4, shoppingFor: "gift", mode: "explore", priorities: ["taste", "condition", "price"], tasteContext: "single coil pickups" },
-    caption: "The strongest options win on different evidence, so the agent asks one useful question instead of pretending the ranking is certain. Choose the priority that should settle it.",
-    detail: TOOL_STORIES.find_best_options.detail,
-    action: "recommend",
-    waitForRefinement: true,
-  },
-  {
-    phase: "05 / 09  INTERPOLATE",
-    tool: "interpolate_page",
-    selector: "#interpolate-form",
-    resultSelector: "#interpolate-view",
-    duration: 30000,
-    args: { path: "/products/sunburst-s-style-electric" },
-    caption: "This is the converter: one real HTTPS page becomes compact Markdown plus a structured Offer, with its canonical URL and provenance intact.",
-    detail: TOOL_STORIES.interpolate_page.detail,
-    action: "interpolate",
-  },
-  {
-    phase: "06 / 09  COMPARE",
-    tool: "compare_products",
-    selector: "#product-grid",
-    duration: 20000,
-    args: { handles: ["sunburst-s-style-electric", "mahogany-single-cut-electric"] },
-    caption: "Because every adapter produces the same Offer shape, the agent can compare products without learning a second catalog model.",
-    detail: TOOL_STORIES.compare_products.detail,
-    action: "compare",
-  },
-  {
-    phase: "07 / 09  PROPOSE",
-    tool: "propose_add_to_cart",
-    selector: ".agent-panel",
-    resultSelector: "#confirm-panel",
-    duration: 22000,
-    args: { handle: "sunburst-s-style-electric", variantTitle: "As listed", quantity: 1 },
-    caption: "The agent stages one listing with its delivered price and seller evidence, then stops for human review.",
-    detail: TOOL_STORIES.propose_add_to_cart.detail,
-    action: "propose",
-    waitForHuman: true,
-  },
-  {
-    phase: "08 / 09  HUMAN CONTROL",
-    tool: "human_approval_button",
-    selector: "#cart-panel",
-    duration: 20000,
-    args: { action: "visible button only" },
-    caption: "The human approves the selection. Only that button creates the page-local decision record, and payment remains with the source merchant.",
-    detail: TOOL_STORIES.human_approval_button.detail,
-    humanResult: true,
-  },
-  {
-    phase: "09 / 09  TRUST",
-    tool: "exact host + path + byte limits",
-    selector: ".trust-note",
-    duration: 8000,
-    args: { redirects: "same host only", content: "untrusted" },
-    caption: "Agents get a useful open-web interface, while people retain source visibility and final control over writes.",
-    detail: "Every upstream request is HTTPS, exact-host allowlisted, path checked, off-host redirect rejected, and response-byte bounded.",
-  },
-]);
+export async function loadRehearsalSteps(fetcher = fetch) {
+  const response = await fetcher("/demo-sequence.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("The Ribband demo sequence could not be loaded.");
+  const sequence = await response.json();
+  const actions = new Set(["listOrigins", "selectOrigin", "search", "recommend", "interpolate", "compare", "propose", "itinerary"]);
+  if (!Array.isArray(sequence.steps) || sequence.steps.length < 1 || sequence.steps.length > 24) {
+    throw new Error("The Ribband demo sequence is invalid.");
+  }
+  for (const step of sequence.steps) {
+    if (typeof step.id !== "string" || typeof step.tool !== "string" || typeof step.selector !== "string"
+      || !Number.isFinite(step.duration) || step.duration < 1000 || step.duration > 60000
+      || (step.action && !actions.has(step.action))) {
+      throw new Error("The Ribband demo contains an unsupported step.");
+    }
+  }
+  return sequence.steps;
+}
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -153,6 +84,7 @@ export function createPresenter(actions) {
     pause: document.querySelector("#presenter-pause"),
     next: document.querySelector("#presenter-next"),
     exit: document.querySelector("#presenter-exit"),
+    export: document.querySelector("#presenter-export"),
   };
 
   let active = false;
@@ -166,6 +98,12 @@ export function createPresenter(actions) {
   let waitingForHuman = false;
   let waitingKind = null;
   let cursorRole = "AGENT";
+  let rehearsalSteps = [];
+  let transitioning = false;
+  let starting = false;
+  let runVersion = 0;
+  let runStartedAt = 0;
+  let timingCues = [];
 
   function setCursor(x, y, label = "AGENT") {
     const safeX = Math.max(8, Math.min(innerWidth - 104, x));
@@ -205,7 +143,7 @@ export function createPresenter(actions) {
     if (!(target instanceof HTMLElement) || target.hidden) return;
     target.scrollIntoView({ behavior: immediate ? "auto" : "smooth", block: "center", inline: "nearest" });
     if (!immediate) await delay(520);
-    placeTarget(target, immediate);
+    if (active) placeTarget(target, immediate);
   }
 
   function renderStory({ tool, args = {}, detail }) {
@@ -235,6 +173,9 @@ export function createPresenter(actions) {
           if (waitingKind === "refinement") {
             elements.detail.textContent = "The agent has stopped at genuine uncertainty. Choose one visible priority to finalize the ranking.";
             focusSelector("#refinement-panel").catch(() => undefined);
+          } else if (waitingKind === "dossier") {
+            elements.detail.textContent = "Download the goods dossier before switching origins. The report is generated locally in this browser.";
+            focusSelector("#download-dossier").catch(() => undefined);
           } else {
             elements.detail.textContent = "The agent has stopped. Only the visible human button can approve the selection for handoff.";
             focusSelector("#confirm-cart").catch(() => undefined);
@@ -247,56 +188,74 @@ export function createPresenter(actions) {
   }
 
   async function showStep(step) {
-    waitingKind = step.waitForRefinement === true ? "refinement" : step.waitForHuman === true ? "approval" : null;
+    const startedAt = performance.now();
+    timingCues.push({ id: step.id, start: (startedAt - runStartedAt) / 1000 });
+    waitingKind = step.waitForRefinement === true ? "refinement" : step.waitForHuman === true ? "approval" : step.waitForDossier === true ? "dossier" : null;
     waitingForHuman = waitingKind !== null;
     cursorRole = step.humanResult === true ? "HUMAN" : "AGENT";
     elements.next.disabled = waitingForHuman;
     document.body.classList.toggle("presenter-waiting", false);
     renderStory(step);
     await focusSelector(step.selector);
+    if (!running) return;
     if (step.action) {
       elements.cursor.classList.add("clicking");
       await delay(180);
       elements.cursor.classList.remove("clicking");
+      if (!running) return;
       await actions[step.action](step.args);
       if (!running) return;
       if (step.resultSelector) await focusSelector(step.resultSelector);
       renderStory(step);
     }
     if (!running) return;
-    startTimer(step.duration);
+    if (waitingKind === "refinement" && document.querySelector("#refinement-panel")?.hidden) {
+      waitingForHuman = false;
+      waitingKind = null;
+      elements.next.disabled = false;
+    }
+    startTimer(Math.max(0, step.duration - (performance.now() - startedAt)));
   }
 
   async function advance() {
-    if (!running) return;
-    clearTimer();
-    paused = false;
-    elements.pause.textContent = "Pause";
-    elements.pause.disabled = false;
-    stepIndex += 1;
-    if (stepIndex >= REHEARSAL_STEPS.length) {
-      running = false;
-      document.body.classList.remove("presenter-running", "presenter-waiting");
-      elements.pause.disabled = true;
-      elements.next.disabled = true;
-      elements.rehearse.disabled = false;
-      elements.rehearse.textContent = "Run guided demo again";
-      renderStory({
-        tool: "Guided demo complete",
-        args: { readyToRecord: true },
-        detail: "Use presenter mode with the real agent. Every actual tool call will update this overlay and move the focus frame.",
-      });
-      await focusSelector(".workspace");
-      return;
+    if (!running || waitingForHuman || transitioning) return;
+    transitioning = true;
+    try {
+      clearTimer();
+      if (timingCues.length) timingCues[timingCues.length - 1].end = (performance.now() - runStartedAt) / 1000;
+      paused = false;
+      elements.pause.textContent = "Pause";
+      elements.pause.disabled = false;
+      stepIndex += 1;
+      if (stepIndex >= rehearsalSteps.length) {
+        running = false;
+        document.body.classList.remove("presenter-running", "presenter-waiting");
+        elements.pause.disabled = true;
+        elements.next.disabled = true;
+        elements.pause.hidden = true;
+        elements.next.hidden = true;
+        elements.export.hidden = false;
+        elements.rehearse.disabled = false;
+        elements.rehearse.textContent = "Run guided demo again";
+        renderStory({
+          tool: "Guided demo complete",
+          args: { product: "Ribband", approval: "human only" },
+          detail: "Export edit cues for narration alignment. The recording still needs review before publication. Actual agent calls continue to update the same overlay.",
+        });
+        await focusSelector(".workspace");
+        return;
+      }
+      await showStep(rehearsalSteps[stepIndex]);
+    } finally {
+      transitioning = false;
     }
-    await showStep(REHEARSAL_STEPS[stepIndex]);
   }
 
   function showPresenterError(error) {
     clearTimer();
     paused = true;
     const message = error instanceof Error ? error.message : "The guided demo step failed.";
-    elements.detail.textContent = `${message} The live app remains usable. Check the visible origin health, then press Next.`;
+    elements.detail.textContent = `${message} The app remains usable. Exit presenter mode, check the visible origin health, and run the demo again.`;
   }
 
   function enable() {
@@ -311,6 +270,7 @@ export function createPresenter(actions) {
   }
 
   function exit() {
+    runVersion += 1;
     clearTimer();
     active = false;
     running = false;
@@ -326,13 +286,33 @@ export function createPresenter(actions) {
     elements.rehearse.disabled = false;
     elements.pause.disabled = true;
     elements.next.disabled = true;
+    elements.pause.hidden = false;
+    elements.next.hidden = false;
+    elements.export.hidden = true;
     document.body.classList.remove("presenter-active", "presenter-running", "presenter-waiting");
     history.replaceState(null, "", location.pathname);
   }
 
   async function start() {
+    if (running || transitioning || starting) return;
+    starting = true;
+    const version = ++runVersion;
     enable();
-    await actions.reset?.();
+    elements.rehearse.disabled = true;
+    try {
+      rehearsalSteps = await loadRehearsalSteps();
+      if (!active || version !== runVersion) return;
+      await actions.reset?.();
+      if (!active || version !== runVersion) return;
+    } catch (error) {
+      elements.rehearse.disabled = false;
+      if (version === runVersion) throw error;
+      return;
+    } finally {
+      starting = false;
+    }
+    timingCues = [];
+    runStartedAt = performance.now();
     running = true;
     paused = false;
     waitingForHuman = false;
@@ -341,6 +321,9 @@ export function createPresenter(actions) {
     elements.rehearse.disabled = true;
     elements.pause.disabled = false;
     elements.next.disabled = false;
+    elements.pause.hidden = false;
+    elements.next.hidden = false;
+    elements.export.hidden = true;
     document.body.classList.add("presenter-running");
     await advance();
   }
@@ -373,28 +356,34 @@ export function createPresenter(actions) {
     }
   }
 
-  function humanConfirmed() {
-    if (!running || !waitingForHuman || waitingKind !== "approval") return;
+  function completeHumanStep(kind) {
+    if (!running || !waitingForHuman || waitingKind !== kind) return;
     waitingForHuman = false;
     waitingKind = null;
     paused = false;
     elements.next.disabled = false;
     document.body.classList.remove("presenter-waiting");
-    advance().catch(showPresenterError);
+    if (!timerId && !transitioning) advance().catch(showPresenterError);
   }
 
-  function humanRefined() {
-    if (!running || !waitingForHuman || waitingKind !== "refinement") return;
-    waitingForHuman = false;
-    waitingKind = null;
-    paused = false;
-    elements.next.disabled = false;
-    document.body.classList.remove("presenter-waiting");
-    advance().catch(showPresenterError);
+  function downloadTimings() {
+    if (running || timingCues.length !== rehearsalSteps.length || !timingCues.at(-1)?.end) return;
+    const blob = new Blob([JSON.stringify({ version: 1, title: "Ribband", cues: timingCues }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ribband-demo-timing.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+
+  const humanConfirmed = () => completeHumanStep("approval");
+  const humanRefined = () => completeHumanStep("refinement");
+  const humanDossierDownloaded = () => completeHumanStep("dossier");
 
   elements.toggle.addEventListener("click", () => active ? exit() : enable());
   elements.exit.addEventListener("click", exit);
+  elements.export.addEventListener("click", downloadTimings);
   elements.rehearse.addEventListener("click", () => start().catch(showPresenterError));
   elements.pause.addEventListener("click", togglePause);
   elements.next.addEventListener("click", () => advance().catch(showPresenterError));
@@ -411,5 +400,5 @@ export function createPresenter(actions) {
 
   if (new URLSearchParams(location.search).get("present") === "1") enable();
 
-  return { toolEvent, humanConfirmed, humanRefined, enable, exit };
+  return { toolEvent, humanConfirmed, humanRefined, humanDossierDownloaded, enable, exit };
 }

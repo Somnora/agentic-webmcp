@@ -20,7 +20,7 @@ describe("decision dossier", () => {
     for (const value of ["electric guitar", "Someone else", "Explore", "classic shape", "single coil", "final sale", "Refinement checkpoint", "Which consideration", "Safer returns", "Lower delivered price", "Ranking changed: No", "Best fit stayed", "Best fit", "Matches the recipient context", "Verified across product JSON and page", "score 94", "preferenceFit 15", "Evidence conflict: pricing", "610.00 USD", "approved for merchant handoff", "Order created: No", "find_best_options"]) {
       expect(dossier).toContain(value);
     }
-    expect(dossierFilename("catalog-lab", "2026-09-01T12:00:00.000Z")).toBe("agentic-decision-dossier-catalog-lab-2026-09-01.md");
+    expect(dossierFilename("catalog-lab", "2026-09-01T12:00:00.000Z")).toBe("ribband-decision-dossier-catalog-lab-2026-09-01.md");
   });
 
   it("keeps untrusted text on one line and rejects non-HTTPS source links", () => {

@@ -2,7 +2,7 @@
 
 ## Project title
 
-Agentic WebMCP
+Ribband
 
 ## Tagline
 
@@ -12,9 +12,11 @@ An explainable market decision layer for people and web agents.
 
 Visual websites make agents infer controls and reconstruct product facts from presentation markup. We wanted a page where the agent and the person share the same source, evidence, recommendation, and approval boundary.
 
+The name nods to the Blue Riband, the historic distinction associated with transatlantic passenger speed records. Ribband applies that spirit to surfing the web: fast movement across authorized sources, with the evidence and final decision kept visible.
+
 ## What it does
 
-Agentic WebMCP exposes ten WebMCP tools over explicitly allowlisted product and service origins. It converts public catalog JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options against session-only taste and intent, ask one evidence-derived refinement when credible choices have competing strengths, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review. On the controlled services scope, the same Offer contract can represent a local professional or destination activity and assemble selected options into a planning-only itinerary.
+Ribband exposes ten WebMCP tools over explicitly allowlisted product and service origins. It converts public catalog JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options against session-only taste and intent, ask one evidence-derived refinement when credible choices have competing strengths, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review. On the controlled services scope, the same Offer contract can represent a local professional or destination activity and assemble selected options into a planning-only itinerary.
 
 The final decision stays human-controlled. The agent cannot place an order or pay. A visible button creates only a page-local approved selection and links back to the merchant. Before recording it, the Worker rereads the Offer and requires every line and total to match the Quote the person reviewed.
 

@@ -381,7 +381,7 @@ export async function interpolatePage(
   try {
     const response = await fetchOriginText(origin, path, {
       method: "GET",
-      headers: { "Accept": "text/html", "User-Agent": "Agentic-WebMCP/0.1" },
+      headers: { "Accept": "text/html", "User-Agent": "Ribband-WebMCP/0.1" },
     }, origin.policy.maxPageResponseBytes, fetcher);
     pageAttempt = response.diagnosticAttempt;
     if (!response.contentType.toLocaleLowerCase().includes("text/html")) {

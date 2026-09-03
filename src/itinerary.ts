@@ -408,7 +408,7 @@ export function createActivityItinerary(
 
   if (!date) {
     for (const candidate of ready) {
-      const reason = "Choose a start date before Agentic can match published weekday windows.";
+      const reason = "Choose a start date before Ribband can match published weekday windows.";
       addConflict(conflicts, "date-required", candidate, `${candidate.offer.title}: ${reason}`);
       items.push(itemFromCandidate(candidate, partySize, reason));
     }

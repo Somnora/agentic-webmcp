@@ -1,0 +1,205 @@
+{
+  "title": "Ribband",
+  "version": 1,
+  "model": "gemini-3.1-flash-tts-preview",
+  "voice": "Sadachbia",
+  "steps": [
+    {
+      "id": "opening",
+      "tool": "document.modelContext.registerTool",
+      "selector": ".status-cluster",
+      "duration": 9000,
+      "detail": "Ten page-defined WebMCP tools share the visible workspace. Nine read evidence; one stages a goods proposal. The guided demo invokes the same application actions.",
+      "narration": "Meet Ribband. I can ask my agent to research a purchase, compare the evidence, and leave the final decision with me."
+    },
+    {
+      "id": "origins",
+      "tool": "list_origins",
+      "selector": ".origin-control",
+      "duration": 9000,
+      "args": {},
+      "action": "listOrigins",
+      "detail": "A static authorization manifest defines exact HTTPS hosts, permitted paths, adapters, response limits, and authorization expiry.",
+      "narration": "First, we discover the authorized sources. Ribband only reads permitted hosts and paths, with strict response limits."
+    },
+    {
+      "id": "select-goods",
+      "tool": "select_origin",
+      "selector": ".origin-control",
+      "duration": 8000,
+      "args": {
+        "originId": "catalog-lab"
+      },
+      "action": "selectOrigin",
+      "detail": "These original guitar listings are controlled demonstration data. Their JSON and HTML are served over live HTTPS, not scraped from another retailer.",
+      "narration": "This guitar marketplace uses original demonstration listings. Its public pages and structured responses are live."
+    },
+    {
+      "id": "recommend",
+      "tool": "find_best_options",
+      "selector": "#recommend-form",
+      "resultSelector": "#refinement-panel",
+      "duration": 17000,
+      "args": {
+        "query": "electric guitar",
+        "maxDeliveredPrice": 900,
+        "maxResults": 4,
+        "shoppingFor": "gift",
+        "mode": "explore",
+        "priorities": [
+          "taste",
+          "condition",
+          "price"
+        ],
+        "tasteContext": "single coil pickups"
+      },
+      "action": "recommend",
+      "waitForRefinement": true,
+      "detail": "Session-only taste and intent rebalance seven visible scoring factors. The agent stops for one human priority when credible choices win on different evidence.",
+      "narration": "I'm choosing a guitar as a gift, under nine hundred dollars delivered. The recipient likes single-coil pickups. Good candidates have competing strengths, so Ribband asks which tradeoff matters most. I choose the priority myself."
+    },
+    {
+      "id": "ranking",
+      "tool": "find_best_options",
+      "selector": "#product-grid",
+      "duration": 8000,
+      "args": {
+        "result": "human refinement applied"
+      },
+      "humanResult": true,
+      "detail": "The resolved ranking shows Best fit, Best value, reasons, tradeoffs, evidence confidence, and the explicit effect of the human answer.",
+      "narration": "Now the shortlist explains its ranking. I can see the reasons, tradeoffs, and how my answer changed the scores."
+    },
+    {
+      "id": "interpolate",
+      "tool": "interpolate_page",
+      "selector": "#interpolate-form",
+      "resultSelector": "#interpolate-view",
+      "duration": 20000,
+      "args": {
+        "path": "/products/sunburst-s-style-electric"
+      },
+      "action": "interpolate",
+      "detail": "One allowlisted page becomes stripped Markdown plus the same Offer model. Product JSON and page JSON-LD reconcile price, availability, condition, shipping, and returns.",
+      "narration": "Here is the converter at the heart of Ribband. One source page becomes readable Markdown and a structured Offer. The canonical address stays visible. Product JSON and page evidence are reconciled, so agreement is verified and conflicts remain explicit."
+    },
+    {
+      "id": "compare",
+      "tool": "compare_products",
+      "selector": "#product-grid",
+      "duration": 10000,
+      "args": {
+        "handles": [
+          "sunburst-s-style-electric",
+          "mahogany-single-cut-electric"
+        ]
+      },
+      "action": "compare",
+      "detail": "The comparison consumes normalized Offer facts. Delivered price, condition, shipping, and returns remain inspectable across both listings.",
+      "narration": "I compare two finalists using the same fields. A lower sticker price isn't the whole decision: condition, shipping, and returns matter too."
+    },
+    {
+      "id": "propose",
+      "tool": "propose_add_to_cart",
+      "selector": ".agent-panel",
+      "resultSelector": "#confirm-panel",
+      "duration": 12000,
+      "args": {
+        "handle": "sunburst-s-style-electric",
+        "variantTitle": "As listed",
+        "quantity": 1
+      },
+      "action": "propose",
+      "waitForHuman": true,
+      "detail": "A fresh quote stages a visible goods review. No agent tool can approve it, create an order, or charge. Approval requires the visible human button.",
+      "narration": "The agent can prepare my selection, but it stops here. Nothing has been ordered or charged. I review the quote, then use the visible approval button."
+    },
+    {
+      "id": "receipt",
+      "tool": "human_approval_button",
+      "selector": "#cart-panel",
+      "duration": 8000,
+      "args": {
+        "action": "visible human button only"
+      },
+      "humanResult": true,
+      "detail": "Before recording approval, the Worker rereads the Offer and rejects a changed quote. The receipt is a page-local decision record, not a merchant order.",
+      "narration": "Ribband checks the quote again before recording my approval. This is a decision receipt, not an order or payment."
+    },
+    {
+      "id": "dossier",
+      "tool": "human_download_button",
+      "selector": "#download-dossier",
+      "duration": 8000,
+      "args": {
+        "action": "download goods decision dossier"
+      },
+      "waitForDossier": true,
+      "humanResult": true,
+      "detail": "The human downloads a browser-generated Markdown dossier with the goal, rankings, sources, uncertainty checkpoint, and decision. It is not stored on the server.",
+      "narration": "I download the dossier: my goal, ranked options, source evidence, and decision, in a portable report that stays with me."
+    },
+    {
+      "id": "select-services",
+      "tool": "select_origin",
+      "selector": ".origin-control",
+      "duration": 8000,
+      "args": {
+        "originId": "services-lab"
+      },
+      "action": "selectOrigin",
+      "detail": "Services use a disjoint path scope on the controlled origin and normalize into the same Offer protocol. These are original fixtures, not real provider inventory.",
+      "narration": "The same protocol also supports services. I switch to the controlled experiences directory to plan a day on Oahu."
+    },
+    {
+      "id": "service-evidence",
+      "tool": "interpolate_page",
+      "selector": "#interpolate-form",
+      "resultSelector": "#interpolate-view",
+      "duration": 12000,
+      "args": {
+        "path": "/services/north-shore-surf-foundations"
+      },
+      "action": "interpolate",
+      "detail": "Service JSON and page JSON-LD carry provider, location, duration, price basis, party limits, published windows, and cancellation terms into one evidence graph.",
+      "narration": "A surf lesson becomes structured evidence too: location, duration, party limits, published windows, and cancellation terms. Those are planning facts, not a confirmed appointment."
+    },
+    {
+      "id": "itinerary",
+      "tool": "create_activity_itinerary",
+      "selector": "#itinerary-form",
+      "resultSelector": "#itinerary-view",
+      "duration": 24000,
+      "args": {
+        "goal": "Plan a balanced Oahu day for two under 500 USD with surf, local food, and sunset photography.",
+        "handles": [
+          "north-shore-surf-foundations",
+          "haleiwa-food-story-walk",
+          "oahu-sunset-photo-walk"
+        ],
+        "date": "2026-10-10",
+        "days": 1,
+        "partySize": 2,
+        "budget": 500,
+        "pace": "balanced",
+        "earliestStart": "08:00",
+        "latestEnd": "19:00"
+      },
+      "action": "itinerary",
+      "detail": "The planner checks destination, weekday windows, party size, budget, pace, and day hours. Conservative transition buffers are assumptions, not measured travel times. No provider is contacted.",
+      "narration": "For two people, with a five-hundred-dollar activity budget, Ribband arranges surf, a food walk, and sunset photography. It checks published windows, party size, pace, and transition allowances. The plan totals four hundred fifty dollars, leaving fifty. These times are proposals, not reservations; provider confirmation and payment remain outside Ribband."
+    },
+    {
+      "id": "closing",
+      "tool": "human_download_button",
+      "selector": "#download-dossier",
+      "duration": 12000,
+      "args": {
+        "action": "download itinerary dossier"
+      },
+      "humanResult": true,
+      "detail": "The itinerary dossier preserves the constraints, proposed schedule, canonical sources, and limitations. Goods approval and service planning remain separate human-controlled decisions.",
+      "narration": "I can keep this itinerary in a second dossier. Ribband gives agents a tool-callable view of the web, and gives people the evidence, a useful result, and final control."
+    }
+  ]
+}

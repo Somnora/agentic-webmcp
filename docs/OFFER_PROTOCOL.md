@@ -1,4 +1,4 @@
-# Agentic Offer Protocol (hackathon kernel)
+# Ribband Offer Protocol (hackathon kernel)
 
 This is the shared model for turning a real website into something an agent can use.
 It is not a scraper manifesto. It is a compiler: one offer graph, several projections.
@@ -13,7 +13,7 @@ The secondary Shopify development store preserves the Storefront and public prod
 
 The page the agent visits must remain this origin (`agentic-webmcp.somnora.workers.dev`).
 WebMCP tools are registered on the top-level document (`tools=(self)`). You cannot inject
-tools into amazon.com. The honest architecture is: Agentic is the agent view of one or more
+tools into amazon.com. The honest architecture is: Ribband is the agent view of one or more
 allowlisted real origins.
 
 ## Non-goals for the Challenge

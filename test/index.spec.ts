@@ -24,7 +24,7 @@ const secondProduct = {
 };
 
 const assetFetcher: Fetcher = {
-  fetch: vi.fn(async () => new Response("<!doctype html><title>Agentic</title>", {
+  fetch: vi.fn(async () => new Response("<!doctype html><title>Ribband</title>", {
     headers: { "Content-Type": "text/html" },
   })),
   connect: () => {
@@ -116,7 +116,7 @@ describe("Worker routes", () => {
 
   it("serves static assets through the isolated Worker boundary", async () => {
     const response = await handleRequest(new Request("https://example.test/"), env);
-    expect(await response.text()).toContain("Agentic");
+    expect(await response.text()).toContain("Ribband");
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
   });
 

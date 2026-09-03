@@ -168,7 +168,7 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
     id: "review-shop",
     mode: "live-merchant",
     vertical: "retail",
-    displayName: "Agentic App Review Shop",
+    displayName: "Authorized Shopify Review Shop",
     hostname: "agentic-app-review-test.myshopify.com",
     canonicalUrl: "https://agentic-app-review-test.myshopify.com",
     adapter: "shopify-storefront",

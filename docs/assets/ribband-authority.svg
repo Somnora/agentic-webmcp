@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <title>Ribband: the agent prepares, the person decides</title>
+  <rect x="2" y="2" width="1196" height="516" rx="30" fill="#173d34" stroke="#668177" stroke-width="2"/>
+  <text x="52" y="65" fill="#cba770" font-family="Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="4">RIBBAND / HUMAN AUTHORITY</text>
+  <text x="52" y="137" fill="#f5f3ed" font-family="Georgia,serif" font-size="47">The agent prepares. You decide.</text>
+  <g font-family="Arial,sans-serif">
+    <rect x="52" y="202" width="514" height="192" rx="16" fill="#244a40" stroke="#668177"/>
+    <text x="82" y="244" fill="#cba770" font-size="17" font-weight="700" letter-spacing="3">AGENT</text>
+    <text x="82" y="294" fill="#ffffff" font-size="28" font-weight="700">Research, verify, compare</text>
+    <text x="82" y="335" fill="#cbd6d0" font-size="21">Prepare a goods review</text>
+    <text x="82" y="367" fill="#cbd6d0" font-size="21">Propose an activity itinerary</text>
+    <path d="M600 213V383" fill="none" stroke="#cba770" stroke-width="2" stroke-dasharray="5 9"/>
+    <rect x="634" y="202" width="514" height="192" rx="16" fill="#f5f3ed"/>
+    <text x="664" y="244" fill="#89623b" font-size="17" font-weight="700" letter-spacing="3">PERSON</text>
+    <text x="664" y="294" fill="#173d34" font-size="28" font-weight="700">Refine, approve, keep</text>
+    <text x="664" y="335" fill="#52665c" font-size="21">Choose what matters</text>
+    <text x="664" y="367" fill="#52665c" font-size="21">Keep the evidence in a dossier</text>
+    <text x="52" y="462" fill="#cbd6d0" font-size="20">No orders, bookings, provider messages, account access, or payments.</text>
+  </g>
+</svg>

@@ -20,6 +20,12 @@ Open `Origin diagnostics` after selecting an origin. Pass when the request corre
 
 ## Core behavioral evaluations
 
+### Narrated presentation
+
+Run `python3 -m unittest scripts.test_demo_voiceover` for offline narration tests. The presenter and renderer must load the same 14-step sequence with a nominal duration below three minutes. Cache identity includes narration, direction, duration, model, and voice. Measured cues must preserve ids and order, reject overlaps and non-finite times, and stay below the video limit. Audio fit must reject rushed segments rather than silently compressing them.
+
+In a fresh browser run, complete refinement, goods approval, and goods dossier download using their visible human controls. Each required gate must disable Next, wait if unanswered, and retain its minimum narration hold if answered early. Verify services then interpolate into the same Offer model, and the itinerary form matches the October 10 plan result. Exit must prevent a pending sequence load from restarting the runner. At completion, export edit cues. Review finished picture and audio separately from these code checks.
+
 ### Origin discovery
 
 Prompt: `List the allowlisted origins and select catalog-lab.`

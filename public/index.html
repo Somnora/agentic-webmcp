@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Agentic WebMCP turns allowlisted product and service pages into structured evidence, comparisons, activity itineraries, and human-controlled handoffs.">
-  <title>Agentic WebMCP | Offer decision workspace</title>
-  <link rel="icon" href="/icon.webp" type="image/webp">
+  <meta name="description" content="Ribband turns allowlisted product and service pages into structured evidence, comparisons, activity itineraries, and human-controlled handoffs.">
+  <title>Ribband | Offer decision workspace</title>
+  <link rel="icon" href="/ribband-symbol.png" type="image/png">
+  <link rel="apple-touch-icon" href="/ribband-symbol.png">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/" aria-label="Agentic WebMCP home">
-      <img src="/icon.webp" alt="" width="42" height="42">
-      <span><strong>Agentic</strong><small>Offer decision workspace</small></span>
+    <a class="brand" href="/" aria-label="Ribband home">
+      <img class="brand-lockup" src="/ribband-lockup.png" alt="" width="980" height="520">
     </a>
     <div class="header-actions">
       <button id="presenter-toggle" class="presenter-toggle" type="button" aria-pressed="false">Presenter mode</button>
@@ -28,7 +28,7 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="eyebrow">WEB RESEARCH WITH A VISIBLE DECISION TRAIL</div>
       <h1 id="hero-title">Compare the evidence.<br><span>Keep the decision.</span></h1>
-      <p>Agentic turns allowlisted product and service pages into normalized Offers, stripped Markdown, and comparable evidence. The agent can research a purchase or assemble a planning-only activity itinerary. Booking, provider contact, approval, and payment remain outside the agent.</p>
+      <p>Ribband turns allowlisted product and service pages into normalized Offers, stripped Markdown, and comparable evidence. The agent can research a purchase or assemble a planning-only activity itinerary. Booking, provider contact, approval, and payment remain outside the agent.</p>
       <div class="tool-strip" aria-label="Available tools">
         <code>list_origins</code>
         <code>select_origin</code>
@@ -43,7 +43,7 @@
       </div>
     </section>
 
-    <section class="workspace" aria-label="Agentic Offer decision workspace">
+    <section class="workspace" aria-label="Ribband Offer decision workspace">
       <div class="catalog-panel">
         <div class="panel-heading">
           <div>
@@ -56,7 +56,7 @@
         <section id="conversion-path" class="conversion-path" aria-labelledby="conversion-path-title">
           <div class="conversion-path-heading">
             <div>
-              <span class="kicker">Agentic conversion path</span>
+              <span class="kicker">Ribband conversion path</span>
               <strong id="conversion-path-title">From public page to human decision</strong>
             </div>
             <span id="conversion-path-status" class="conversion-path-status" aria-live="polite">Waiting for an allowlisted source</span>
@@ -289,13 +289,14 @@
         <button id="presenter-rehearse" type="button">Run guided demo</button>
         <button id="presenter-pause" type="button" class="ghost" disabled>Pause</button>
         <button id="presenter-next" type="button" class="ghost" disabled>Next</button>
+        <button id="presenter-export" type="button" class="ghost" hidden>Export edit cues</button>
         <button id="presenter-exit" type="button" class="ghost">Exit</button>
       </footer>
     </section>
   </div>
 
   <footer>
-    <span>Agentic WebMCP Challenge build | <span id="deployment-id">Loading deployment identity...</span></span>
+    <span>Ribband WebMCP Challenge build | <span id="deployment-id">Loading deployment identity...</span></span>
     <span>Default origin: agentic-webmcp-origin.somnora.workers.dev | controlled public demo data | <a href="/privacy.html">Privacy</a> | <a href="https://github.com/Somnora/agentic-webmcp">Source</a></span>
   </footer>
 </body>

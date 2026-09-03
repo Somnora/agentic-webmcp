@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Privacy disclosure for the public Agentic WebMCP Challenge demo.">
-  <title>Privacy | Agentic WebMCP</title>
-  <link rel="icon" href="/icon.webp" type="image/webp">
+  <meta name="description" content="Privacy disclosure for the public Ribband WebMCP Challenge demo.">
+  <title>Privacy | Ribband</title>
+  <link rel="icon" href="/ribband-symbol.png" type="image/png">
+  <link rel="apple-touch-icon" href="/ribband-symbol.png">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/" aria-label="Agentic WebMCP home">
-      <img src="/icon.webp" alt="" width="42" height="42">
-      <span><strong>Agentic</strong><small>Offer decision workspace</small></span>
+    <a class="brand" href="/" aria-label="Ribband home">
+      <img class="brand-lockup" src="/ribband-lockup.png" alt="" width="980" height="520">
     </a>
   </header>
 
@@ -20,26 +20,26 @@
     <span class="eyebrow">PUBLIC CHALLENGE DEMO</span>
     <h1>Privacy for the public demo</h1>
     <p class="effective">Effective August 25, 2026</p>
-    <p>Agentic WebMCP is a stateless demonstration. It does not create user accounts, set cookies, request payment information, or store origin selections, searches, taste and intent, recommendations, activity itineraries, purchase reviews, approved selections, or generated briefs in an application database.</p>
+    <p>Ribband is a stateless demonstration. It does not create user accounts, set cookies, request payment information, or store origin selections, searches, taste and intent, recommendations, activity itineraries, purchase reviews, approved selections, or generated briefs in an application database.</p>
 
     <h2>Infrastructure data</h2>
     <p>Cloudflare hosts the application and may process standard request, URL, security, log, and trace metadata needed to deliver, monitor, and protect the service. Application records contain a random request correlation id, route path, response status, duration, adapter timing, response byte count, normalized failure category, stable error code, and retryability. They do not contain search terms, taste and intent fields, request bodies, upstream response bodies, tokens, or cookies. Taste and intent use a no-store request and are never placed in the request URL. There are no third-party analytics identifiers. Do not enter personal or confidential information into the public demo.</p>
 
     <h2>Offer data</h2>
-    <p>The Worker reads only exact HTTPS hostnames and product or service paths declared in its validated origin manifests. Runtime access stops at each origin's authorization review date, before another upstream request is made. The default origin is agentic-webmcp-origin.somnora.workers.dev, a first-party controlled public marketplace with original guitar listings and no external product images. A separate `/services/*` scope on that controlled hostname contains seven original local-service and destination-activity fixtures, including five Oahu experiences. Its JSON and HTML responses are fetched live and clearly labeled as controlled demonstration data. The secondary Shopify development store can use a read-only Storefront token, public products JSON, or a clearly labeled research-only bundled snapshot. Fallback and stale Offers cannot create a purchase review. Search terms do not include an Agentic visitor identity.</p>
+    <p>The Worker reads only exact HTTPS hostnames and product or service paths declared in its validated origin manifests. Runtime access stops at each origin's authorization review date, before another upstream request is made. The default origin is agentic-webmcp-origin.somnora.workers.dev, a first-party controlled public marketplace with original guitar listings and no external images. A separate `/services/*` scope on that controlled hostname contains seven original local-service and destination-activity fixtures, including five Oahu experiences. Its JSON and HTML responses are fetched live and clearly labeled as controlled demonstration data. The secondary Shopify development store can use a read-only Storefront token, public products JSON, or a clearly labeled research-only bundled snapshot. Fallback and stale Offers cannot create a purchase review. Search terms do not include a Ribband visitor identity.</p>
 
     <h2>Agent tools</h2>
     <p>Ten WebMCP tools read origins, Offers, ranked recommendations, stripped page content, and planning-only activity itineraries. A recommendation may ask one refinement question when eligible options have competing evidence. The answer remains in page-local state and the no-store request only long enough to rerank and optionally create the dossier. create_activity_itinerary uses the submitted date, party size, budget, pace, and day hours to propose a source-linked schedule. It does not reserve a service, confirm live availability, measure travel time, contact a provider, or pay. propose_add_to_cart stages a goods purchase review but does not create an order. Only the human approval button can create an in-page decision record after the Worker confirms the reviewed Quote still matches current facts. No tool exposes booking, provider messaging, checkout, payment, account, order, customer, billing, or merchant mutation capability. Tool activity disappears when the page is closed or reloaded.</p>
 
     <h2>Decision dossier</h2>
-    <p>The Download dossier button creates a Markdown file in the browser from the visible research activity, taste and intent, refinement question and answer, source URLs, evidence state, selection, and human decision. The dossier is downloaded directly to the visitor's device. It is not uploaded to or stored by Agentic.</p>
+    <p>The Download dossier button creates a Markdown file in the browser from the visible research activity, taste and intent, refinement question and answer, source URLs, evidence state, selection, and human decision. The dossier is downloaded directly to the visitor's device. It is not uploaded to or stored by Ribband.</p>
 
     <h2>Contact and source</h2>
     <p>Questions may be sent to <a href="mailto:support@somnora.app">support@somnora.app</a>. The complete public implementation is available on <a href="https://github.com/Somnora/agentic-webmcp">GitHub</a>.</p>
   </main>
 
   <footer>
-    <span>Agentic WebMCP Challenge build</span>
+    <span>Ribband WebMCP Challenge build</span>
     <a href="/">Return to the workspace</a>
   </footer>
 </body>

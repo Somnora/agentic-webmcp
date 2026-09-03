@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <title>Ribband: from website to shared decision</title>
+  <rect x="2" y="2" width="1196" height="516" rx="30" fill="#173d34" stroke="#668177" stroke-width="2"/>
+  <text x="52" y="65" fill="#cba770" font-family="Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="4">RIBBAND / UNDER THE HOOD</text>
+  <text x="52" y="137" fill="#f5f3ed" font-family="Georgia,serif" font-size="47">From website to shared decision.</text>
+  <path d="M364 304H440M752 304H828" fill="none" stroke="#cba770" stroke-width="3"/>
+  <path d="m425 295 15 9-15 9m388-18 15 9-15 9" fill="none" stroke="#cba770" stroke-width="3" stroke-linejoin="round"/>
+  <g font-family="Arial,sans-serif">
+    <rect x="52" y="202" width="312" height="192" rx="16" fill="#244a40" stroke="#668177"/>
+    <text x="78" y="244" fill="#cba770" font-size="16" font-weight="700" letter-spacing="2">01 / AUTHORIZED SOURCE</text>
+    <text x="78" y="296" fill="#ffffff" font-size="26" font-weight="700">Product JSON + page</text>
+    <text x="78" y="335" fill="#cbd6d0" font-size="20">Exact host and path</text>
+    <text x="78" y="364" fill="#cbd6d0" font-size="20">Bounded HTTPS reads</text>
+    <rect x="440" y="202" width="312" height="192" rx="16" fill="#f5f3ed"/>
+    <text x="466" y="244" fill="#89623b" font-size="16" font-weight="700" letter-spacing="2">02 / EVIDENCE CONVERSION</text>
+    <text x="466" y="296" fill="#173d34" font-size="26" font-weight="700">Offer + Markdown</text>
+    <text x="466" y="335" fill="#52665c" font-size="20">Reconcile source facts</text>
+    <text x="466" y="364" fill="#52665c" font-size="20">Keep conflicts visible</text>
+    <rect x="828" y="202" width="320" height="192" rx="16" fill="#244a40" stroke="#668177"/>
+    <text x="854" y="244" fill="#cba770" font-size="16" font-weight="700" letter-spacing="2">03 / SHARED WORKSPACE</text>
+    <text x="854" y="296" fill="#ffffff" font-size="26" font-weight="700">WebMCP tools</text>
+    <text x="854" y="335" fill="#cbd6d0" font-size="20">Rank, compare, plan</text>
+    <text x="854" y="364" fill="#cbd6d0" font-size="20">Let the person inspect</text>
+    <text x="52" y="462" fill="#cbd6d0" font-size="20">One Offer model. Canonical sources. A decision the person can understand.</text>
+  </g>
+</svg>

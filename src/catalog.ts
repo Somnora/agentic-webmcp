@@ -503,7 +503,7 @@ async function graphql(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": "Agentic-WebMCP/0.1",
+      "User-Agent": "Ribband-WebMCP/0.1",
       "X-Shopify-Storefront-Access-Token": token,
     },
     body: JSON.stringify({ query, variables }),
@@ -533,7 +533,7 @@ async function storefrontProduct(origin: Origin, handle: string, token: string, 
 async function productsJsonCatalog(origin: Origin, fetcher: Fetcher): Promise<Offer[]> {
   const response = await fetchOriginText(origin, "/products.json?limit=24", {
     method: "GET",
-    headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
+    headers: { "Accept": "application/json", "User-Agent": "Ribband-WebMCP/0.1" },
   }, origin.policy.maxCatalogResponseBytes, fetcher);
   let payload: Record<string, unknown>;
   try {
@@ -552,7 +552,7 @@ async function productsJsonProduct(origin: Origin, handle: string, fetcher: Fetc
   const extension = origin.adapter === "public-products-json" ? "json" : "js";
   const response = await fetchOriginText(origin, `/products/${encodeURIComponent(handle)}.${extension}`, {
     method: "GET",
-    headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
+    headers: { "Accept": "application/json", "User-Agent": "Ribband-WebMCP/0.1" },
   }, origin.policy.maxCatalogResponseBytes, fetcher);
   let payload: Record<string, unknown>;
   try {
@@ -568,7 +568,7 @@ async function productsJsonProduct(origin: Origin, handle: string, fetcher: Fetc
 async function servicesJsonCatalog(origin: Origin, fetcher: Fetcher): Promise<Offer[]> {
   const response = await fetchOriginText(origin, "/services.json?limit=24", {
     method: "GET",
-    headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
+    headers: { "Accept": "application/json", "User-Agent": "Ribband-WebMCP/0.1" },
   }, origin.policy.maxCatalogResponseBytes, fetcher);
   let payload: Record<string, unknown>;
   try {
@@ -586,7 +586,7 @@ async function servicesJsonCatalog(origin: Origin, fetcher: Fetcher): Promise<Of
 async function servicesJsonOffer(origin: Origin, handle: string, fetcher: Fetcher): Promise<Offer[]> {
   const response = await fetchOriginText(origin, `/services/${encodeURIComponent(handle)}.json`, {
     method: "GET",
-    headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
+    headers: { "Accept": "application/json", "User-Agent": "Ribband-WebMCP/0.1" },
   }, origin.policy.maxCatalogResponseBytes, fetcher);
   let payload: Record<string, unknown>;
   try {
@@ -654,7 +654,7 @@ function fallback(origin: Origin, offers: Offer[], failureReason: OriginFailureR
     source: "bundled-snapshot",
     live: false,
     offers,
-    warning: "The Storefront API and public products JSON were unavailable, so Agentic used the clearly labeled bundled snapshot for this origin.",
+    warning: "The Storefront API and public products JSON were unavailable, so Ribband used the clearly labeled bundled snapshot for this origin.",
     failureReason,
   };
 }

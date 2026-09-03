@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { loadRehearsalSteps } from "../public/presenter.js";
 
 const presenter = readFileSync(new URL("../public/presenter.js", import.meta.url), "utf8");
 const app = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
 const page = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../public/styles.css", import.meta.url), "utf8");
+const sequence = JSON.parse(readFileSync(new URL("../public/demo-sequence.json", import.meta.url), "utf8"));
 
 describe("recording presenter", () => {
   it("includes the converter, core WebMCP calls, and human-only commit boundary", () => {
@@ -19,7 +21,7 @@ describe("recording presenter", () => {
       "propose_add_to_cart",
       "human_approval_button",
     ]) {
-      expect(presenter).toContain(name);
+      expect(presenter + JSON.stringify(sequence)).toContain(name);
     }
     expect(presenter).not.toContain('action: "commitCart"');
   });
@@ -76,8 +78,8 @@ describe("recording presenter", () => {
     expect(app).toContain("renderRefinement(payload.refinement)");
     expect(app).toContain('refinementChoice: choice.id');
     expect(app).toContain("presenter?.humanRefined()");
-    expect(presenter).toContain('shoppingFor: "gift"');
-    expect(presenter).toContain("waitForRefinement: true");
+    expect(sequence.steps.find((step) => step.action === "recommend").args.shoppingFor).toBe("gift");
+    expect(sequence.steps.find((step) => step.action === "recommend").waitForRefinement).toBe(true);
     expect(presenter).toContain('waitingKind === "refinement"');
     expect(styles).toContain(".recommendation-copy");
   });
@@ -86,5 +88,30 @@ describe("recording presenter", () => {
     expect(page).toContain('id="itinerary-conflicts" class="itinerary-conflicts" hidden');
     expect(app).toContain('resultFact("Budget remaining"');
     expect(styles).toContain(".itinerary-conflicts[hidden] { display: none; }");
+    expect(app).toContain("[elements.itineraryDate, plan.date]");
+    expect(app).toContain("[elements.itineraryBudget, plan.constraints.budget?.amount]");
+  });
+
+  it("shares a sub-three-minute narrated plan and exports actual edit cues", async () => {
+    const fetcher = vi.fn(async () => ({ ok: true, json: async () => sequence }));
+    expect(await loadRehearsalSteps(fetcher)).toEqual(sequence.steps);
+    expect(fetcher).toHaveBeenCalledWith("/demo-sequence.json", { cache: "no-store" });
+    expect(sequence.steps.reduce((total, step) => total + step.duration, 0)).toBeLessThan(180000);
+    expect(sequence.steps.every((step) => step.narration && step.id && step.detail)).toBe(true);
+    expect(new Set(sequence.steps.map((step) => step.id)).size).toBe(sequence.steps.length);
+    expect(sequence.steps.find((step) => step.action === "itinerary").args.budget).toBe(500);
+    const dossier = sequence.steps.findIndex((step) => step.waitForDossier);
+    const services = sequence.steps.findIndex((step) => step.args?.originId === "services-lab");
+    expect(dossier).toBeLessThan(services);
+    expect(page).toContain('id="presenter-export"');
+    expect(app).toContain("presenter?.humanDossierDownloaded()");
+  });
+
+  it("rejects a failed sequence fetch or an agent-callable human action", async () => {
+    await expect(loadRehearsalSteps(async () => ({ ok: false }))).rejects.toThrow("could not be loaded");
+    for (const action of ["commitCart", "checkout", "human_approval_button", "pay"]) {
+      const steps = [{ ...sequence.steps[0], action }];
+      await expect(loadRehearsalSteps(async () => ({ ok: true, json: async () => ({ steps }) }))).rejects.toThrow("unsupported step");
+    }
   });
 });

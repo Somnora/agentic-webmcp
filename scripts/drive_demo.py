@@ -1,4 +1,4 @@
-"""Run a visible QA pass for the current ten-tool Agentic WebMCP workspace.
+"""Run a visible QA pass for the current ten-tool Ribband workspace.
 
 This script does not start a recording or upload media. It is a convenience pass
 for the deployed page after James explicitly deploys the current branch.
