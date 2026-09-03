@@ -46,6 +46,7 @@ describe("decision dossier", () => {
         partySize: 2,
         constraints: { days: 1, pace: "balanced", earliestStart: "08:00", latestEnd: "19:00", budget: { amount: "500.00", currencyCode: "USD" } },
         publishedPriceTotal: { amount: "190.00", currencyCode: "USD" },
+        budgetRemaining: { amount: "310.00", currencyCode: "USD" },
         items: [{
           order: 1,
           title: "North Shore Surf Foundations",
@@ -66,7 +67,7 @@ describe("decision dossier", () => {
         warnings: ["Published windows are not reservations."],
       },
     });
-    for (const value of ["Plan a surf lesson", "Activity itinerary", "planning-only", "ready-for-review", "Oahu, Hawaii, US", "balanced", "08:00 to 19:00", "500.00 USD", "2026-10-10 08:00-10:00", "190.00 USD", "North Shore Surf Foundations", "Pacific Current Instruction", "Tuesday 08:00-12:00", "not reservations", "did not create an order or booking"]) {
+    for (const value of ["Plan a surf lesson", "Activity itinerary", "planning-only", "ready-for-review", "Oahu, Hawaii, US", "balanced", "08:00 to 19:00", "500.00 USD", "310.00 USD", "2026-10-10 08:00-10:00", "190.00 USD", "North Shore Surf Foundations", "Pacific Current Instruction", "Tuesday 08:00-12:00", "not reservations", "did not create an order or booking"]) {
       expect(dossier).toContain(value);
     }
   });

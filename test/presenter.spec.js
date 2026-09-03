@@ -84,6 +84,7 @@ describe("recording presenter", () => {
 
   it("keeps the itinerary conflict panel out of the layout when no conflicts exist", () => {
     expect(page).toContain('id="itinerary-conflicts" class="itinerary-conflicts" hidden');
+    expect(app).toContain('resultFact("Budget remaining"');
     expect(styles).toContain(".itinerary-conflicts[hidden] { display: none; }");
   });
 });

@@ -215,7 +215,7 @@ input:focus, select:focus { border-color: var(--forest); box-shadow: 0 0 0 3px r
 .itinerary-view-heading h3 { margin-bottom: 0; }
 .itinerary-status { flex: none; padding: 5px 8px; color: var(--forest-dark); border: 1px solid #cbdacf; border-radius: 999px; background: var(--forest-soft); font-size: 0.57rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .itinerary-status.attention { color: var(--danger); border-color: #d9bbb7; background: #fbefed; }
-.itinerary-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin: 14px 0; }
+.itinerary-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin: 14px 0; }
 .itinerary-summary .result-fact { border: 1px solid var(--line); background: var(--surface); }
 .itinerary-timeline { display: grid; gap: 10px; }
 .itinerary-day { padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }

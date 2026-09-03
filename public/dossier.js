@@ -107,6 +107,7 @@ export function createDecisionDossier(snapshot) {
     lines.push(`Day hours: ${clean(itinerary.constraints?.earliestStart || "Not recorded", 12)} to ${clean(itinerary.constraints?.latestEnd || "Not recorded", 12)}`);
     lines.push(`Activity budget: ${money(itinerary.constraints?.budget)}`);
     lines.push(`Published price total: ${money(itinerary.publishedPriceTotal)}`);
+    lines.push(`Budget remaining: ${money(itinerary.budgetRemaining)}`);
     for (const item of (Array.isArray(itinerary.items) ? itinerary.items : []).slice(0, 8)) {
       const time = item.startLocal && item.endLocal ? `${clean(item.date, 40)} ${clean(item.startLocal, 12)}-${clean(item.endLocal, 12)}` : "Not scheduled";
       lines.push(`- ${clean(item.order, 4)}. ${clean(item.title || item.handle, 180)} | ${clean(item.status || "Not recorded", 40)} | ${time}`);

@@ -700,6 +700,7 @@ function renderItinerary(itinerary) {
     resultFact("Dates", itinerary.date ? `${itinerary.date} | ${itinerary.constraints.days} day${itinerary.constraints.days === 1 ? "" : "s"}` : "Date needed"),
     resultFact("Party and pace", `${itinerary.partySize} | ${itinerary.constraints.pace}`),
     resultFact("Planned total", moneyLabel(itinerary.publishedPriceTotal)),
+    resultFact("Budget remaining", itinerary.budgetRemaining ? moneyLabel(itinerary.budgetRemaining) : "No budget set"),
   );
   elements.itineraryTimeline.replaceChildren();
   for (const day of itinerary.days) {
