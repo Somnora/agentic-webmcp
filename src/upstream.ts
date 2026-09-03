@@ -79,6 +79,9 @@ function adapterFor(origin: Origin, url: URL): Adapter {
   if (url.pathname === "/products.json" || /\/products\/[^/]+\.(?:js|json)$/.test(url.pathname)) {
     return origin.adapter === "public-products-json" ? "public-products-json" : "shopify-products-json";
   }
+  if (url.pathname === "/services.json" || /\/services\/[^/]+\.json$/.test(url.pathname)) {
+    return "public-services-json";
+  }
   return "html-markdown";
 }
 
@@ -89,6 +92,8 @@ function operationFor(url: URL, init: RequestInit): AdapterOperation {
   }
   if (url.pathname === "/products.json") return "catalog";
   if (/\/products\/[^/]+\.(?:js|json)$/.test(url.pathname)) return "product";
+  if (url.pathname === "/services.json") return "catalog";
+  if (/\/services\/[^/]+\.json$/.test(url.pathname)) return "product";
   return "page";
 }
 

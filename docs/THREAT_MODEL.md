@@ -10,7 +10,7 @@
 
 ## Trust boundaries
 
-1. Origin HTML, JSON-LD, product JSON, and GraphQL strings are external and untrusted.
+1. Origin HTML, JSON-LD, product JSON, service JSON, and GraphQL strings are external and untrusted.
 2. WebMCP arguments are model-controlled and untrusted.
 3. Manual form input is user-controlled and untrusted.
 4. The Worker API is public and must enforce every limit independently of browser schemas.
@@ -20,7 +20,7 @@
 ## Upstream controls
 
 - `src/origins.ts` is the only source of allowed hostnames and path patterns.
-- Registry validation rejects anchored catch-all patterns, non-product paths, and nested product paths before an origin can load.
+- Registry validation rejects anchored catch-all patterns, paths outside the declared product or service prefix, nested paths, and overlapping scopes before an origin can load.
 - Each origin record declares authorization status, data rights, capabilities, response limits, Offer freshness, and a review date. The complete registry is validated at Worker startup.
 - Runtime origin resolution checks authorization on every request. At `reviewAfter`, the origin disappears from discovery and read or handoff routes return 403 before any upstream access. Conformance retains manifest inspection but skips the live adapter probe.
 - Upstream URLs are constructed from an Origin record, never accepted as arbitrary URLs.
@@ -33,16 +33,17 @@
 - Password redirects are classified explicitly and never followed.
 - Every origin manifest sets an upstream timeout that covers connection, headers, and streamed body reads.
 - Catalog and HTML responses are read through byte-bounded streams.
-- Product HTML interpolation accepts only product paths declared on the selected Origin.
+- HTML interpolation accepts only product or service paths declared on the selected Origin.
 
 ## Data and UI controls
 
-- Controlled public product JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
+- Controlled public product JSON, public service JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
 - Marketplace evidence is accepted only when condition, seller, shipping, returns, and delivered price form a complete bounded record.
+- Service evidence is accepted only when provider label, coarse location, duration, price basis, party-size limits, timezone, published windows, and cancellation terms form a complete bounded record.
 - Recommendation scores are deterministic and expose relevance, preference fit, condition, delivered price, seller confidence, returns, and delivery factors.
 - Taste, recipient context, priorities, must-have terms, and avoid terms are bounded decision inputs. They use a no-store POST request, never enter the request URL, and are not retained by the Worker.
 - A refinement answer is accepted only when the same bounded inputs produce a genuine competing-tradeoff checkpoint and the answer matches one of its evidence-derived choices. Clear leaders, insufficient candidates, unknown choices, and unavailable choices fail closed.
-- Each Offer records structured field provenance. Price, availability, condition, shipping, and returns carry `verified`, `single-source`, or `conflict` evidence states.
+- Each Offer records structured field provenance. Marketplace fields and service fields carry `verified`, `single-source`, or `conflict` evidence states appropriate to their vertical.
 - Reconciliation keeps the structured adapter as primary. A page mismatch is recorded rather than silently replacing the primary value, and the reconciled Offer becomes ineligible for handoff.
 - Each Offer exposes live status, fetch time, freshness expiry, and handoff eligibility. Adapter output is checked against the selected origin manifest before it reaches an API response.
 - Descriptions, titles, vendor text, option text, and image URLs are normalized and truncated.
@@ -53,6 +54,8 @@
 - Fallback offers have `source.live: false`, the UI says `FALLBACK | bundled-snapshot | RESEARCH ONLY`, and proposal controls are disabled.
 - The controlled origin has `mode: controlled-demo`; successful reads say `CONTROLLED LIVE`, not third-party merchant inventory.
 - The controlled origin contains original guitar listing text, no external images, no forms, and no checkout or payment routes.
+- The controlled service scope contains original provider fixtures, coarse public locations, and no booking, messaging, account, or payment routes.
+- `create_activity_itinerary` is read-only. It checks destination, calendar date, one-to-three-day range, party size, budget, pace, day hours, evidence, availability, published windows, and explicit transition buffers. It preserves source URLs and returns typed conflicts. Proposed times are not reservations, and transition buffers are planning allowances rather than measured travel time.
 
 ## Approval controls
 
@@ -89,6 +92,9 @@
 | Redirect to `/password` | Fetch stops with an explicit password-protected warning; fallback is labeled |
 | Proposal from a password-protected or fallback origin | HTTP 409 with `OFFER_NOT_ELIGIBLE` and no quote |
 | Proposal from an expired Offer | HTTP 409 with `OFFER_NOT_ELIGIBLE` and no quote |
+| Proposal for a service Offer | HTTP 409 with `SERVICE_BOOKING_NOT_ENABLED` and no quote |
+| Itinerary with a goods Offer | HTTP 400 with no itinerary |
+| Non-eligible, cross-destination, unavailable, conflicted, out-of-window, over-budget, or party-size-incompatible service | Planning-only itinerary returns `needs-attention` with a typed blocking conflict and no reservation action |
 | Oversized upstream body | Stream is cancelled and live data is not claimed |
 | Origin stalls before or during body streaming | Time budget aborts the attempt and reports `timeout` |
 | Prompt injection in origin text | Shown as untrusted text and never executed |

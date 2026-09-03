@@ -1,4 +1,4 @@
-"""Run a visible QA pass for the current nine-tool Agentic WebMCP workspace.
+"""Run a visible QA pass for the current ten-tool Agentic WebMCP workspace.
 
 This script does not start a recording or upload media. It is a convenience pass
 for the deployed page after James explicitly deploys the current branch.
@@ -87,9 +87,9 @@ async def run_qa(base_url: str) -> None:
         await capture(page, "05-confirmed")
 
         status = (await page.locator("#webmcp-status").inner_text()).strip()
-        if "9 WebMCP tools registered" not in status:
+        if "10 WebMCP tools registered" not in status:
             print(f"WebMCP status: {status}")
-            print("The manual flow passed, but the recording browser did not expose all nine tools.")
+            print("The manual flow passed, but the recording browser did not expose all ten tools.")
 
         unexpected = [message for message in console_errors if "favicon" not in message.lower()]
         if unexpected or page_errors:

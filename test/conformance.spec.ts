@@ -27,6 +27,16 @@ describe("origin conformance", () => {
     ]));
   });
 
+  it("validates service freshness while preserving the no-booking policy", async () => {
+    const services = inspectOrigin("services-lab");
+    const report = await runOriginConformance(services, demoFetcher, {}, new Date("2026-09-02T12:00:00.000Z"));
+    expect(report.status).toBe("pass");
+    expect(report.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "provenance", status: "pass", detail: expect.stringContaining("Verified across service JSON and page") }),
+      expect.objectContaining({ id: "freshness", status: "pass", detail: expect.stringContaining("booking handoff is disabled by policy") }),
+    ]));
+  });
+
   it("reports expired authorization without contacting the origin", async () => {
     const fetcher = vi.fn(demoFetcher);
     const report = await runOriginConformance(origin, fetcher, {}, new Date("2027-08-26T00:00:00.000Z"));

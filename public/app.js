@@ -12,6 +12,7 @@ function emptyDecision() {
     comparedHandles: [],
     selection: null,
     humanDecision: null,
+    itinerary: null,
   };
 }
 
@@ -61,9 +62,28 @@ const elements = {
   refinementChoices: document.querySelector("#refinement-choices"),
   compareButton: document.querySelector("#compare-button"),
   selectionCount: document.querySelector("#selection-count"),
+  selectionHelp: document.querySelector("#selection-help"),
   briefForm: document.querySelector("#brief-form"),
   briefGoal: document.querySelector("#brief-goal"),
   briefButton: document.querySelector("#brief-button"),
+  itineraryForm: document.querySelector("#itinerary-form"),
+  itineraryGoal: document.querySelector("#itinerary-goal"),
+  itineraryDate: document.querySelector("#itinerary-date"),
+  itineraryDays: document.querySelector("#itinerary-days"),
+  itineraryParty: document.querySelector("#itinerary-party"),
+  itineraryBudget: document.querySelector("#itinerary-budget"),
+  itineraryPace: document.querySelector("#itinerary-pace"),
+  itineraryStart: document.querySelector("#itinerary-start"),
+  itineraryEnd: document.querySelector("#itinerary-end"),
+  itineraryButton: document.querySelector("#itinerary-button"),
+  itineraryView: document.querySelector("#itinerary-view"),
+  itineraryTitle: document.querySelector("#itinerary-title"),
+  itineraryStatus: document.querySelector("#itinerary-status"),
+  itinerarySummary: document.querySelector("#itinerary-summary"),
+  itineraryTimeline: document.querySelector("#itinerary-timeline"),
+  itineraryConflicts: document.querySelector("#itinerary-conflicts"),
+  itineraryMarkdown: document.querySelector("#itinerary-markdown"),
+  itineraryWarning: document.querySelector("#itinerary-warning"),
   originSelect: document.querySelector("#origin-select"),
   originMeta: document.querySelector("#origin-meta"),
   originHealth: document.querySelector("#origin-health"),
@@ -86,6 +106,7 @@ const elements = {
   cartEmpty: document.querySelector("#cart-empty"),
   cartList: document.querySelector("#cart-list"),
   cartPanel: document.querySelector("#cart-panel"),
+  decisionBoundaryLabel: document.querySelector("#decision-boundary-label"),
   downloadDossier: document.querySelector("#download-dossier"),
   deploymentId: document.querySelector("#deployment-id"),
   promptButtons: [...document.querySelectorAll("[data-query]")],
@@ -128,7 +149,7 @@ function updateConversionPath(tool) {
     renderConversionPath("Page converted into Markdown and a normalized Offer");
     return;
   }
-  if (["search_products", "find_best_options", "get_product", "compare_products", "create_catalog_brief"].includes(tool)) {
+  if (["search_products", "find_best_options", "get_product", "compare_products", "create_catalog_brief", "create_activity_itinerary"].includes(tool)) {
     complete("source", "offer", "tool");
     state.conversionActive = "tool";
     renderConversionPath("Source-grounded result visible to agent and human");
@@ -179,6 +200,7 @@ function handoffReason(reason) {
     "source-stale": "source data expired",
     "source-timestamp-invalid": "source time invalid",
     unavailable: "listing unavailable",
+    "service-booking-not-enabled": "service booking not enabled",
     "evidence-conflict": "source evidence conflicts",
     "policy-unavailable": "eligibility unknown",
   };
@@ -212,6 +234,15 @@ function compactListingOffer(offer) {
         returns: offer.marketplace.returns.accepted ? `${offer.marketplace.returns.windowDays} days` : "not accepted",
       },
     } : {}),
+    ...(offer.service ? {
+      service: {
+        provider: offer.service.provider.displayName,
+        location: `${offer.service.location.city}, ${offer.service.location.countryCode}`,
+        durationMinutes: offer.service.durationMinutes,
+        priceBasis: offer.service.priceBasis,
+        timezone: offer.service.scheduling.timezone,
+      },
+    } : {}),
   };
 }
 
@@ -243,10 +274,12 @@ function compactOrigin(origin) {
   return {
     id: origin.id,
     mode: origin.mode,
+    vertical: origin.vertical,
     displayName: origin.displayName,
     hostname: origin.hostname,
     adapter: origin.adapter,
     fallbackAdapters: origin.fallbackAdapters,
+    offerPathPrefix: origin.offerPathPrefix,
     authorization: origin.authorization.status,
     handoffPolicy: origin.capabilities.merchantHandoff,
   };
@@ -324,6 +357,16 @@ function originQuery() {
   return `originId=${encodeURIComponent(state.originId)}`;
 }
 
+function nextSaturdayDate() {
+  const date = new Date();
+  const offset = (6 - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + offset);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function updateOrigin(origin, live, source) {
   if (origin) {
     state.origin = origin;
@@ -331,6 +374,13 @@ function updateOrigin(origin, live, source) {
     elements.originSelect.value = origin.id;
   }
   if (!state.origin) return;
+  const servicesMode = state.origin.vertical === "services";
+  elements.recommendForm.hidden = servicesMode;
+  elements.briefForm.hidden = servicesMode;
+  elements.itineraryForm.hidden = !servicesMode;
+  elements.cartPanel.hidden = servicesMode;
+  elements.decisionBoundaryLabel.textContent = servicesMode ? "Booking remains outside Agentic" : "Human approval required";
+  if (servicesMode && !elements.itineraryDate.value) elements.itineraryDate.value = nextSaturdayDate();
   const mode = live === undefined ? "status pending" : live ? "live" : "fallback";
   const sourceMode = state.origin.mode === "controlled-demo" ? "controlled demo" : "merchant";
   const authorization = state.origin.authorization.status.replaceAll("-", " ");
@@ -351,6 +401,7 @@ function updateOrigin(origin, live, source) {
     elements.recommendBudget.value = origin.vertical === "marketplace" ? "900" : "";
     elements.interpolatePath.value = origin.healthPath;
     elements.briefGoal.value = origin.demo.briefGoal;
+    elements.itineraryGoal.value = origin.demo.briefGoal;
   }
 }
 
@@ -362,7 +413,9 @@ function updateSource(payload) {
   const count = offers.length;
   elements.source.textContent = `${elements.source.textContent} | ${ready > 0 ? "HANDOFF READY" : "RESEARCH ONLY"}`;
   elements.source.classList.toggle("research-only", ready === 0 && payload.live !== false);
-  const policy = ready > 0
+  const policy = state.origin?.vertical === "services"
+    ? "Service booking is disabled. Eligible activities can be assembled into a planning-only itinerary."
+    : ready > 0
     ? `${ready} offer${ready === 1 ? " is" : "s are"} live, fresh, and eligible for handoff.`
     : "No offer is currently eligible for merchant handoff.";
   elements.message.textContent = payload.warning || `${count} offer result${count === 1 ? "" : "s"}. ${policy} External origin content is treated as untrusted.`;
@@ -460,7 +513,13 @@ function offerResultList(offers) {
   for (const offer of offers.slice(0, 4)) {
     const item = node("li");
     const title = node("strong", "", offer.title || offer.handle || "Untitled offer");
-    const details = [offer.price, offer.marketplace?.deliveredPrice, offer.marketplace?.condition]
+    const details = [
+      offer.price,
+      offer.marketplace?.deliveredPrice,
+      offer.marketplace?.condition,
+      offer.service?.location,
+      offer.service?.durationMinutes ? `${offer.service.durationMinutes} minutes` : null,
+    ]
       .filter(Boolean)
       .join(" | ");
     const handoff = offer.handoff?.eligible ? "Handoff ready" : `Research only: ${handoffReason(offer.handoff?.reason)}`;
@@ -516,7 +575,7 @@ function renderAgentResult(tool, actor, resultText, displayPayload) {
     const list = node("ul", "result-list");
     for (const origin of payload.origins) {
       const item = node("li");
-      item.append(node("strong", "", origin.displayName || origin.id), node("span", "", `${origin.hostname} | ${origin.adapter}`));
+      item.append(node("strong", "", origin.displayName || origin.id), node("span", "", `${origin.vertical || "offers"} | ${origin.hostname} | ${origin.adapter}`));
       list.append(item);
     }
     content.append(list);
@@ -555,6 +614,23 @@ function renderAgentResult(tool, actor, resultText, displayPayload) {
     );
   } else if (payload.brief) {
     content.append(node("p", "result-lead", "A compact decision brief was created from selected source facts."), node("pre", "result-brief", payload.brief));
+  } else if (payload.itinerary) {
+    const scheduled = payload.itinerary.items?.filter((item) => item.status === "scheduled").length || 0;
+    const needsAttention = payload.itinerary.planStatus === "needs-attention";
+    content.append(node("p", "result-lead", needsAttention
+      ? "The planning-only itinerary exposed constraints that need a human decision."
+      : "A constraint-aware, planning-only itinerary was assembled from source-grounded service Offers."));
+    const facts = node("div", "result-facts");
+    facts.append(
+      resultFact("Plan", needsAttention ? "Needs attention" : "Ready for review"),
+      resultFact("Destination", payload.itinerary.destination?.label || payload.itinerary.destination),
+      resultFact("Scheduled", scheduled),
+      resultFact("Published total", moneyLabel(payload.itinerary.publishedPriceTotal || payload.itinerary.total)),
+    );
+    content.append(facts);
+    if (payload.itinerary.conflicts?.length) {
+      content.append(node("p", "result-brief", `${payload.itinerary.conflicts.length} constraint${payload.itinerary.conflicts.length === 1 ? "" : "s"} need attention. Review the visible itinerary for details.`));
+    }
   } else if (payload.status === "awaiting_human_confirmation") {
     content.append(node("p", "result-lead", "The agent prepared a purchase handoff and stopped for human approval."));
     const facts = node("div", "result-facts");
@@ -596,13 +672,83 @@ function recordActivity(tool, args, actor, resultText, displayPayload) {
 
 function updateSelection() {
   const count = state.selected.size;
-  elements.selectionCount.textContent = `${count} listing${count === 1 ? "" : "s"} selected`;
+  const servicesMode = state.origin?.vertical === "services";
+  elements.selectionCount.textContent = `${count} ${servicesMode ? "service" : "listing"}${count === 1 ? "" : "s"} selected`;
+  elements.selectionHelp.textContent = servicesMode
+    ? "Select one to four activities for an itinerary, or two to four for comparison."
+    : "Select two to four listings for a grounded comparison.";
   elements.compareButton.disabled = count < 2 || count > 4;
   elements.briefButton.disabled = count < 1 || count > 4;
+  elements.itineraryButton.disabled = state.origin?.vertical !== "services" || count < 1 || count > 4;
 }
 
 function hideInterpolate() {
   elements.interpolateView.hidden = true;
+}
+
+function hideItinerary() {
+  elements.itineraryView.hidden = true;
+}
+
+function renderItinerary(itinerary) {
+  const needsAttention = itinerary.planStatus === "needs-attention";
+  elements.itineraryTitle.textContent = `${itinerary.destination.region} activities arranged around your constraints`;
+  elements.itineraryStatus.textContent = needsAttention ? "Needs attention" : "Ready for review";
+  elements.itineraryStatus.classList.toggle("attention", needsAttention);
+  elements.itinerarySummary.replaceChildren(
+    resultFact("Destination", itinerary.destination.label),
+    resultFact("Dates", itinerary.date ? `${itinerary.date} | ${itinerary.constraints.days} day${itinerary.constraints.days === 1 ? "" : "s"}` : "Date needed"),
+    resultFact("Party and pace", `${itinerary.partySize} | ${itinerary.constraints.pace}`),
+    resultFact("Planned total", moneyLabel(itinerary.publishedPriceTotal)),
+  );
+  elements.itineraryTimeline.replaceChildren();
+  for (const day of itinerary.days) {
+    const card = node("article", "itinerary-day");
+    const header = node("header");
+    header.append(node("strong", "", `Day ${day.day} | ${day.weekday}`), node("span", "", day.date));
+    card.append(header);
+    const scheduled = itinerary.items.filter((item) => item.status === "scheduled" && item.day === day.day);
+    if (!scheduled.length) {
+      card.append(node("p", "itinerary-empty", "No selected activity fits this day."));
+    } else {
+      const list = node("ol", "itinerary-day-list");
+      for (const item of scheduled) {
+        const row = node("li");
+        const detail = node("div", "itinerary-activity");
+        const buffer = item.transitionBufferMinutes > 0 ? ` | ${item.transitionBufferMinutes} minute planning buffer` : "";
+        detail.append(
+          node("strong", "", item.title),
+          node("span", "", `${item.provider} | ${item.location}`),
+          node("span", "", `${item.durationMinutes} minutes${buffer} | ${item.evidence}`),
+        );
+        const source = document.createElement("a");
+        source.href = item.sourceUrl;
+        source.target = "_blank";
+        source.rel = "noopener noreferrer";
+        source.textContent = "Canonical source";
+        detail.append(source);
+        row.append(
+          node("span", "itinerary-time", `${item.startLocal}-${item.endLocal}`),
+          detail,
+          node("span", "itinerary-price", `${item.price.amount} ${item.price.currencyCode}`),
+        );
+        list.append(row);
+      }
+      card.append(list);
+    }
+    elements.itineraryTimeline.append(card);
+  }
+  const conflicts = itinerary.conflicts || [];
+  elements.itineraryConflicts.hidden = conflicts.length === 0;
+  elements.itineraryConflicts.replaceChildren();
+  if (conflicts.length) {
+    const list = node("ul");
+    for (const conflict of conflicts) list.append(node("li", "", conflict.message));
+    elements.itineraryConflicts.append(node("strong", "", `${conflicts.length} constraint${conflicts.length === 1 ? "" : "s"} need attention`), list);
+  }
+  elements.itineraryMarkdown.textContent = itinerary.markdown;
+  elements.itineraryWarning.textContent = itinerary.warnings.join(" ");
+  elements.itineraryView.hidden = false;
 }
 
 function hideRefinement() {
@@ -678,6 +824,21 @@ function marketplaceFacts(offer) {
   ];
 }
 
+function serviceFacts(offer) {
+  if (!offer.service) return null;
+  const service = offer.service;
+  return [
+    ["Provider", service.provider.displayName],
+    ["Location", `${service.location.city}, ${service.location.region}`],
+    ["Duration", `${service.durationMinutes} minutes`],
+    ["Price basis", service.priceBasis.replaceAll("-", " ")],
+    ["Party size", `${service.partySize.min} to ${service.partySize.max}`],
+    ["Published days", service.scheduling.windows.map((window) => window.weekday.slice(0, 3)).join(", ")],
+    ["Cancellation", service.cancellation.refundable ? `${service.cancellation.windowHours} hour window` : "Not refundable"],
+    ["Itinerary", service.itineraryEligible ? "Eligible" : "Not eligible"],
+  ];
+}
+
 function provenanceLabel(offer) {
   const verification = offer.provenance?.verification;
   if (verification?.label) {
@@ -740,14 +901,15 @@ function renderOffers(offers) {
     propose.disabled = !handoff.eligible;
     propose.title = handoff.eligible ? "Prepare a human-reviewed merchant handoff" : `Unavailable for handoff: ${handoffReason(handoff.reason)}`;
     propose.addEventListener("click", () => runProposeCart({ handle: offer.handle, quantity: 1 }, "human preview").catch(showError));
-    actions.append(label, inspect, propose);
+    actions.append(label, inspect);
+    if (!offer.service) actions.append(propose);
     if (recommendation) {
       const rank = node("div", "recommendation-rank");
       rank.append(node("span", "", `${recommendation.label} | Option ${recommendation.rank}`), node("strong", "", `${recommendation.score}/100`));
       card.append(rank);
     }
     card.append(node("h3", "", offer.title), meta);
-    const facts = marketplaceFacts(offer);
+    const facts = marketplaceFacts(offer) || serviceFacts(offer);
     if (facts) {
       const evidence = node("dl", "evidence-grid");
       for (const [labelText, value] of facts) {
@@ -786,6 +948,12 @@ function renderComparison(offers) {
       node("p", "provenance-line", provenanceLabel(offer)),
       handoffLine(offer),
     );
+    const facts = marketplaceFacts(offer) || serviceFacts(offer);
+    if (facts) {
+      const evidence = node("dl", "evidence-grid");
+      for (const [labelText, value] of facts) evidence.append(node("dt", "", labelText), node("dd", "", value));
+      card.append(evidence);
+    }
     elements.grid.append(card);
   }
 }
@@ -821,9 +989,10 @@ async function runSelectOrigin({ originId }, actor = "agent", signal) {
   updateOrigin(payload.selected);
   updateSelection();
   hideInterpolate();
+  hideItinerary();
   hideRefinement();
   await Promise.all([loadOriginHealth(signal), loadOriginDiagnostics(signal)]);
-  const output = boundedJson({ ...payload, suggestedNextActions: ["search_products", "interpolate_page"] });
+  const output = boundedJson({ selected: compactOrigin(payload.selected), sessionless: payload.sessionless, suggestedNextActions: ["search_products", "interpolate_page"] });
   recordActivity("select_origin", { originId }, actor, output);
   return output;
 }
@@ -832,11 +1001,15 @@ async function runSearch({ query = "", maxResults = 6 }, actor = "agent", signal
   const payload = await api(`/api/catalog?query=${encodeURIComponent(query)}&limit=${encodeURIComponent(maxResults)}&${originQuery()}`, { signal });
   updateSource(payload);
   hideInterpolate();
+  hideItinerary();
   state.recommendations.clear();
   state.recommendationRequest = null;
   hideRefinement();
   renderOffers(payload.offers);
-  payload.suggestedNextActions = suggestedActions(["get_product", "compare_products"], payload.offers);
+  payload.suggestedNextActions = suggestedActions(
+    state.origin?.vertical === "services" ? ["get_product", "compare_products", "create_activity_itinerary"] : ["get_product", "compare_products"],
+    payload.offers,
+  );
   const output = compactCatalog(payload);
   recordActivity("search_products", { query, maxResults }, actor, output);
   return output;
@@ -919,7 +1092,7 @@ async function runRecommend({
 }
 
 async function runGetProduct({ handle }, actor = "agent", signal) {
-  const payload = await api(`/api/products/${encodeURIComponent(handle)}?${originQuery()}`, { signal });
+  const payload = await api(`/api/offers/${encodeURIComponent(handle)}?${originQuery()}`, { signal });
   updateSource(payload);
   hideInterpolate();
   renderOffers(payload.offers);
@@ -934,9 +1107,12 @@ async function runCompare({ handles }, actor = "agent", signal) {
   const payload = await api(`/api/compare?handles=${encodeURIComponent(normalized.join(","))}&${originQuery()}`, { signal });
   updateSource(payload);
   hideInterpolate();
+  state.selected.clear();
+  for (const handle of normalized) state.selected.add(handle);
   renderComparison(payload.offers);
+  updateSelection();
   state.decision.comparedHandles = payload.offers.map((offer) => offer.handle);
-  payload.suggestedNextActions = suggestedActions(["create_catalog_brief"], payload.offers);
+  payload.suggestedNextActions = suggestedActions(state.origin?.vertical === "services" ? ["create_activity_itinerary"] : ["create_catalog_brief"], payload.offers);
   const output = compactCatalog(payload);
   recordActivity("compare_products", { handles: normalized }, actor, output);
   return output;
@@ -947,7 +1123,7 @@ function normalizeInterpolateInput(input) {
   if (!value.startsWith("http://") && !value.startsWith("https://")) return value;
   const url = new URL(value);
   if (url.protocol !== "https:" || url.hostname !== state.origin.hostname || url.search || url.hash) {
-    throw new Error("Product URL must match the selected HTTPS origin exactly.");
+    throw new Error("Offer URL must match the selected HTTPS origin exactly.");
   }
   return url.pathname;
 }
@@ -977,6 +1153,7 @@ async function runInterpolate({ path }, actor = "agent", signal) {
     : `RESEARCH ONLY | ${handoffReason(interpolateHandoff.reason).toLocaleUpperCase()}`;
   elements.interpolateProvenance.textContent = provenanceLabel(payload.offer);
   elements.interpolateView.hidden = false;
+  hideItinerary();
   elements.interpolateView.scrollIntoView({ block: "center" });
   elements.interpolateView.focus({ preventScroll: true });
   const output = boundedJson({
@@ -985,8 +1162,13 @@ async function runInterpolate({ path }, actor = "agent", signal) {
     live: payload.live,
     pageLive: payload.pageLive,
     offer: compactOffer(payload.offer),
-    verification: payload.offer.provenance?.verification,
-    markdown: payload.markdown.slice(0, 420),
+    verification: payload.offer.provenance?.verification ? {
+      state: payload.offer.provenance.verification.state,
+      label: payload.offer.provenance.verification.label,
+      verifiedFields: payload.offer.provenance.verification.verifiedFields,
+      conflictFields: payload.offer.provenance.verification.conflictFields,
+    } : undefined,
+    markdown: payload.markdown.slice(0, 240),
     suggestedNextActions: suggestedActions(["compare_products"], [payload.offer]),
     ...(payload.warning ? { warning: payload.warning.slice(0, 180) } : {}),
   });
@@ -1008,9 +1190,100 @@ async function runBrief({ goal, handles }, actor = "agent", signal) {
   });
   updateSource(payload);
   hideInterpolate();
+  state.selected.clear();
+  for (const handle of normalized) state.selected.add(handle);
   renderComparison(payload.offers);
+  updateSelection();
+  for (const offer of payload.offers) {
+    const verification = offer.provenance?.verification;
+    state.decision.evidence[offer.handle] = {
+      handle: offer.handle,
+      title: offer.title,
+      url: offer.url,
+      state: verification?.state || "single-source",
+      label: verification?.label || `Single source: ${offer.source.adapter}`,
+      checkedAt: verification?.checkedAt || offer.source.fetchedAt,
+      conflicts: verification?.conflictFields || [],
+    };
+  }
   const output = boundedJson({ brief: payload.brief.slice(0, 1100), suggestedNextActions: suggestedActions([], payload.offers) });
   recordActivity("create_catalog_brief", { goal, handles: normalized }, actor, output);
+  return output;
+}
+
+async function runItinerary({
+  goal,
+  handles,
+  date,
+  days = 1,
+  partySize = 1,
+  budget,
+  pace = "balanced",
+  earliestStart = "08:00",
+  latestEnd = "19:00",
+}, actor = "agent", signal) {
+  const normalized = [...new Set(handles)].slice(0, 4);
+  const payload = await api(`/api/itinerary?${originQuery()}`, {
+    method: "POST",
+    signal,
+    body: JSON.stringify({ originId: state.originId, goal, handles: normalized, date, days, partySize, budget, pace, earliestStart, latestEnd }),
+  });
+  updateSource(payload);
+  hideInterpolate();
+  state.selected.clear();
+  for (const handle of normalized) state.selected.add(handle);
+  renderComparison(payload.offers);
+  updateSelection();
+  for (const offer of payload.offers) {
+    const verification = offer.provenance?.verification;
+    state.decision.evidence[offer.handle] = {
+      handle: offer.handle,
+      title: offer.title,
+      url: offer.url,
+      state: verification?.state || "single-source",
+      label: verification?.label || `Single source: ${offer.source.adapter}`,
+      checkedAt: verification?.checkedAt || offer.source.fetchedAt,
+      conflicts: verification?.conflictFields || [],
+    };
+  }
+  state.decision.goal = {
+    type: "activity-itinerary",
+    text: payload.itinerary.goal,
+    date: payload.itinerary.date,
+    partySize: payload.itinerary.partySize,
+    constraints: payload.itinerary.constraints,
+  };
+  state.decision.itinerary = payload.itinerary;
+  state.decision.comparedHandles = payload.itinerary.items.map((item) => item.handle);
+  renderItinerary(payload.itinerary);
+  elements.itineraryView.scrollIntoView({ block: "center" });
+  elements.itineraryView.focus({ preventScroll: true });
+  const output = boundedJson({
+    itinerary: {
+      status: payload.itinerary.status,
+      planStatus: payload.itinerary.planStatus,
+      goal: payload.itinerary.goal,
+      destination: payload.itinerary.destination.label,
+      date: payload.itinerary.date,
+      days: payload.itinerary.constraints.days,
+      partySize: payload.itinerary.partySize,
+      pace: payload.itinerary.constraints.pace,
+      budget: payload.itinerary.constraints.budget,
+      total: payload.itinerary.publishedPriceTotal,
+      remaining: payload.itinerary.budgetRemaining,
+      items: payload.itinerary.items.map((item) => ({
+        handle: item.handle,
+        day: item.day,
+        time: item.startLocal ? `${item.startLocal}-${item.endLocal}` : null,
+        status: item.status,
+        price: item.price,
+        sourceUrl: item.sourceUrl,
+      })),
+      conflicts: payload.itinerary.conflicts.map((conflict) => ({ code: conflict.code, handles: conflict.handles })),
+    },
+    suggestedNextActions: ["review_source_urls", "contact_providers_outside_agentic"],
+  });
+  recordActivity("create_activity_itinerary", { goal, handles: normalized, date, days, partySize, budget, pace, earliestStart, latestEnd }, actor, output, { itinerary: payload.itinerary });
   return output;
 }
 
@@ -1125,6 +1398,7 @@ function decisionSnapshot() {
     comparedHandles: state.decision.comparedHandles,
     selection: state.decision.selection,
     humanDecision: state.decision.humanDecision,
+    itinerary: state.decision.itinerary,
     activity: state.activity.filter((item) => item.originId === state.originId).slice().reverse().map((item) => ({
       time: item.time.toISOString(),
       tool: item.tool,
@@ -1163,6 +1437,7 @@ async function registerWebMcpTools() {
     compare: (args, signal) => runCompare(args, "agent via WebMCP", signal),
     interpolate: (args, signal) => runInterpolate(args, "agent via WebMCP", signal),
     brief: (args, signal) => runBrief(args, "agent via WebMCP", signal),
+    itinerary: (args, signal) => runItinerary(args, "agent via WebMCP", signal),
     proposeCart: (args, signal) => runProposeCart(args, "agent via WebMCP", signal),
   });
   elements.status.textContent = `${tools.length} WebMCP tools registered`;
@@ -1171,7 +1446,7 @@ async function registerWebMcpTools() {
 
 elements.originSelect.addEventListener("change", () => {
   runSelectOrigin({ originId: elements.originSelect.value }, "human preview")
-    .then(() => runSearch({ query: "", maxResults: 6 }, "human preview"))
+    .then(() => runSearch({ query: state.origin?.vertical === "services" ? "Oahu experience" : "", maxResults: 6 }, "human preview"))
     .catch(showError);
 });
 
@@ -1227,6 +1502,21 @@ elements.briefForm.addEventListener("submit", (event) => {
   runBrief({ goal: elements.briefGoal.value, handles: [...state.selected] }, "human preview").catch(showError);
 });
 
+elements.itineraryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runItinerary({
+    goal: elements.itineraryGoal.value,
+    handles: [...state.selected],
+    date: elements.itineraryDate.value,
+    days: elements.itineraryDays.value,
+    partySize: elements.itineraryParty.value,
+    budget: elements.itineraryBudget.value,
+    pace: elements.itineraryPace.value,
+    earliestStart: elements.itineraryStart.value,
+    latestEnd: elements.itineraryEnd.value,
+  }, "human preview").catch(showError);
+});
+
 elements.confirmCart.addEventListener("click", () => confirmCart().catch(showError));
 elements.dismissCart.addEventListener("click", dismissCart);
 elements.downloadDossier.addEventListener("click", downloadDecisionDossier);
@@ -1264,6 +1554,7 @@ function resetWorkspaceForRehearsal() {
   renderCart();
   updateSelection();
   hideInterpolate();
+  hideItinerary();
   hideRefinement();
 }
 

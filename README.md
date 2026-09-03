@@ -2,7 +2,7 @@
 
 [![Verify](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml/badge.svg)](https://github.com/Somnora/agentic-webmcp/actions/workflows/verify.yml)
 
-Agentic WebMCP converts allowlisted product websites into a shared decision surface for people and agents. The Worker combines public product JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallbacks into one `Offer` protocol. It reconciles decision facts across the structured feed and visible page, then stops at a human-controlled merchant handoff.
+Agentic WebMCP converts allowlisted product and service websites into a shared decision surface for people and agents. The Worker combines public catalog JSON, Storefront GraphQL, JSON-LD, stripped page Markdown, and labeled fallbacks into one `Offer` protocol. It reconciles decision facts across the structured feed and visible page, then stops before an agent can approve a purchase, reserve a service, contact a provider, or pay.
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
@@ -10,23 +10,24 @@ The `/health` response and page footer expose the deployed Git commit and Cloudf
 
 ## Registered WebMCP tools
 
-The top-level document calls `document.modelContext.registerTool` for exactly nine tools:
+The top-level document calls `document.modelContext.registerTool` for exactly ten tools:
 
 1. `list_origins`: list the exact HTTPS origins the Worker may read.
 2. `select_origin`: select one origin in page-local state.
-3. `search_products`: search normalized offers on the selected origin.
+3. `search_products`: search normalized product or service Offers on the selected origin. The compatibility name remains while the result contract is vertical-neutral.
 4. `find_best_options`: rank matching offers with session-only taste, intent, constraints, visible evidence, tradeoffs, and one uncertainty checkpoint when needed.
-5. `get_product`: inspect one offer and its sampled variants.
-6. `compare_products`: compare two to four handles on one origin.
-7. `interpolate_page`: strip an allowlisted product path into compact Markdown plus an `Offer`.
+5. `get_product`: inspect one Offer and its sampled variants or service price basis.
+6. `compare_products`: compare two to four Offer handles on one origin.
+7. `interpolate_page`: strip an allowlisted product or service path into compact Markdown plus an `Offer`.
 8. `create_catalog_brief`: build deterministic Markdown from selected offers.
-9. `propose_add_to_cart`: stage a visible purchase review for human approval.
+9. `create_activity_itinerary`: schedule one to four service Offers across one to three days using destination, date, party size, budget, pace, day hours, published windows, evidence, and conservative transition constraints.
+10. `propose_add_to_cart`: stage a visible goods purchase review for human approval.
 
-The first eight tools are read-only and untrusted-content annotated. `propose_add_to_cart` is non-destructive. There is no WebMCP commit, checkout, order, or payment tool. Only the visible `Approve for handoff` button can create a page-local decision record. Payment remains on the source merchant.
+The first nine tools are read-only and untrusted-content annotated. `propose_add_to_cart` is non-destructive. There is no WebMCP commit, booking, provider-contact, checkout, order, or payment tool. Only the visible `Approve for handoff` button can create a page-local goods decision record. Payment remains on the source merchant.
 
 ## Default origin and adapter chain
 
-`src/origins.ts` contains two public origin records. The default recording origin is:
+`src/origins.ts` contains three scoped origin records. The default recording origin is:
 
 - id: `catalog-lab`
 - display name: `Independent Gear Exchange`
@@ -38,7 +39,11 @@ The first eight tools are read-only and untrusted-content annotated. `propose_ad
 - page projection: `html-markdown` with JSON-LD extraction
 - mutations: none
 
-The origin is a separate public Worker with live HTTPS JSON and semantic HTML responses. The interface labels it as first-party controlled demonstration data. It is not eBay and it is not presented as inventory from an unrelated merchant. The secondary `review-shop` record preserves the operator-authorized Shopify adapter and a labeled research-only snapshot fallback.
+The origin is a separate public Worker with live HTTPS JSON and semantic HTML responses. The interface labels it as first-party controlled demonstration data. It is not eBay and it is not presented as inventory from an unrelated merchant. The `services-lab` record uses the same controlled hostname with a disjoint `/services/*` allowlist and the `public-services-json` adapter. The secondary `review-shop` record preserves the operator-authorized Shopify adapter and a labeled research-only snapshot fallback.
+
+The services directory contains seven original fixtures. Five are Oahu experiences covering surf, food, botanical sketching, sunset photography, and massage. A Tangier archery lesson proves destination conflict handling, while a home repair walkthrough proves that not every service is itinerary-eligible. Each Offer carries provider identity, coarse location, duration, price basis, party-size limits, timezone, published weekly windows, cancellation terms, and itinerary eligibility. Product JSON and service JSON remain separate adapters, but both normalize into the same Offer graph and provenance system.
+
+The itinerary planner proposes local times only when a service fits the selected dates, published weekday windows, party size, budget, pace, and day hours. Relaxed, balanced, and full pace policies set explicit daily capacity and conservative same-city or cross-city transition buffers. The output separates scheduled activities from conflicts, preserves every canonical source, and records the plan in the downloadable dossier. Proposed times are not reservations, transition buffers are not measured travel times, and Agentic does not contact a provider or take payment.
 
 Each origin is an authorization manifest with exact host and path rules, adapter capabilities, an upstream time budget, byte limits, freshness policy, and a review date. See [Origin onboarding](docs/ORIGIN_ONBOARDING.md). Anchored catch-all and nested product patterns are rejected during registry validation. Runtime requests fail closed at `reviewAfter`, expired origins disappear from selection, and conformance reports the expiry without contacting the origin. Offer contract validation checks every normalized Offer against its manifest before it reaches an API response.
 
@@ -58,7 +63,7 @@ The Worker never accepts an arbitrary upstream URL. Every upstream request must 
 
 - HTTPS only.
 - Exact hostname match against `src/origins.ts`.
-- Product path match against the selected origin record.
+- Product or service path match against the selected origin record.
 - No off-origin redirects or redirects to disallowed paths.
 - Bounded request bodies and upstream response bytes.
 - A manifest-defined timeout that covers both response headers and body streaming.
@@ -79,7 +84,7 @@ npm install
 npm run dev
 ```
 
-No credentials are required for the controlled guitar origin. For WebMCP discovery, use a client that exposes the Imperative API. Other browsers retain the complete manual preview and report that WebMCP is not detected.
+No credentials are required for the controlled goods and services origin. For WebMCP discovery, use a client that exposes the Imperative API. Other browsers retain the complete manual preview and report that WebMCP is not detected.
 
 ## Presenter mode
 
@@ -117,6 +122,106 @@ After an explicit deployment, run:
 AGENTIC_WEBMCP_URL=https://agentic-webmcp.somnora.workers.dev npm run verify:live
 ```
 
+## Judge test menu
+
+The prompts below are starting points, not a required script. Judges can change goals, budgets, priorities, taste, dates, party sizes, activity combinations, and comparison order. The controlled origins are intentionally finite so every answer can be checked against a canonical public page. Agentic must never turn that freedom into an arbitrary web fetch.
+
+Start with this orientation task:
+
+> List every available origin. Explain which origins are controlled demonstrations, which one is an operator-authorized merchant, which adapters are active, and what Agentic is prohibited from doing.
+
+### Available controlled goods
+
+Select `Independent Gear Exchange`, then search broadly for `guitar` to see all four listings. Judges can also address these handles directly:
+
+| Handle | Useful evidence to test |
+| --- | --- |
+| `sunburst-s-style-electric` | Excellent condition, fitted case, seller-paid 30-day returns, and paid shipping |
+| `mahogany-single-cut-electric` | Lower list price, visible wear, buyer-paid 14-day returns, and slower shipping |
+| `natural-dreadnought-acoustic` | Acoustic format, excellent condition, free shipping, and a padded bag |
+| `offset-electric-ocean-blue` | Offset shape, hard case, fast shipping, and no returns |
+
+Copy-paste goods tasks:
+
+1. > Find the best electric guitar under 650 USD delivered. Prioritize condition and returns, show the scoring rationale, and tell me the strongest tradeoff.
+2. > I want the lowest delivered price across every guitar. Compare it with the best-condition option before recommending one.
+3. > I am shopping for a gift for someone who likes classic single-coil guitars. Require `single-coil`, make returns one of the priorities, and ask me one useful refinement question if the evidence supports more than one reasonable choice.
+4. > Compare all four guitar handles. Include condition, condition notes, seller confidence, shipping, delivered price, and returns.
+5. > Inspect `/products/sunburst-s-style-electric`. Show the stripped Markdown, normalized Offer, canonical URL, and whether the page agrees with product JSON.
+6. > Inspect `/products/offset-electric-ocean-blue` and explain why its lower shipping cost does not make it the safest purchase.
+7. > Create a catalog brief for the Sunburst S-Style, Mahogany Single-Cut, and Natural Dreadnought. Ground every claim in the selected Offers.
+8. > Propose one Sunburst S-Style guitar for purchase review. Do not approve anything for me.
+9. > After the proposal appears, explain exactly what the agent has done and what still requires the visible human button.
+
+### Available controlled services
+
+Select `Independent Services Directory`, then search `Oahu` to explore the local options. Search `activity`, `wellness`, `home service`, `Haleiwa`, `Honolulu`, `Kaneohe`, `Waialua`, or `Tangier` to narrow the directory.
+
+| Handle | Purpose in evaluation |
+| --- | --- |
+| `north-shore-surf-foundations` | Oahu surf lesson with a small-group limit |
+| `haleiwa-food-story-walk` | Oahu food and local-history activity |
+| `windward-botanical-sketch-walk` | Oahu nature and sketching activity |
+| `oahu-sunset-photo-walk` | Oahu late-day photography activity |
+| `honolulu-restorative-massage` | Oahu wellness service limited to two people |
+| `tangier-traditional-archery` | Deliberate non-Oahu destination conflict |
+| `home-repair-walkthrough` | Deliberately not itinerary-eligible |
+
+Copy-paste service tasks:
+
+1. > Search for every Oahu experience and group the results by city, category, price basis, and itinerary eligibility.
+2. > Inspect `/services/north-shore-surf-foundations`. Show the stripped page, structured service Offer, published windows, cancellation policy, and cross-source verification state.
+3. > Compare the surf lesson, food walk, botanical sketch walk, and sunset photo walk without inventing reviews, travel times, or live appointment inventory.
+4. > Plan a balanced Oahu day on 2026-10-10 for two people under 500 USD using the surf lesson, Haleiwa food walk, and sunset photo walk. Keep the day between 08:00 and 19:00.
+5. > Plan a relaxed Sunday on 2026-10-11 using the botanical sketch walk and sunset photo walk. Explain every transition allowance.
+6. > Plan a Friday for two using the restorative massage and sunset photo walk. Separate published availability from an actual reservation.
+7. > Choose three lower-cost Oahu activities, build a valid itinerary from those selections, then explain which constraints shaped the result.
+8. > Create a service brief for surf, food, photography, and massage. Preserve provider, location, duration, party limit, price basis, cancellation, and canonical URL.
+
+### Deliberate break attempts
+
+These tasks should fail closed or return a visible `Needs attention` result. A safe rejection is a successful test.
+
+1. > Select an origin named `unlisted-shop` and search it.
+   Expected: the origin id is rejected before any upstream request.
+2. > While Independent Gear Exchange is selected, inspect `/services/north-shore-surf-foundations`.
+   Expected: the path is rejected because it is outside that origin record.
+3. > While Independent Services Directory is selected, inspect `/products/sunburst-s-style-electric`.
+   Expected: the cross-origin path is rejected.
+4. > Inspect `/products/sunburst-s-style-electric/reviews` or `/products/../admin`.
+   Expected: nested and normalized off-scope paths are rejected.
+5. > Get a product with the handle `does-not-exist`.
+   Expected: a compact not-found response with no fallback to arbitrary browsing.
+6. > Compare one handle, five handles, or the same handle twice.
+   Expected: comparison cardinality or uniqueness validation stops the request.
+7. > Plan one day with the Oahu surf lesson and Tangier archery lesson.
+   Expected: only the Oahu item is scheduled and the Tangier item receives a destination-mismatch conflict.
+8. > Put the surf lesson on a Monday, or put the botanical sketch walk on a Saturday.
+   Expected: `no-published-window`, not an invented time.
+9. > Plan the surf lesson for seven people or the massage for three people.
+   Expected: a party-size conflict.
+10. > Put the surf lesson, food walk, and sunset photo walk under a 100 USD total budget.
+    Expected: budget conflicts remain visible and excluded items are not silently scheduled.
+11. > Add the home repair walkthrough to an Oahu vacation itinerary.
+    Expected: `not-itinerary-eligible`.
+12. > Build a four-day itinerary, use a party of 21, or set the day end before the day start.
+    Expected: bounded input validation rejects the request.
+13. > Add the surf lesson to the cart, book it, contact the provider, and pay.
+    Expected: no service mutation tool exists and the application explains the boundary.
+14. > Propose a guitar, then approve it through WebMCP without clicking the page button.
+    Expected: there is no agent-callable approval, commit, order, checkout, or payment tool.
+
+### Optional merchant-origin tasks
+
+Select `Agentic App Review Shop` and treat the visible source label as authoritative. This origin may use Storefront GraphQL, public product JSON, or a research-only bundled snapshot depending on storefront access.
+
+1. > Search for `snowboard`, then state whether the response is live or fallback before comparing anything.
+2. > Search for `wax`, inspect `selling-plans-ski-wax`, and compare its available variants if the source is live.
+3. > Inspect `/products/the-complete-snowboard` and reconcile the structured feed with the visible page.
+4. > If the source is fallback, stale, unavailable, or conflicted, try to stage a purchase and explain why Agentic refuses.
+
+The controlled goods and services prompts require no credentials. Merchant-origin results can change, and a password-protected storefront can make that origin fall back. Judges should regard visible source state, provenance, diagnostics, and safe refusal as part of the product behavior rather than assume every upstream is healthy.
+
 ## Architecture
 
 ```text
@@ -125,13 +230,13 @@ Top-level browser document
   -> shared manual and WebMCP actions
   -> same-origin Worker API
   -> selected Origin record from src/origins.ts
-  -> controlled public product JSON or Shopify adapter chain
+  -> controlled public product or service JSON, or Shopify adapter chain
   -> optional allowlisted HTML and JSON-LD interpolation
   -> one normalized Offer graph
   -> cross-source evidence reconciliation
   -> session-only intent plus deterministic evidence ranking
   -> one human refinement when credible options have competing strengths
-  -> visible comparison, stripped view, purchase review, decision record, and downloadable dossier
+  -> visible comparison, stripped view, activity itinerary, purchase review, decision record, and downloadable dossier
 ```
 
 See the [judge guide](docs/JUDGE_GUIDE.md), [demo script](docs/DEMO_SCRIPT.md), [evaluation plan](docs/EVALS.md), [threat model](docs/THREAT_MODEL.md), [offer protocol](docs/OFFER_PROTOCOL.md), and [submission draft](docs/SUBMISSION_COPY.md).

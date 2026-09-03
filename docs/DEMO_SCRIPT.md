@@ -12,7 +12,7 @@
 
 ### Opening
 
-Show the restrained workspace and the nine-tool status. Establish that this is a shared decision surface, not an autonomous buyer.
+Show the restrained workspace and the ten-tool status. Establish that this is a shared decision surface, not an autonomous buyer. The tenth read-only tool extends the same Offer model to planning-only service itineraries, but the main recording flow can remain focused on the marketplace.
 
 ### Discover and select
 
@@ -39,6 +39,12 @@ Show the canonical HTTPS URL, stripped Markdown, provenance, freshness, handoff 
 Ask: `Compare sunburst-s-style-electric and mahogany-single-cut-electric using only source facts.`
 
 Show delivered price, condition, seller confidence, shipping, and return evidence in one comparison.
+
+### Optional Oahu itinerary pickup
+
+After the primary commerce recording is safe, select `services-lab` and search `Oahu experience`. Select `north-shore-surf-foundations`, `haleiwa-food-story-walk`, and `oahu-sunset-photo-walk`. Set 2026-10-10, one day, two people, 500 USD, balanced pace, 08:00 start, and 19:00 end. Build the itinerary.
+
+Show the three proposed time blocks, 450.00 USD planned total, 50.00 USD remaining, verified source labels, and canonical source links. Explain that the planner matched weekday windows, party size, budget, daily density, and transition buffers. Read the limitation that the times are not reservations and the buffers are not measured travel times. Do not imply live provider availability.
 
 ### Human-controlled handoff
 

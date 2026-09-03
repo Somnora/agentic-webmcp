@@ -11,6 +11,7 @@ function actions() {
     compare: vi.fn(async () => "compare"),
     interpolate: vi.fn(async () => "interpolate"),
     brief: vi.fn(async () => "brief"),
+    itinerary: vi.fn(async () => "itinerary"),
     proposeCart: vi.fn(async () => "proposal"),
   };
 }
@@ -24,23 +25,24 @@ const toolNames = [
   "compare_products",
   "interpolate_page",
   "create_catalog_brief",
+  "create_activity_itinerary",
   "propose_add_to_cart",
 ];
 
 describe("WebMCP tool contract", () => {
-  it("defines the coherent nine-tool origin and offer surface", () => {
+  it("defines the coherent ten-tool origin and Offer surface", () => {
     expect(createAgenticTools(actions()).map((tool) => tool.name)).toEqual(toolNames);
   });
 
-  it("marks eight read tools and one human-confirmed proposal tool", () => {
+  it("marks nine read tools and one human-confirmed proposal tool", () => {
     const tools = createAgenticTools(actions());
-    for (const tool of tools.slice(0, 8)) {
+    for (const tool of tools.slice(0, 9)) {
       expect(tool.annotations).toEqual({ readOnlyHint: true, untrustedContentHint: true });
       expect(tool.inputSchema.type).toBe("object");
       expect(tool.description.length).toBeLessThanOrEqual(500);
     }
-    expect(tools[8].annotations).toEqual({ readOnlyHint: false, untrustedContentHint: true, destructiveHint: false });
-    expect(tools[8].description.length).toBeLessThanOrEqual(500);
+    expect(tools[9].annotations).toEqual({ readOnlyHint: false, untrustedContentHint: true, destructiveHint: false });
+    expect(tools[9].description.length).toBeLessThanOrEqual(500);
   });
 
   it("keeps tool and parameter metadata within compact browser budgets", () => {
@@ -58,10 +60,12 @@ describe("WebMCP tool contract", () => {
     const handlers = actions();
     const registerTool = vi.fn(async () => undefined);
     const tools = await registerAgenticTools({ registerTool }, handlers);
-    expect(registerTool).toHaveBeenCalledTimes(9);
+    expect(registerTool).toHaveBeenCalledTimes(10);
     const signal = new AbortController().signal;
     await tools[2].execute({ query: "wax" }, { signal });
     expect(handlers.search).toHaveBeenCalledWith({ query: "wax" }, signal);
+    await tools[8].execute({ goal: "Plan a lesson", handles: ["north-shore-surf-foundations"] }, { signal });
+    expect(handlers.itinerary).toHaveBeenCalledWith({ goal: "Plan a lesson", handles: ["north-shore-surf-foundations"] }, signal);
   });
 
   it("exposes bounded taste and intent without requiring a profile", () => {
@@ -72,6 +76,19 @@ describe("WebMCP tool contract", () => {
     expect(recommendation.inputSchema.properties.priorities).toMatchObject({ maxItems: 3, uniqueItems: true });
     expect(recommendation.inputSchema.properties.tasteContext.maxLength).toBe(120);
     expect(recommendation.inputSchema.properties.refinementChoice.enum).toEqual(["match", "taste", "condition", "price", "returns", "delivery"]);
+  });
+
+  it("exposes bounded itinerary constraints without a booking capability", () => {
+    const itinerary = createAgenticTools(actions()).find((tool) => tool.name === "create_activity_itinerary");
+    expect(itinerary.inputSchema.properties).toMatchObject({
+      days: { minimum: 1, maximum: 3 },
+      partySize: { minimum: 1, maximum: 20 },
+      budget: { minimum: 25, maximum: 100000 },
+      pace: { enum: ["relaxed", "balanced", "full"] },
+      earliestStart: { pattern: expect.any(String) },
+      latestEnd: { pattern: expect.any(String) },
+    });
+    expect(itinerary.description).toContain("never reserves");
   });
 
   it("does not register a cart commit or checkout tool", () => {

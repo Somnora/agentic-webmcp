@@ -1,4 +1,4 @@
-import { getProduct, type CatalogEnv, type CatalogSource } from "./catalog";
+import { getProduct, normalizeServicesJsonOffer, type CatalogEnv, type CatalogSource } from "./catalog";
 import {
   finalizeOffer,
   money,
@@ -11,7 +11,7 @@ import {
   type Variant,
 } from "./offers";
 import { assertOfferAdapterContract } from "./origin-contract";
-import { publicOrigin, validateInterpolatePath, type Origin, type PublicOrigin } from "./origins";
+import { offerUrl, publicOrigin, validateInterpolatePath, type Origin, type PublicOrigin } from "./origins";
 import { OriginFailure, markAdapterAttemptFailure, normalizeFailureReason, type OriginFailureReason } from "./reliability";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
@@ -54,19 +54,19 @@ function decodeEntities(value: string): string {
     .replace(/&#(\d+);/g, (_match, code: string) => String.fromCodePoint(Number(code)));
 }
 
-function findProductNode(value: unknown): Record<string, unknown> | null {
+function findOfferNode(value: unknown): Record<string, unknown> | null {
   if (Array.isArray(value)) {
     for (const item of value) {
-      const found = findProductNode(item);
+      const found = findOfferNode(item);
       if (found) return found;
     }
     return null;
   }
   const candidate = record(value);
   const types = array(candidate["@type"]).map((item) => text(item, 40).toLocaleLowerCase());
-  if (types.includes("product") || types.includes("productgroup")) return candidate;
+  if (types.includes("product") || types.includes("productgroup") || types.includes("service")) return candidate;
   for (const key of ["@graph", "mainEntity", "itemListElement", "hasVariant"]) {
-    const found = findProductNode(candidate[key]);
+    const found = findOfferNode(candidate[key]);
     if (found) return found;
   }
   return null;
@@ -79,13 +79,76 @@ function extractJsonLd(html: string): Record<string, unknown> | null {
     if (!raw || raw.length > 64 * 1024) continue;
     try {
       const parsed: unknown = JSON.parse(raw);
-      const product = findProductNode(parsed);
-      if (product) return product;
+      const offer = findOfferNode(parsed);
+      if (offer) return offer;
     } catch {
       // Ignore malformed untrusted JSON-LD and continue looking.
     }
   }
   return null;
+}
+
+function jsonLdServiceOffer(service: Record<string, unknown>, origin: Origin, handle: string): Offer | null {
+  const properties = jsonLdProperties(service);
+  const provider = record(service.provider);
+  const offers = array(service.offers).map(record);
+  const offer = offers[0] ?? {};
+  const availability = text(offer.availability, 200).toLocaleLowerCase();
+  let windows: unknown[] = [];
+  const rawWindows = text(properties.get("scheduling_windows"), 1600);
+  try {
+    const parsed: unknown = JSON.parse(rawWindows);
+    windows = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return null;
+  }
+  const fetchedAt = new Date().toISOString();
+  const normalized = normalizeServicesJsonOffer({
+    id: text(offer.sku ?? service.sku, 180) || `service-${handle}`,
+    handle,
+    title: text(service.name, 160),
+    description: text(service.description, 600),
+    provider: {
+      display_name: text(provider.name, 100),
+      verification: properties.get("provider_verification"),
+    },
+    category: text(service.serviceType, 40),
+    location: {
+      city: properties.get("location_city"),
+      region: properties.get("location_region"),
+      country_code: properties.get("location_country_code"),
+      venue: properties.get("location_venue"),
+    },
+    duration_minutes: properties.get("duration_minutes"),
+    price: record(offer.priceSpecification).price ?? offer.price,
+    currency_code: offer.priceCurrency,
+    price_basis: properties.get("price_basis"),
+    party_size: {
+      min: properties.get("party_size_min"),
+      max: properties.get("party_size_max"),
+    },
+    scheduling: { timezone: properties.get("scheduling_timezone"), windows },
+    cancellation: {
+      refundable: properties.get("cancellation_refundable"),
+      window_hours: properties.get("cancellation_window_hours"),
+      fee: properties.get("cancellation_fee"),
+    },
+    itinerary_eligible: properties.get("itinerary_eligible"),
+    available: availability.includes("instock") || availability.includes("limitedavailability"),
+  }, origin, fetchedAt);
+  if (!normalized) return null;
+  const provenance = uniformProvenance("json-ld");
+  provenance.provider = singleSourceEvidence("json-ld");
+  provenance.location = singleSourceEvidence("json-ld");
+  provenance.duration = singleSourceEvidence("json-ld");
+  provenance.scheduling = singleSourceEvidence("json-ld");
+  provenance.cancellation = singleSourceEvidence("json-ld");
+  provenance.verification.singleSourceFields = ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"];
+  return finalizeOffer({
+    ...normalized,
+    source: { adapter: "json-ld", live: true, fetchedAt, untrusted: true },
+    provenance,
+  }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
 }
 
 function jsonLdImage(value: unknown): { url: string; altText: string | null } | undefined {
@@ -166,6 +229,8 @@ function jsonLdMarketplace(
 }
 
 export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: Origin, handle: string): Offer | null {
+  const types = array(product["@type"]).map((value) => text(value, 40).toLocaleLowerCase());
+  if (types.includes("service")) return jsonLdServiceOffer(product, origin, handle);
   const title = text(product.name, 160);
   if (!title) return null;
   const rootOffers = array(product.offers).map(record);
@@ -187,7 +252,7 @@ export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: O
     const available = availability.includes("instock") || availability.includes("limitedavailability");
     const priceNode = record(offerNode.priceSpecification);
     return {
-      id: text(offerNode.sku ?? product.sku, 180) || `${origin.canonicalUrl}/products/${handle}#offer-${index + 1}`,
+      id: text(offerNode.sku ?? product.sku, 180) || `${offerUrl(origin, handle)}#offer-${index + 1}`,
       title: text(offerNode.name, 120) || (leafOffers.length > 1 ? `Offer ${index + 1}` : "Default offer"),
       available,
       quantityAvailable: null,
@@ -213,7 +278,7 @@ export function normalizeJsonLdOffer(product: Record<string, unknown>, origin: O
     handle,
     title,
     description: text(product.description, 600),
-    url: `${origin.canonicalUrl}/products/${handle}`,
+    url: offerUrl(origin, handle),
     ...(vendor ? { vendor } : {}),
     vertical: origin.vertical,
     priceRange: { min: money(low, currencyCode), max: money(high, currencyCode) },
@@ -279,6 +344,14 @@ function offerFacts(offer: Offer): string {
     `Handle: ${offer.handle}`,
     `Price: ${offer.priceRange.min.amount} to ${offer.priceRange.max.amount} ${offer.priceRange.min.currencyCode}`,
     `Availability: ${offer.constraints.available ? "available" : "unavailable"}`,
+    ...(offer.service ? [
+      `Provider: ${offer.service.provider.displayName}`,
+      `Location: ${offer.service.location.city}, ${offer.service.location.region}, ${offer.service.location.countryCode}`,
+      `Duration: ${offer.service.durationMinutes} minutes`,
+      `Price basis: ${offer.service.priceBasis}`,
+      `Schedule timezone: ${offer.service.scheduling.timezone}`,
+      `Cancellation: ${offer.service.cancellation.refundable ? `${offer.service.cancellation.windowHours} hour window` : "not refundable"}`,
+    ] : []),
     ...(offer.description ? ["", offer.description] : []),
     ...(variants.length ? ["", "Variants:", ...variants.map((item) => `- ${item}`)] : []),
   ].join("\n");

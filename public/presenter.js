@@ -48,7 +48,7 @@ const REHEARSAL_STEPS = Object.freeze([
     selector: ".status-cluster",
     duration: 12000,
     caption: "Most websites make agents reverse engineer a visual interface. Agentic adds an explicit capability layer while keeping the human on the same page.",
-    detail: "The top-level document registers nine bounded tools. Eight are read-only, and one can only stage a proposal.",
+    detail: "The top-level document registers ten bounded tools. Nine are read-only, including activity itinerary planning, and one can only stage a goods proposal.",
   },
   {
     phase: "02 / 09  ALLOWLIST",

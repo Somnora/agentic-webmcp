@@ -14,6 +14,7 @@ const expectedTools = [
   "compare_products",
   "interpolate_page",
   "create_catalog_brief",
+  "create_activity_itinerary",
   "propose_add_to_cart",
 ];
 
@@ -38,7 +39,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${originUrl}/health`);
       const body = await response.json();
-      if (response.status !== 200 || body.status !== "ok" || body.products !== 4) throw new Error("controlled origin unavailable");
+      if (response.status !== 200 || body.status !== "ok" || body.products !== 4 || body.services !== 7) throw new Error("controlled origin unavailable");
     },
   },
   {
@@ -58,7 +59,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/`);
       const html = await response.text();
-      if (response.status !== 200 || !html.includes("Compare the evidence") || !html.includes("recommend-form") || !html.includes("interpolate-form") || !html.includes("presenter-toggle") || !html.includes("download-dossier")) throw new Error("workspace unavailable");
+      if (response.status !== 200 || !html.includes("Compare the evidence") || !html.includes("recommend-form") || !html.includes("interpolate-form") || !html.includes("itinerary-form") || !html.includes("presenter-toggle") || !html.includes("download-dossier")) throw new Error("workspace unavailable");
       const dossierResponse = await fetch(`${baseUrl}/dossier.js`);
       const dossierScript = await dossierResponse.text();
       if (dossierResponse.status !== 200 || !dossierScript.includes("createDecisionDossier")) throw new Error("decision dossier client unavailable");
@@ -103,14 +104,16 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/api/origins`);
       const body = await response.json();
-      if (response.status !== 200 || !Array.isArray(body.origins) || body.origins.length < 1 || body.origins.length > 2) throw new Error("unexpected origin list");
-      if (body.manifestVersion !== "2026-09-01") throw new Error("origin manifest version mismatch");
-      if (body.origins.some((origin) => !["catalog-lab", "review-shop"].includes(origin.id))) throw new Error("unknown origin was listed");
+      if (response.status !== 200 || !Array.isArray(body.origins) || body.origins.length < 2 || body.origins.length > 3) throw new Error("unexpected origin list");
+      if (body.manifestVersion !== "2026-09-02") throw new Error("origin manifest version mismatch");
+      if (body.origins.some((origin) => !["catalog-lab", "services-lab", "review-shop"].includes(origin.id))) throw new Error("unknown origin was listed");
       const controlled = body.origins.find((origin) => origin.id === "catalog-lab");
+      const services = body.origins.find((origin) => origin.id === "services-lab");
       const merchant = body.origins.find((origin) => origin.id === "review-shop");
       if (!controlled || controlled.hostname !== "agentic-webmcp-origin.somnora.workers.dev") throw new Error("default origin mismatch");
       if (controlled.mode !== "controlled-demo") throw new Error("demo origin is not labeled");
       if (controlled.authorization?.status !== "first-party-controlled") throw new Error("controlled origin authorization missing");
+      if (!services || services.hostname !== controlled.hostname || services.vertical !== "services" || services.adapter !== "public-services-json" || services.offerPathPrefix !== "/services") throw new Error("service origin scope mismatch");
       if (merchant && merchant.authorization?.status !== "operator-authorized") throw new Error("merchant origin authorization is invalid");
       if (merchant && Date.parse(merchant.authorization.reviewAfter) <= Date.now()) throw new Error("expired merchant origin remains discoverable");
       if (body.origins.some((origin) => origin.capabilities?.checkout !== false || origin.capabilities?.payment !== false)) throw new Error("checkout or payment capability must be disabled");
@@ -137,6 +140,21 @@ const checks = [
     },
   },
   {
+    name: "service origin conformance",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/origins/conformance?originId=services-lab`);
+      const body = await response.json();
+      if (response.status !== 200 || body.status !== "pass" || body.checks?.length !== 10) throw new Error("service origin conformance failed");
+      if (!body.checks.every((item) => item.status === "pass")) throw new Error("service conformance contains a non-pass result");
+      if (!body.checks.some((item) => item.id === "provenance" && item.detail.includes("Verified across service JSON and page"))) {
+        throw new Error("service conformance did not reconcile service JSON and page evidence");
+      }
+      if (!body.checks.some((item) => item.id === "freshness" && item.detail.includes("booking handoff is disabled by policy"))) {
+        throw new Error("service conformance did not preserve the no-booking policy");
+      }
+    },
+  },
+  {
     name: "catalog search",
     run: async () => {
       const response = await fetch(`${baseUrl}/api/catalog?originId=catalog-lab&query=electric%20guitar&limit=4`);
@@ -146,6 +164,18 @@ const checks = [
       }
       if (!body.offers.every((offer) => offer.provenance?.pricing && offer.provenance?.availability)) throw new Error("offer provenance missing");
       if (!body.offers.every((offer) => offer.handoff?.eligible === true && offer.handoff?.freshness === "fresh")) throw new Error("offer handoff policy missing");
+    },
+  },
+  {
+    name: "service catalog",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/catalog?originId=services-lab&query=Oahu&limit=6`);
+      const body = await response.json();
+      if (response.status !== 200 || body.live !== true || body.source !== "public-services-json" || !body.offers?.some((offer) => offer.handle === "north-shore-surf-foundations")) {
+        throw new Error("service catalog returned no live Oahu Offer");
+      }
+      if (!body.offers.every((offer) => offer.vertical === "services" && offer.service?.provider && offer.service?.scheduling?.windows?.length)) throw new Error("service evidence missing");
+      if (!body.offers.every((offer) => offer.handoff?.eligible === false && offer.handoff?.reason === "service-booking-not-enabled")) throw new Error("service handoff boundary missing");
     },
   },
   {
@@ -182,6 +212,64 @@ const checks = [
       for (const field of ["pricing", "availability", "condition", "shipping", "returns"]) {
         if (!verification.verifiedFields?.includes(field)) throw new Error(`${field} was not reconciled`);
       }
+    },
+  },
+  {
+    name: "service interpolation contract",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/interpolate?originId=services-lab&path=%2Fservices%2Fnorth-shore-surf-foundations`);
+      const body = await response.json();
+      if (response.status !== 200 || body.offer?.handle !== "north-shore-surf-foundations" || body.live !== true || body.pageLive !== true) throw new Error("live service interpolation unavailable");
+      if (body.canonicalUrl !== `${originUrl}/services/north-shore-surf-foundations`) throw new Error("service canonical URL mismatch");
+      if (body.offer?.service?.durationMinutes !== 120 || body.offer?.service?.location?.city !== "Haleiwa") throw new Error("normalized service facts missing");
+      const verification = body.offer?.provenance?.verification;
+      if (verification?.state !== "verified" || verification?.label !== "Verified across service JSON and page") throw new Error("service evidence reconciliation missing");
+      for (const field of ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"]) {
+        if (!verification.verifiedFields?.includes(field)) throw new Error(`${field} was not reconciled for the service`);
+      }
+    },
+  },
+  {
+    name: "constraint-aware activity itinerary",
+    run: async () => {
+      const response = await fetch(`${baseUrl}/api/itinerary?originId=services-lab`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          originId: "services-lab",
+          goal: "Plan a balanced Oahu day for two people under 500 USD",
+          handles: ["north-shore-surf-foundations", "haleiwa-food-story-walk", "oahu-sunset-photo-walk"],
+          date: "2026-10-10",
+          days: 1,
+          partySize: 2,
+          budget: 500,
+          pace: "balanced",
+          earliestStart: "08:00",
+          latestEnd: "19:00",
+        }),
+      });
+      const body = await response.json();
+      const itinerary = body.itinerary;
+      if (response.status !== 200 || itinerary?.status !== "planning-only" || itinerary?.planStatus !== "ready-for-review") throw new Error("activity itinerary unavailable");
+      if (itinerary.publishedPriceTotal?.amount !== "450.00" || itinerary.budgetRemaining?.amount !== "50.00") throw new Error("itinerary totals are incorrect");
+      const times = new Map(itinerary.items?.map((item) => [item.handle, `${item.startLocal}-${item.endLocal}`]));
+      if (times.get("north-shore-surf-foundations") !== "08:00-10:00" || times.get("haleiwa-food-story-walk") !== "11:30-13:00" || times.get("oahu-sunset-photo-walk") !== "16:00-17:30") throw new Error("itinerary scheduling is incorrect");
+      if (!itinerary.warnings?.some((warning) => warning.includes("not reservations")) || !itinerary.warnings?.some((warning) => warning.includes("not measured travel times"))) throw new Error("itinerary limitations missing");
+    },
+  },
+  {
+    name: "service mutation and path rejection",
+    run: async () => {
+      const proposal = await fetch(`${baseUrl}/api/cart/propose?originId=services-lab`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ originId: "services-lab", handle: "north-shore-surf-foundations", quantity: 1 }),
+      });
+      const proposalBody = await proposal.json();
+      if (proposal.status !== 409 || proposalBody.code !== "SERVICE_BOOKING_NOT_ENABLED") throw new Error("service proposal did not fail closed");
+      const crossScope = await fetch(`${baseUrl}/api/interpolate?originId=services-lab&path=%2Fproducts%2Fsunburst-s-style-electric`);
+      const crossScopeBody = await crossScope.json();
+      if (crossScope.status !== 400 || crossScopeBody.code !== "PATH_NOT_ALLOWED") throw new Error("cross-scope path did not fail closed");
     },
   },
   {

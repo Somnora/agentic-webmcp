@@ -7,7 +7,7 @@ describe("controlled public demo origin", () => {
   it("reports a bounded health record", async () => {
     const response = handleDemoOriginRequest(new Request(`${base}/health`));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ status: "ok", service: "agentic-webmcp-origin", products: 4 });
+    expect(await response.json()).toEqual({ status: "ok", service: "agentic-webmcp-origin", products: 4, services: 7 });
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
   });
 
@@ -40,8 +40,36 @@ describe("controlled public demo origin", () => {
     expect(html).not.toContain("<form");
   });
 
+  it("serves original service fixtures as JSON and semantic HTML", async () => {
+    const catalog = handleDemoOriginRequest(new Request(`${base}/services.json?limit=24`));
+    const catalogBody = await catalog.json() as { services: Array<{ handle: string }> };
+    expect(catalogBody.services.map((service) => service.handle)).toEqual([
+      "north-shore-surf-foundations",
+      "haleiwa-food-story-walk",
+      "windward-botanical-sketch-walk",
+      "oahu-sunset-photo-walk",
+      "tangier-traditional-archery",
+      "honolulu-restorative-massage",
+      "home-repair-walkthrough",
+    ]);
+
+    const service = handleDemoOriginRequest(new Request(`${base}/services/north-shore-surf-foundations.json`));
+    expect(await service.json()).toMatchObject({
+      handle: "north-shore-surf-foundations",
+      location: { city: "Haleiwa", country_code: "US" },
+      itinerary_eligible: true,
+    });
+    const page = handleDemoOriginRequest(new Request(`${base}/services/north-shore-surf-foundations`));
+    expect(page.headers.get("Content-Type")).toContain("text/html");
+    const html = await page.text();
+    expect(html).toContain('"@type":"Service"');
+    expect(html).toContain("Published scheduling windows");
+    expect(html).toContain("does not create a booking");
+  });
+
   it("rejects unknown products and write methods", async () => {
     expect(handleDemoOriginRequest(new Request(`${base}/products/unknown.json`)).status).toBe(404);
+    expect(handleDemoOriginRequest(new Request(`${base}/services/unknown.json`)).status).toBe(404);
     expect(handleDemoOriginRequest(new Request(`${base}/products.json`, { method: "POST" })).status).toBe(405);
   });
 });

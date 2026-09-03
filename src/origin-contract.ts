@@ -3,15 +3,17 @@ import type { Adapter, Origin } from "./origins";
 
 const ORIGIN_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const HTTPS_PORT = "";
-const UNSAFE_PRODUCT_PATH_PROBES = [
-  "/",
-  "/collections/not-allowlisted",
-  "/products/probe/extra",
-  "/products/-invalid",
-  "/products/INVALID",
-  "/products/probe.json",
-  "/products/probe%2Fextra",
-] as const;
+function unsafeOfferPathProbes(origin: Origin): string[] {
+  return [
+    "/",
+    "/collections/not-allowlisted",
+    `${origin.offerPathPrefix}/probe/extra`,
+    `${origin.offerPathPrefix}/-invalid`,
+    `${origin.offerPathPrefix}/INVALID`,
+    `${origin.offerPathPrefix}/probe.json`,
+    `${origin.offerPathPrefix}/probe%2Fextra`,
+  ];
+}
 
 function validDate(value: string): boolean {
   return Number.isFinite(Date.parse(value));
@@ -80,6 +82,9 @@ export function validateOriginManifest(origin: Origin): string[] {
   if (origin.hostname !== origin.hostname.toLocaleLowerCase() || origin.hostname.length > 253) {
     issues.push("hostname must be lowercase and bounded");
   }
+  if (!["/products", "/services"].includes(origin.offerPathPrefix) || !origin.healthPath.startsWith(`${origin.offerPathPrefix}/`)) {
+    issues.push("offerPathPrefix must be bounded and match healthPath");
+  }
   if (!origin.productPathPattern.startsWith("^") || !origin.productPathPattern.endsWith("$") || origin.productPathPattern.length > 240) {
     issues.push("productPathPattern must be anchored and bounded");
   }
@@ -97,10 +102,11 @@ export function validateOriginManifest(origin: Origin): string[] {
     if (!productMatch?.[1] || productMatch[1] !== expectedHandle) {
       issues.push("productPathPattern must capture exactly one bounded product handle");
     }
-    if (UNSAFE_PRODUCT_PATH_PROBES.some((path) => productPattern.test(path))) {
+    const unsafePaths = unsafeOfferPathProbes(origin);
+    if (unsafePaths.some((path) => productPattern.test(path))) {
       issues.push("productPathPattern must reject non-product and nested paths");
     }
-    if (interpolationPatterns.some((pattern) => UNSAFE_PRODUCT_PATH_PROBES.some((path) => pattern.test(path)))) {
+    if (interpolationPatterns.some((pattern) => unsafePaths.some((path) => pattern.test(path)))) {
       issues.push("interpolatePathPatterns must reject non-product and nested paths");
     }
   } catch {
@@ -111,6 +117,12 @@ export function validateOriginManifest(origin: Origin): string[] {
   }
   const chain = [origin.adapter, ...origin.fallbackAdapters];
   if (new Set(chain).size !== chain.length) issues.push("adapter chain must not contain duplicates");
+  if (origin.adapter === "public-services-json" && (origin.vertical !== "services" || origin.offerPathPrefix !== "/services")) {
+    issues.push("public-services-json requires a services vertical and /services path prefix");
+  }
+  if (origin.vertical === "services" && origin.adapter !== "public-services-json") {
+    issues.push("services vertical requires the public-services-json adapter");
+  }
   if (origin.authorization.status === "inactive") issues.push("authorization must be active");
   for (const scope of ["catalog-read", "page-interpolation", "video-display"] as const) {
     if (!origin.authorization.scopes.includes(scope)) issues.push(`authorization must include ${scope}`);
@@ -147,14 +159,20 @@ export function validateOriginManifest(origin: Origin): string[] {
 
 export function assertOriginRegistry(origins: readonly Origin[]): void {
   const ids = new Set<string>();
-  const hostnames = new Set<string>();
+  const hostOrigins = new Map<string, Origin[]>();
   for (const origin of origins) {
     const issues = validateOriginManifest(origin);
     if (issues.length) throw new Error(`Origin manifest ${origin.id} is invalid: ${issues.join("; ")}.`);
     if (ids.has(origin.id)) throw new Error(`Origin manifest id ${origin.id} is duplicated.`);
-    if (hostnames.has(origin.hostname)) throw new Error(`Origin manifest hostname ${origin.hostname} is duplicated.`);
+    const peers = hostOrigins.get(origin.hostname) ?? [];
+    for (const peer of peers) {
+      const overlaps = new RegExp(peer.productPathPattern).test(origin.healthPath)
+        || new RegExp(origin.productPathPattern).test(peer.healthPath)
+        || peer.offerPathPrefix === origin.offerPathPrefix;
+      if (overlaps) throw new Error(`Origin manifest hostname ${origin.hostname} has overlapping path scopes.`);
+    }
     ids.add(origin.id);
-    hostnames.add(origin.hostname);
+    hostOrigins.set(origin.hostname, [...peers, origin]);
   }
 }
 
@@ -163,6 +181,8 @@ export function assertOfferAdapterContract(origin: Origin, offer: Offer): void {
   const allowedAdapters = adapterChain(origin);
   if (offer.originId !== origin.id) issues.push("origin id mismatch");
   if (offer.vertical !== origin.vertical) issues.push("vertical mismatch");
+  if (origin.vertical === "services" && !offer.service) issues.push("services vertical requires service evidence");
+  if (origin.vertical !== "services" && offer.service) issues.push("service evidence is outside the selected vertical");
   if (!allowedAdapters.has(offer.source.adapter)) issues.push("source adapter is outside the manifest chain");
   if (offer.source.adapter === "bundled-snapshot" && offer.source.live) issues.push("bundled snapshot cannot be live");
   if (offer.source.adapter !== "bundled-snapshot" && !offer.source.live) issues.push("non-snapshot adapter cannot be labeled fallback");

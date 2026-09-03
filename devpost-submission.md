@@ -12,7 +12,7 @@ Visual commerce pages force agents to infer controls, reconstruct facts from pre
 
 ## Solution
 
-Agentic WebMCP lets an authorized website expose a bounded agent interface. Nine WebMCP tools discover origins, search and rank offers, compare products, convert an allowlisted page into compact Markdown plus a structured Offer, create a brief, and prepare a purchase review.
+Agentic WebMCP lets an authorized website expose a bounded agent interface. Ten WebMCP tools discover origins, search and rank Offers, compare products or services, convert an allowlisted page into compact Markdown plus a structured Offer, build a constraint-aware activity itinerary, create a brief, and prepare a purchase review.
 
 The agent and the person share one visible workspace. Product JSON and page JSON-LD are reconciled into verified, single-source, or conflict evidence for price, availability, condition, shipping, and returns. When credible options win on different evidence, the agent asks one bounded refinement question and shows exactly how the answer affects the ranking. The agent can prepare a short-lived Quote, but only the visible human button can create a page-local decision record. The Worker rereads the Offer and rejects approval if the facts changed after review.
 
@@ -36,7 +36,7 @@ Codex also helped identify and close release risks including origin authorizatio
 
 ## Key Features
 
-- Nine tools registered with `document.modelContext.registerTool`.
+- Ten tools registered with `document.modelContext.registerTool`.
 - One normalized Offer model across public product JSON, Shopify Storefront GraphQL, Shopify products JSON, JSON-LD, stripped HTML, and labeled snapshots.
 - Exact HTTPS hostname checks, restrictive product paths, manual redirect rejection, timeouts, and bounded upstream bodies.
 - Verified, single-source, and conflict states for price, availability, condition, shipping, and returns.
@@ -45,17 +45,18 @@ Codex also helped identify and close release risks including origin authorizatio
 - A repeatable origin conformance command for authorization, paths, redirects, limits, adapters, provenance, freshness, and fallback behavior.
 - A short-lived, quote-bound human approval flow with no WebMCP commit, checkout, order, or payment tool.
 - A browser-generated Markdown decision dossier with the goal, ranked options, rationale, sources, conflicts, selection, and human decision.
+- A planning-only Oahu itinerary that checks destination, date, party size, budget, pace, day hours, published windows, evidence, and transition buffers while preserving provider source links.
 
 ## Architecture
 
 The main Cloudflare Worker serves the application, API routes, security headers, validation, diagnostics, and WebMCP tool handlers. A separate first-party Worker serves the controlled public guitar origin over HTTPS. `src/origins.ts` stores origin authorization manifests as data. All adapters normalize into the Offer protocol and are checked against the selected manifest before results reach the browser.
 
-The default origin is `catalog-lab` at `agentic-webmcp-origin.somnora.workers.dev`. It contains four original demonstration listings and does not impersonate another merchant. The secondary `review-shop` Shopify origin remains operator-authorized and is visibly research-only when public inventory is unavailable.
+The default origin is `catalog-lab` at `agentic-webmcp-origin.somnora.workers.dev`. It contains four original demonstration listings and does not impersonate another merchant. A disjoint `/services/*` scope on the same controlled hostname contains seven original service fixtures, including five Oahu experiences for itinerary planning. The secondary `review-shop` Shopify origin remains operator-authorized and is visibly research-only when public inventory is unavailable.
 
 ## Testing Instructions
 
 1. Open https://agentic-webmcp.somnora.workers.dev/ in ChatGPT's in-app browser or Chrome with WebMCP enabled.
-2. Confirm the page reports nine registered tools.
+2. Confirm the page reports ten registered tools.
 3. Ask: `List the allowlisted origins and select catalog-lab.`
 4. Ask: `Find the best electric guitars under 900 USD as a gift. Let me explore. The recipient prefers single-coil pickups. Emphasize taste, condition, and price.`
 5. Choose one of the returned priorities at the decision checkpoint and inspect the resolved ranking.
@@ -65,6 +66,8 @@ The default origin is `catalog-lab` at `agentic-webmcp-origin.somnora.workers.de
 9. Ask: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
 10. Click `Approve for handoff` yourself and inspect the page-local receipt.
 11. Download the decision dossier.
+
+Optional services proof: select `services-lab`, search `Oahu experience`, and inspect `north-shore-surf-foundations`. Select that service with `haleiwa-food-story-walk` and `oahu-sunset-photo-walk`, then build a balanced one-day itinerary for two people on 2026-10-10 under 500 USD between 08:00 and 19:00. Confirm the visible schedule totals 450.00 USD, preserves all three canonical sources, and labels proposed times as non-reservational.
 
 No credentials are required. Payment remains on the source merchant and is not part of this build.
 
@@ -107,7 +110,7 @@ Video outline:
 
 Five 2560 by 1440 PNGs were captured from the deployed release and stored outside the public repository under `Agentic WebMCP Gallery/2560x1440`.
 
-1. `01-origin.png`: full workspace with origin badge, nine-tool status, recommendation form, and shared activity rail.
+1. `01-origin.png`: full workspace with origin badge, registered-tool status, recommendation form, and shared activity rail.
 2. `02-recommend.png`: uncertainty checkpoint with evidence-derived choices, followed by ranked guitar options with deterministic factor evidence.
 3. `03-interpolate.png`: stripped Markdown, structured Offer, canonical URL, and `Verified across product JSON and page` evidence.
 4. `04-proposal.png`: purchase review banner showing that nothing has been ordered or charged before human approval.
@@ -119,8 +122,8 @@ Five 2560 by 1440 PNGs were captured from the deployed release and stored outsid
 - Strict TypeScript, 79 automated tests across 13 files, and both Worker dry runs pass on the deployed release.
 - The repository is public and contains an MIT license.
 - The public URL and public repository are known.
-- All 17 public smoke checks pass against the deployed Workers.
-- The no-credential judge flow passed in the in-app browser at 2560 by 1440 with nine registered tools, live cross-source verification, quote-bound approval, a receipt, and the dossier export action.
+- All 22 public smoke checks pass against the deployed Workers, including the controlled services scope, service provenance, itinerary constraints, and the no-booking boundary.
+- The no-credential judge flow exposes ten registered tools, live cross-source verification, quote-bound goods approval, a page-local receipt, the dossier export action, and a planning-only Oahu itinerary with canonical source links.
 - Five gallery screenshots were captured at a true 2560 by 1440 and visually reviewed.
 - The required public video must be completed before the final Devpost check.
 

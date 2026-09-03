@@ -69,6 +69,9 @@ export function assertOfferHandoffEligible(
   if (assessment.reason === "source-stale" || assessment.reason === "source-timestamp-invalid") {
     throw new RangeError("Offer is not eligible for merchant handoff because its source timestamp is stale or invalid.");
   }
+  if (assessment.reason === "service-booking-not-enabled") {
+    throw new RangeError("Service booking is not enabled. Agentic can research and assemble an itinerary, but it cannot reserve or pay for a service.");
+  }
   throw new RangeError("Offer is not eligible for merchant handoff because it is unavailable.");
 }
 
@@ -237,6 +240,9 @@ export async function proposeCartAdd(
   env: CatalogEnv = {},
 ): Promise<CatalogResult & { quote: Quote; confirmation: Confirmation }> {
   validateOrigin(input, origin);
+  if (origin.vertical === "services") {
+    throw new RangeError("Service booking is not enabled. Agentic can research and assemble an itinerary, but it cannot reserve or pay for a service.");
+  }
   const handle = validateHandle(input.handle);
   const quantity = validateQuantity(input.quantity ?? 1);
   const catalog = await getProduct(handle, origin, fetcher, env);

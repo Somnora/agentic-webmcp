@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleRequest } from "../src/index";
+import { handleDemoOriginRequest } from "../src/demo-origin";
 import { DEMO_PRODUCTS } from "../src/demo-origin-catalog";
 
 const rawProduct = {
@@ -133,13 +134,71 @@ describe("Worker routes", () => {
     expect(await selected.json()).toMatchObject({ selected: { id: "review-shop" }, sessionless: true });
   });
 
+  it("searches, interpolates, and assembles controlled services without booking", async () => {
+    vi.setSystemTime(new Date("2026-09-02T12:00:00.000Z"));
+    vi.stubGlobal("fetch", vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => (
+      handleDemoOriginRequest(new Request(input, init))
+    )));
+    const listed = await handleRequest(new Request("https://example.test/api/origins"), env);
+    expect(await listed.json()).toMatchObject({
+      origins: expect.arrayContaining([expect.objectContaining({ id: "services-lab", vertical: "services", adapter: "public-services-json" })]),
+    });
+
+    const catalog = await handleRequest(new Request("https://example.test/api/catalog?originId=services-lab&query=surf%20lesson&limit=4"), env);
+    expect(await catalog.json()).toMatchObject({
+      live: true,
+      source: "public-services-json",
+      offers: [expect.objectContaining({
+        handle: "north-shore-surf-foundations",
+        handoff: expect.objectContaining({ eligible: false, reason: "service-booking-not-enabled" }),
+      })],
+    });
+
+    const interpolation = await handleRequest(new Request("https://example.test/api/interpolate?originId=services-lab&path=%2Fservices%2Fnorth-shore-surf-foundations"), env);
+    expect(await interpolation.json()).toMatchObject({
+      pageLive: true,
+      offer: { service: { durationMinutes: 120 }, provenance: { verification: { state: "verified" } } },
+    });
+
+    const itinerary = await handleRequest(jsonRequest("https://example.test/api/itinerary?originId=services-lab", {
+      originId: "services-lab",
+      goal: "Plan a Hawaii lesson",
+      date: "2026-10-10",
+      days: 1,
+      partySize: 2,
+      budget: 500,
+      pace: "balanced",
+      earliestStart: "08:00",
+      latestEnd: "19:00",
+      handles: ["north-shore-surf-foundations"],
+    }), env);
+    expect(await itinerary.json()).toMatchObject({
+      itinerary: {
+        status: "planning-only",
+        planStatus: "ready-for-review",
+        destination: { label: "Oahu, Hawaii, US" },
+        partySize: 2,
+        publishedPriceTotal: { amount: "190.00" },
+        items: [expect.objectContaining({ status: "scheduled", startLocal: "08:00", endLocal: "10:00" })],
+      },
+    });
+
+    const proposal = await handleRequest(jsonRequest("https://example.test/api/cart/propose?originId=services-lab", {
+      originId: "services-lab",
+      handle: "north-shore-surf-foundations",
+      quantity: 1,
+    }), env);
+    expect(proposal.status).toBe(409);
+    expect(await proposal.json()).toMatchObject({ error: expect.stringContaining("Service booking is not enabled") });
+  });
+
   it("blocks expired origins while preserving a no-fetch conformance report", async () => {
     vi.setSystemTime(new Date("2026-09-04T20:00:00.000Z"));
     const upstream = vi.fn(async () => json({ products: [rawProduct] }));
     vi.stubGlobal("fetch", upstream);
 
     const listed = await handleRequest(new Request("https://example.test/api/origins"), env);
-    expect(await listed.json()).toMatchObject({ origins: [{ id: "catalog-lab" }] });
+    expect(await listed.json()).toMatchObject({ origins: [{ id: "catalog-lab" }, { id: "services-lab" }] });
 
     const catalog = await handleRequest(new Request("https://example.test/api/catalog?originId=review-shop"), env);
     expect(catalog.status).toBe(403);

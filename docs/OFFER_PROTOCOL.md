@@ -3,7 +3,7 @@
 This is the shared model for turning a real website into something an agent can use.
 It is not a scraper manifesto. It is a compiler: one offer graph, several projections.
 
-Do not invent a second product per vertical. Retail, wholesale, and travel fill the same types.
+Do not invent a second product per vertical. Retail, marketplace, wholesale, services, and travel fill the same types.
 
 ## Why this exists
 
@@ -31,13 +31,14 @@ allowlisted real origins.
 Every upstream fetch must match an explicit origin record. Reject everything else.
 
 ```ts
-export type Vertical = "retail" | "marketplace" | "wholesale" | "travel";
+export type Vertical = "retail" | "marketplace" | "wholesale" | "services" | "travel";
 
 export type Adapter =
   | "shopify-storefront"      // Storefront GraphQL with a read-only token
   | "shopify-products-json"   // GET https://{host}/products.json and /products/{handle}.js
   | "public-products-json"    // first-party public catalog JSON
-  | "json-ld"                 // Product, Offer, Hotel, TouristTrip on an allowlisted page
+  | "public-services-json"    // first-party public service JSON
+  | "json-ld"                 // Product, Service, Offer, Hotel, TouristTrip on an allowlisted page
   | "html-markdown";          // last-resort strip of an allowlisted page
 
 export type Origin = {
@@ -48,6 +49,7 @@ export type Origin = {
   canonicalUrl: string;       // https origin, no path
   adapter: Adapter;
   fallbackAdapters: readonly Adapter[];
+  offerPathPrefix: "/products" | "/services";
   productPathPattern: string; // e.g. "^/products/([a-z0-9-]+)/?$"
   interpolatePathPatterns: readonly string[];
   notes: string;              // human-visible source label
@@ -107,8 +109,8 @@ export type Constraints = {
   moq?: number;                 // wholesale
   leadDays?: number;            // wholesale
   accountRequired?: boolean;    // wholesale
-  refundable?: boolean;         // travel
-  occupancy?: { min: number; max: number };
+  refundable?: boolean;         // services and travel
+  occupancy?: { min: number; max: number }; // party size or occupancy
   stayNights?: { min: number; max: number };
 };
 
@@ -141,11 +143,16 @@ export type Offer = {
     seller?: EvidenceClaim;
     shipping?: EvidenceClaim;
     returns?: EvidenceClaim;
+    provider?: EvidenceClaim;
+    location?: EvidenceClaim;
+    duration?: EvidenceClaim;
+    scheduling?: EvidenceClaim;
+    cancellation?: EvidenceClaim;
     verification: EvidenceVerification;
   };
   handoff: {
     eligible: boolean;
-    reason: "eligible" | "source-not-live" | "source-stale" | "source-timestamp-invalid" | "unavailable" | "evidence-conflict";
+    reason: "eligible" | "source-not-live" | "source-stale" | "source-timestamp-invalid" | "unavailable" | "service-booking-not-enabled" | "evidence-conflict";
     freshness: "fresh" | "stale" | "invalid" | "not-live";
     freshUntil: string | null;
     maxAgeSeconds: number;
@@ -157,6 +164,25 @@ export type Offer = {
     shipping: { price: Money; method: string; estimatedDays: { min: number; max: number } };
     returns: { accepted: boolean; windowDays: number | null; paidBy: "seller" | "buyer" | null };
     deliveredPrice: Money;
+  };
+  service?: {
+    category: "activity" | "wellness" | "home-service";
+    provider: { displayName: string; verification: "controlled-demo" | "operator-attested" };
+    location: {
+      city: string;
+      region: string;
+      countryCode: string;
+      venue: "provider-location" | "customer-location" | "outdoor" | "remote";
+    };
+    durationMinutes: number;
+    priceBasis: "fixed" | "hourly" | "per-person" | "estimate";
+    partySize: { min: number; max: number };
+    scheduling: {
+      timezone: string;
+      windows: Array<{ weekday: string; startLocal: string; endLocal: string }>;
+    };
+    cancellation: { refundable: boolean; windowHours: number | null; fee: Money | null };
+    itineraryEligible: boolean;
   };
 };
 
@@ -172,9 +198,9 @@ type EvidenceVerification = {
   label: string;
   checkedAt: string | null;
   sources: Array<Adapter | "bundled-snapshot">;
-  verifiedFields: Array<"pricing" | "availability" | "condition" | "shipping" | "returns">;
-  singleSourceFields: Array<"pricing" | "availability" | "condition" | "shipping" | "returns">;
-  conflictFields: Array<"pricing" | "availability" | "condition" | "shipping" | "returns">;
+  verifiedFields: ReconciledEvidenceField[];
+  singleSourceFields: ReconciledEvidenceField[];
+  conflictFields: ReconciledEvidenceField[];
 };
 ```
 
@@ -183,7 +209,11 @@ facts, normalize into `Offer`, discard chrome (nav, footer, scripts, forms). Pre
 Storefront GraphQL, then `products.json`, then JSON-LD, then HTML-to-Markdown. Never
 present HTML interpolation as live inventory if a structured adapter succeeded.
 
-When a structured Offer and page JSON-LD both exist for the same handle, the compiler reconciles price, availability, condition, shipping, and returns. Matching values become `verified`; missing corroboration remains `single-source`; mismatches become `conflict`. The structured adapter remains primary, conflict details remain visible, and a conflicted reconciled Offer is research-only.
+When a structured Offer and page JSON-LD both exist for the same handle, the compiler reconciles the decision fields appropriate to that vertical. Marketplace fields are price, availability, condition, shipping, and returns. Service fields are price, availability, provider, location, duration, scheduling, and cancellation. Matching values become `verified`; missing corroboration remains `single-source`; mismatches become `conflict`. The structured adapter remains primary, conflict details remain visible, and a conflicted reconciled Offer is research-only.
+
+Service Offers are always planning-only in this Challenge build. A live service can be searched, inspected, compared, interpolated, and added to an activity itinerary, but its handoff reason is `service-booking-not-enabled`.
+
+The itinerary is a deterministic projection of one to four service Offers. It accepts a start date, one to three days, party size, optional activity budget, relaxed or balanced or full pace, earliest start, and latest end. The planner keeps one destination and timezone, matches weekday windows, applies explicit same-city or cross-city transition buffers, enforces a daily activity cap, totals party-aware prices, and returns scheduled items plus typed conflicts. Missing dates, destination mismatches, party-size failures, unavailable or conflicted evidence, window mismatches, daily-capacity failures, and budget exclusions remain visible instead of being silently discarded. Published windows are not reservations or availability for a particular date. Transition buffers are planning allowances, not measured travel times.
 
 ## Purchase review, approval, and decision record
 
@@ -244,10 +274,11 @@ Read-only (`readOnlyHint: true`, `untrustedContentHint: true`):
 7. `interpolate_page` : `{ path }` : strip one allowlisted path on the selected origin
    into an Offer plus compact Markdown. Path only, never a free-form URL.
 8. `create_catalog_brief` : `{ goal, handles }` : deterministic Markdown from selected offers.
+9. `create_activity_itinerary` : `{ goal, handles, date?, days?, partySize?, budget?, pace?, earliestStart?, latestEnd? }` : constraint-aware, planning-only schedule with source URLs, proposed local times, party-aware totals, typed conflicts, and explicit booking limitations.
 
 Confirm-write (`readOnlyHint: false`, `destructiveHint: false`):
 
-9. `propose_add_to_cart` : `{ handle, variantTitle?, quantity? }` : stage a visible
+10. `propose_add_to_cart` : `{ handle, variantTitle?, quantity? }` : stage a visible
    purchase review. Does not create an order or charge.
 
 Do not register a commit tool. Commit is a human button.
@@ -284,7 +315,8 @@ Uncertainty refinement extends the recommendation projection, not the Offer mode
 ## Default Challenge origins
 
 1. `catalog-lab`: controlled public guitar marketplace with original listings, public product JSON, and allowlisted product pages.
-2. `review-shop`: `agentic-app-review-test.myshopify.com`, using optional Storefront GraphQL, public product JSON, then a labeled bundled snapshot.
+2. `services-lab`: controlled public service directory on the same first-party hostname with a disjoint `/services/*` allowlist, original listings, public service JSON, and allowlisted service pages.
+3. `review-shop`: `agentic-app-review-test.myshopify.com`, using optional Storefront GraphQL, public product JSON, then a labeled bundled snapshot.
 
 Do not add unrelated retailer names or scrape third-party catalogs without permission.
 

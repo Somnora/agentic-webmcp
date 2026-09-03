@@ -1,6 +1,6 @@
 # Legacy submission media
 
-These captures were taken from the earlier four-tool deployment on August 25, 2026. They do not show the current origin switcher, nine registered tools, recommendation view, interpolation view, purchase review, or approved selection.
+These captures were taken from the earlier four-tool deployment on August 25, 2026. They do not show the current origin switcher, ten registered tools, recommendation view, interpolation view, purchase review, or approved selection.
 
 | File | Dimensions | Current status |
 | --- | --- | --- |

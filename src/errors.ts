@@ -14,6 +14,7 @@ export type ErrorCode =
   | "PRODUCT_NOT_FOUND"
   | "QUOTE_CHANGED"
   | "ROUTE_NOT_FOUND"
+  | "SERVICE_BOOKING_NOT_ENABLED"
   | "UNSUPPORTED_MEDIA_TYPE";
 
 export type ErrorPayload = {
@@ -41,6 +42,9 @@ export function classifyError(error: unknown, correlationId?: string): { payload
     if (message.includes("human confirmation")) return known(message, "HUMAN_CONFIRMATION_REQUIRED", correlationId);
     if (message.includes("not eligible for merchant handoff")) {
       return { payload: { error: message, code: "OFFER_NOT_ELIGIBLE", retryable: false, ...(correlationId ? { correlationId } : {}) }, status: 409 };
+    }
+    if (message.includes("Service booking is not enabled")) {
+      return { payload: { error: message, code: "SERVICE_BOOKING_NOT_ENABLED", retryable: false, ...(correlationId ? { correlationId } : {}) }, status: 409 };
     }
     if (message.includes("changed after the reviewed quote")) {
       return { payload: { error: message, code: "QUOTE_CHANGED", retryable: false, ...(correlationId ? { correlationId } : {}) }, status: 409 };

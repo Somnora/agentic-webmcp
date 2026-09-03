@@ -9,7 +9,7 @@ export function createAgenticTools(actions) {
   return [
     {
       name: "list_origins",
-      description: "List the exact HTTPS product origins this page is allowed to read and show their data mode and configured adapters in the shared interface.",
+      description: "List the exact HTTPS product and service origin scopes this page is allowed to read and show their data mode and configured adapters in the shared interface.",
       inputSchema: { type: "object", properties: {} },
       annotations: READ_ONLY_ANNOTATIONS,
       execute: (args, { signal } = {}) => actions.listOrigins(args, signal),
@@ -27,11 +27,11 @@ export function createAgenticTools(actions) {
     },
     {
       name: "search_products",
-      description: "Search offers on the selected allowlisted origin and show matching products or listings in the shared page interface.",
+      description: "Search normalized Offers on the selected allowlisted origin and show matching products or services in the shared page interface.",
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Product words to match, such as electric guitar or acoustic guitar." },
+          query: { type: "string", description: "Words to match, such as electric guitar, surf lesson, archery lesson, or massage." },
           maxResults: { type: "integer", minimum: 1, maximum: 8, description: "Maximum number of results to return." },
         },
         required: ["query"],
@@ -63,10 +63,10 @@ export function createAgenticTools(actions) {
     },
     {
       name: "get_product",
-      description: "Get normalized offer facts and sampled variants for one product handle on the selected origin, then show it in the shared interface.",
+      description: "Get normalized facts for one product or service handle on the selected origin, then show it in the shared interface.",
       inputSchema: {
         type: "object",
-        properties: { handle: { type: "string", description: "Stable lowercase product handle returned by search_products." } },
+        properties: { handle: { type: "string", description: "Stable lowercase Offer handle returned by search_products." } },
         required: ["handle"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
@@ -74,7 +74,7 @@ export function createAgenticTools(actions) {
     },
     {
       name: "compare_products",
-      description: "Compare normalized facts for two to four handles on one selected origin and display a side-by-side view for the human.",
+      description: "Compare normalized facts for two to four product or service handles on one selected origin and display a side-by-side view for the human.",
       inputSchema: {
         type: "object",
         properties: {
@@ -87,10 +87,10 @@ export function createAgenticTools(actions) {
     },
     {
       name: "interpolate_page",
-      description: "Read one allowlisted product path on the selected origin, remove page chrome, and show compact Markdown plus the normalized Offer and canonical origin URL.",
+      description: "Read one allowlisted product or service path, remove page chrome, and show compact Markdown plus the normalized Offer and canonical origin URL.",
       inputSchema: {
         type: "object",
-        properties: { path: { type: "string", description: "Allowlisted product path only, such as /products/sunburst-s-style-electric." } },
+        properties: { path: { type: "string", description: "Allowlisted product or service path, such as /products/sunburst-s-style-electric or /services/north-shore-surf-foundations." } },
         required: ["path"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
@@ -103,12 +103,33 @@ export function createAgenticTools(actions) {
         type: "object",
         properties: {
           goal: { type: "string", description: "The shopper or catalog research goal to ground the brief." },
-          handles: { type: "array", minItems: 1, maxItems: 4, items: { type: "string" }, description: "One to four unique product handles." },
+          handles: { type: "array", minItems: 1, maxItems: 4, items: { type: "string" }, description: "One to four unique Offer handles." },
         },
         required: ["goal", "handles"],
       },
       annotations: READ_ONLY_ANNOTATIONS,
       execute: (args, { signal } = {}) => actions.brief(args, signal),
+    },
+    {
+      name: "create_activity_itinerary",
+      description: "Build a constraint-aware, planning-only itinerary from one to four service Offers. It checks destination, date, published windows, party size, budget, pace, day hours, evidence, and transition buffers. This never reserves, contacts, or pays a provider.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          goal: { type: "string", maxLength: 160, description: "The activity or trip-planning goal." },
+          handles: { type: "array", minItems: 1, maxItems: 4, uniqueItems: true, items: { type: "string" }, description: "One to four itinerary-eligible service handles." },
+          date: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", description: "Optional planning date in YYYY-MM-DD format." },
+          days: { type: "integer", minimum: 1, maximum: 3, description: "Number of consecutive planning days, from one to three." },
+          partySize: { type: "integer", minimum: 1, maximum: 20, description: "Number of people for party-size and per-person price checks." },
+          budget: { type: "number", minimum: 25, maximum: 100000, description: "Optional total activity budget in the selected origin currency." },
+          pace: { type: "string", enum: ["relaxed", "balanced", "full"], description: "Daily activity density and transition-buffer policy." },
+          earliestStart: { type: "string", pattern: "^[0-9]{2}:[0-9]{2}$", description: "Earliest proposed local start in 24-hour HH:MM format." },
+          latestEnd: { type: "string", pattern: "^[0-9]{2}:[0-9]{2}$", description: "Latest proposed local end in 24-hour HH:MM format." },
+        },
+        required: ["goal", "handles"],
+      },
+      annotations: READ_ONLY_ANNOTATIONS,
+      execute: (args, { signal } = {}) => actions.itinerary(args, signal),
     },
     {
       name: "propose_add_to_cart",

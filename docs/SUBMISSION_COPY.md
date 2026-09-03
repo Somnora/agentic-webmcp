@@ -14,7 +14,7 @@ Visual websites make agents infer controls and reconstruct product facts from pr
 
 ## What it does
 
-Agentic WebMCP exposes nine WebMCP tools over explicitly allowlisted product origins. It converts public product JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options against session-only taste and intent, ask one evidence-derived refinement when credible choices have competing strengths, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review.
+Agentic WebMCP exposes ten WebMCP tools over explicitly allowlisted product and service origins. It converts public catalog JSON, Storefront GraphQL, JSON-LD, and stripped page content into a common Offer protocol. On the default guitar marketplace, an agent can search, rank options against session-only taste and intent, ask one evidence-derived refinement when credible choices have competing strengths, inspect a product page as Markdown plus structured data, compare listings, and prepare a purchase review. On the controlled services scope, the same Offer contract can represent a local professional or destination activity and assemble selected options into a planning-only itinerary.
 
 The final decision stays human-controlled. The agent cannot place an order or pay. A visible button creates only a page-local approved selection and links back to the merchant. Before recording it, the Worker rereads the Offer and requires every line and total to match the Quote the person reviewed.
 
@@ -25,6 +25,8 @@ The final decision stays human-controlled. The agent cannot place an order or pa
 - All adapters normalize into the same `Offer` structure.
 - Every normalized Offer is checked against its origin manifest and exposes provenance, freshness, and live-only handoff eligibility.
 - Product JSON and page JSON-LD reconcile price, availability, condition, shipping, and returns into verified, single-source, or conflict evidence states.
+- Service JSON and page JSON-LD reconcile price, availability, provider, location, duration, scheduling, and cancellation in the same provenance system.
+- The Oahu itinerary planner projects selected service Offers into a one-to-three-day timeline. It checks destination, date, party size, budget, pace, day hours, published windows, evidence, and conservative transition buffers, then separates scheduled activities from typed conflicts.
 - The recommender uses session-only taste and intent plus deterministic factor scores for relevance, preference fit, condition, delivered price, seller confidence, returns, and delivery.
 - Ranked output distinguishes Best fit, Best value, Worth a look, and Strong alternative with a reason, tradeoff, and evidence confidence.
 - The uncertainty checkpoint exposes competing evidence, accepts only a returned priority, applies a visible rubric adjustment, and reports whether the human answer changed Best fit.
@@ -40,7 +42,7 @@ The main challenge was making a useful live-web demonstration without claiming a
 
 ## Accomplishments
 
-- Nine coherent WebMCP tools, including explainable recommendation and page interpolation.
+- Ten coherent WebMCP tools, including explainable recommendation, page interpolation, and constraint-aware activity itinerary planning.
 - One Offer model across public JSON, Shopify, JSON-LD, and HTML projections.
 - Exact-host and restrictive path allowlisting with bounded fetches and redirect checks.
 - Fail-closed rejection of fallback, stale, or unavailable Offers before purchase review.
@@ -55,11 +57,11 @@ The strongest agent interface is not just hidden structure. It gives the person 
 
 ## What's next
 
-With merchant permission, the same protocol can support additional real origins and richer marketplace evidence. A production handoff could use a merchant-owned checkout link or account system, but payments and orders remain outside this Challenge build.
+With operator permission, the same protocol can support additional real origins, richer marketplace evidence, live provider availability, and itinerary-aware destination services. A production handoff could use an operator-owned booking or checkout link, but provider contact, reservations, payments, and orders remain outside this Challenge build.
 
 ## Judge flow
 
-1. Confirm nine tools are registered.
+1. Confirm ten tools are registered.
 2. Ask: `List the allowlisted origins and select catalog-lab.`
 3. Ask: `Find the best electric guitars under 900 USD as a gift. Let me explore. The recipient prefers single-coil pickups. Emphasize taste, condition, and price.`
 4. Choose one priority at the decision checkpoint and show the resolved ranking.
@@ -72,3 +74,5 @@ With merchant permission, the same protocol can support additional real origins 
 ## Disclosure
 
 The default origin is a first-party controlled public demonstration marketplace with original guitar listings. Its HTTPS responses and interpolation are live, but the listings are not presented as eBay or another third-party merchant. The secondary Shopify development store is operator-authorized but remains research-only while Shopify password protection blocks public inventory. The app does not place orders or handle payment.
+
+The optional services scope uses seven original controlled fixtures on the same first-party hostname under a disjoint `/services/*` allowlist. Five Oahu experiences create a coherent destination set, while Tangier and a non-itinerary home service demonstrate destination and eligibility conflicts. It demonstrates data shape, provenance, page conversion, budget-aware scheduling, and itinerary planning. It does not claim real provider inventory, measured travel time, bookings, messages, or payment.

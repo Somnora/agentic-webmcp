@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeProductsJsonOffer } from "../src/catalog";
 import { assertOfferAdapterContract, assertOriginRegistry, validateOriginManifest } from "../src/origin-contract";
-import { getOrigin, inspectOrigin, ORIGINS, publicOrigin, runtimeOrigins, type Origin } from "../src/origins";
+import { getOrigin, inspectOrigin, ORIGINS, publicOrigin, runtimeOrigins, validateInterpolatePath, type Origin } from "../src/origins";
 
 const origin = inspectOrigin("catalog-lab");
 const product = {
@@ -27,7 +27,7 @@ describe("origin manifest contract", () => {
     const atReview = Date.parse("2026-09-04T20:00:00.000Z");
     expect(getOrigin("review-shop", beforeReview).id).toBe("review-shop");
     expect(() => getOrigin("review-shop", atReview)).toThrow("authorization expired");
-    expect(runtimeOrigins(atReview).map((item) => item.id)).toEqual(["catalog-lab"]);
+    expect(runtimeOrigins(atReview).map((item) => item.id)).toEqual(["catalog-lab", "services-lab"]);
     expect(inspectOrigin("review-shop").authorization.reviewAfter).toBe("2026-09-04T20:00:00.000Z");
   });
 
@@ -81,7 +81,11 @@ describe("origin manifest contract", () => {
     ]));
   });
 
-  it("rejects duplicated manifest hostnames", () => {
+  it("allows disjoint path scopes on one controlled hostname and rejects overlaps", () => {
+    const services = inspectOrigin("services-lab");
+    expect(() => assertOriginRegistry([origin, services])).not.toThrow();
+    expect(validateInterpolatePath(services, "/services/north-shore-surf-foundations")).toMatchObject({ handle: "north-shore-surf-foundations" });
+    expect(() => validateInterpolatePath(services, "/products/sunburst-s-style-electric")).toThrow("not allowlisted");
     const duplicate = { ...origin, id: "duplicate-origin" } satisfies Origin;
     expect(() => assertOriginRegistry([origin, duplicate])).toThrow("hostname");
   });

@@ -2,7 +2,7 @@
 
 ## Automated checks
 
-The local verification suite covers origin validation, adapter fallback, interpolation, cross-source evidence reconciliation, dossier generation, structured errors, deterministic ranking, proposal semantics, correlation propagation, connection and body-stream timeouts, normalized upstream failures, and the registered WebMCP surface. Deployment dry runs validate both Workers.
+The local verification suite covers origin validation, product and service adapters, fallback, interpolation, cross-source evidence reconciliation, planning-only itineraries, dossier generation, structured errors, deterministic ranking, proposal semantics, correlation propagation, connection and body-stream timeouts, normalized upstream failures, and the registered WebMCP surface. Deployment dry runs validate both Workers.
 
 Run:
 
@@ -52,6 +52,22 @@ Prompt: `Compare sunburst-s-style-electric and mahogany-single-cut-electric usin
 
 Pass when both stable handles are represented and the comparison uses normalized evidence rather than unsupported claims.
 
+### Service discovery and activity itinerary
+
+Prompt: `Select services-lab and search for Oahu experiences. Inspect north-shore-surf-foundations, then create a balanced one-day itinerary on 2026-10-10 for two people under 500 USD using north-shore-surf-foundations, haleiwa-food-story-walk, and oahu-sunset-photo-walk. Keep the day between 08:00 and 19:00.`
+
+Pass when interpolation reports service JSON and page evidence as verified. The itinerary must be `planning-only` and `ready-for-review`, schedule surf from 08:00 to 10:00, the food walk from 11:30 to 13:00, and the photo walk from 16:00 to 17:30. It must total 450.00 USD for two people, leave 50.00 USD in the activity budget, preserve all three canonical source URLs, and state that published windows are not reservations and transition buffers are not measured travel times.
+
+Prompt: `Create one dated itinerary with north-shore-surf-foundations and tangier-traditional-archery.`
+
+Pass when the Oahu item remains eligible, the Tangier item returns a typed `destination-mismatch` conflict, both source URLs remain visible, and the plan says `needs-attention`. Fail if it claims measured travel time, lodging, transport, live availability, provider contact, or a reservation.
+
+Prompt: `Build the same Oahu itinerary with a 300 USD activity budget.`
+
+Pass when the planner schedules only activities that fit the budget, reports excluded selections with `budget-limit`, and never presents the constrained plan as ready for review.
+
+Attempt `propose_add_to_cart` on a service handle. Pass only when the Worker returns `SERVICE_BOOKING_NOT_ENABLED` with no Quote, receipt, message, reservation, or payment action.
+
 ### Proposal does not purchase
 
 Prompt: `Propose quantity 1 of the As listed variant of sunburst-s-style-electric, then stop for my approval.`
@@ -75,8 +91,8 @@ Pass when the Markdown file includes the research goal, scoring rubric, ranked o
 - Reject unknown origin ids with 400.
 - Remove expired origins from discovery and reject their read and proposal routes with 403 before upstream access.
 - Preserve a no-fetch conformance report for an expired origin.
-- Reject non-product paths with 400 and `PATH_NOT_ALLOWED`.
-- Reject anchored catch-all and nested product patterns during manifest validation.
+- Reject paths outside the selected product or service scope with 400 and `PATH_NOT_ALLOWED`.
+- Reject anchored catch-all, nested, and overlapping path patterns during manifest validation.
 - Reject absolute or off-host interpolation URLs.
 - Reject invalid handles, quantities, limits, and budgets.
 - Reject off-origin redirects and oversized upstream bodies.

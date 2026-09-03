@@ -46,7 +46,7 @@ export function createDecisionDossier(snapshot) {
 
   addSection(lines, "Research goal");
   const goal = snapshot.goal || {};
-  lines.push(`Goal: ${clean(goal.query || "No ranked research goal recorded.", 300)}`);
+  lines.push(`Goal: ${clean(goal.query || goal.text || "No ranked research goal recorded.", 300)}`);
   lines.push(`Maximum delivered price: ${goal.maxDeliveredPrice === null || goal.maxDeliveredPrice === undefined ? "Not set" : `${clean(goal.maxDeliveredPrice, 24)} USD`}`);
   const intent = goal.intent || {};
   lines.push(`Shopping for: ${clean(intent.shoppingFor === "gift" ? "Someone else" : "Myself", 40)}`);
@@ -92,6 +92,38 @@ export function createDecisionDossier(snapshot) {
     if (option.factors) lines.push(`   Factors: ${Object.entries(option.factors).map(([name, score]) => `${clean(name, 40)} ${clean(score, 12)}`).join(" | ")}`);
   }
 
+  addSection(lines, "Activity itinerary");
+  const itinerary = snapshot.itinerary;
+  if (!itinerary) {
+    lines.push("No activity itinerary was recorded.");
+  } else {
+    lines.push(`Status: ${clean(itinerary.status || "planning-only", 40)}`);
+    lines.push(`Plan status: ${clean(itinerary.planStatus || "Not recorded", 40)}`);
+    lines.push(`Destination: ${clean(itinerary.destination?.label || itinerary.destination || "Not recorded", 160)}`);
+    lines.push(`Date: ${clean(itinerary.date || "Not selected", 40)}`);
+    lines.push(`Party size: ${clean(itinerary.partySize || 1, 8)}`);
+    lines.push(`Days: ${clean(itinerary.constraints?.days || 1, 8)}`);
+    lines.push(`Pace: ${clean(itinerary.constraints?.pace || "Not recorded", 40)}`);
+    lines.push(`Day hours: ${clean(itinerary.constraints?.earliestStart || "Not recorded", 12)} to ${clean(itinerary.constraints?.latestEnd || "Not recorded", 12)}`);
+    lines.push(`Activity budget: ${money(itinerary.constraints?.budget)}`);
+    lines.push(`Published price total: ${money(itinerary.publishedPriceTotal)}`);
+    for (const item of (Array.isArray(itinerary.items) ? itinerary.items : []).slice(0, 8)) {
+      const time = item.startLocal && item.endLocal ? `${clean(item.date, 40)} ${clean(item.startLocal, 12)}-${clean(item.endLocal, 12)}` : "Not scheduled";
+      lines.push(`- ${clean(item.order, 4)}. ${clean(item.title || item.handle, 180)} | ${clean(item.status || "Not recorded", 40)} | ${time}`);
+      lines.push(`  ${clean(item.location, 180)} | ${clean(item.durationMinutes, 12)} minutes | party total ${money(item.price)} | ${clean(item.priceBasis, 32)}`);
+      lines.push(`  Provider: ${clean(item.provider || "Not supplied", 120)}`);
+      lines.push(`  Source: ${sourceUrl(item.sourceUrl)}`);
+      lines.push(`  Published windows: ${Array.isArray(item.publishedWindows) ? item.publishedWindows.map((window) => clean(window, 80)).join(", ") : "Not supplied"}`);
+      if (item.reason) lines.push(`  Constraint: ${clean(item.reason, 240)}`);
+    }
+    for (const conflict of (Array.isArray(itinerary.conflicts) ? itinerary.conflicts : []).slice(0, 8)) {
+      lines.push(`- Constraint ${clean(conflict.code || "unknown", 60)}: ${clean(conflict.message || "Review required", 300)}`);
+    }
+    for (const warning of (Array.isArray(itinerary.warnings) ? itinerary.warnings : []).slice(0, 4)) {
+      lines.push(`- Limitation: ${clean(warning, 300)}`);
+    }
+  }
+
   addSection(lines, "Evidence reconciliation");
   const evidence = Array.isArray(snapshot.evidence) ? snapshot.evidence : [];
   if (!evidence.length) lines.push("No page reconciliation was recorded.");
@@ -135,6 +167,6 @@ export function createDecisionDossier(snapshot) {
   }
 
   addSection(lines, "Trust boundary");
-  lines.push("This dossier records research and a human decision. Agentic did not create an order, access an account, process payment, or operate merchant checkout.");
+  lines.push("This dossier records research, itinerary planning, and a human decision. Agentic did not create an order or booking, contact a provider, access an account, process payment, or operate merchant checkout.");
   return `${lines.join("\n").trim()}\n`;
 }

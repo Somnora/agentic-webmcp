@@ -118,8 +118,8 @@ export async function runOriginConformance(
       rejected = true;
     }
     checks.push(rejected
-      ? check("paths", "pass", `${allowed.path} is accepted and a non-product path is rejected.`)
-      : check("paths", "fail", "A non-product path passed the interpolation allowlist."));
+      ? check("paths", "pass", `${allowed.path} is accepted and an out-of-scope path is rejected.`)
+      : check("paths", "fail", "An out-of-scope path passed the interpolation allowlist."));
   } catch (error) {
     checks.push(check("paths", "fail", errorText(error)));
   }
@@ -148,8 +148,13 @@ export async function runOriginConformance(
         checks.push(check("provenance", "fail", errorText(error)));
       }
       const handoff = projection.offer.handoff;
-      checks.push(handoff.eligible
-        ? check("freshness", "pass", `Offer is fresh through ${handoff.freshUntil} under the ${handoff.maxAgeSeconds}-second policy.`)
+      const freshService = origin.vertical === "services"
+        && handoff.reason === "service-booking-not-enabled"
+        && handoff.freshness === "fresh";
+      checks.push(handoff.eligible || freshService
+        ? check("freshness", "pass", freshService
+          ? `Service Offer is fresh through ${handoff.freshUntil}; booking handoff is disabled by policy.`
+          : `Offer is fresh through ${handoff.freshUntil} under the ${handoff.maxAgeSeconds}-second policy.`)
         : projection.offer.source.live
           ? check("freshness", "fail", `Live Offer is not handoff eligible: ${handoff.reason}.`)
           : check("freshness", "attention", `Fallback Offer is correctly ineligible: ${handoff.reason}.`));

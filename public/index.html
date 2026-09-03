@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Agentic WebMCP turns allowlisted marketplace pages into structured evidence, ranked options, and human-approved purchase handoffs.">
-  <title>Agentic WebMCP | Market decision workspace</title>
+  <meta name="description" content="Agentic WebMCP turns allowlisted product and service pages into structured evidence, comparisons, activity itineraries, and human-controlled handoffs.">
+  <title>Agentic WebMCP | Offer decision workspace</title>
   <link rel="icon" href="/icon.webp" type="image/webp">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
@@ -13,7 +13,7 @@
   <header class="site-header">
     <a class="brand" href="/" aria-label="Agentic WebMCP home">
       <img src="/icon.webp" alt="" width="42" height="42">
-      <span><strong>Agentic</strong><small>Market decision workspace</small></span>
+      <span><strong>Agentic</strong><small>Offer decision workspace</small></span>
     </a>
     <div class="header-actions">
       <button id="presenter-toggle" class="presenter-toggle" type="button" aria-pressed="false">Presenter mode</button>
@@ -28,7 +28,7 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="eyebrow">WEB RESEARCH WITH A VISIBLE DECISION TRAIL</div>
       <h1 id="hero-title">Compare the evidence.<br><span>Keep the decision.</span></h1>
-      <p>Agentic turns allowlisted marketplace pages into normalized Offers, stripped Markdown, and a ranked shortlist. The agent can research and prepare a purchase handoff. The human reviews the source, condition, delivered price, and seller before anything moves forward.</p>
+      <p>Agentic turns allowlisted product and service pages into normalized Offers, stripped Markdown, and comparable evidence. The agent can research a purchase or assemble a planning-only activity itinerary. Booking, provider contact, approval, and payment remain outside the agent.</p>
       <div class="tool-strip" aria-label="Available tools">
         <code>list_origins</code>
         <code>select_origin</code>
@@ -38,11 +38,12 @@
         <code>compare_products</code>
         <code>interpolate_page</code>
         <code>create_catalog_brief</code>
+        <code>create_activity_itinerary</code>
         <code>propose_add_to_cart</code>
       </div>
     </section>
 
-    <section class="workspace" aria-label="Agentic market decision workspace">
+    <section class="workspace" aria-label="Agentic Offer decision workspace">
       <div class="catalog-panel">
         <div class="panel-heading">
           <div>
@@ -121,7 +122,7 @@
         </section>
 
         <form id="search-form" class="search-form secondary-search">
-          <label for="search-input">Or search listing facts directly</label>
+          <label for="search-input">Or search Offer facts directly</label>
           <div class="search-row">
             <input id="search-input" name="query" maxlength="80" placeholder="Try electric guitar, acoustic guitar, offset guitar..." autocomplete="off">
             <button type="submit">Search</button>
@@ -160,7 +161,7 @@
         <div class="action-dock">
           <div>
             <strong id="selection-count">0 listings selected</strong>
-            <span>Select two to four listings for a grounded comparison.</span>
+            <span id="selection-help">Select two to four listings for a grounded comparison.</span>
           </div>
           <button id="compare-button" type="button" disabled>Compare selected</button>
         </div>
@@ -172,6 +173,48 @@
             <button type="submit" disabled id="brief-button">Create brief</button>
           </div>
         </form>
+
+        <form id="itinerary-form" class="brief-form" hidden>
+          <div class="itinerary-form-heading">
+            <div>
+              <span class="kicker">Constraint-aware planning</span>
+              <label for="itinerary-goal">Build an activity itinerary from selected services</label>
+            </div>
+            <span>Planning only</span>
+          </div>
+          <div class="itinerary-inputs">
+            <input id="itinerary-goal" maxlength="160" value="Plan a relaxed Oahu day for two people under 500 USD with a surf lesson, local food, and a sunset activity.">
+            <label class="itinerary-field-wide" for="itinerary-date"><span>Start date</span><input id="itinerary-date" type="date"></label>
+            <label for="itinerary-days"><span>Days</span><input id="itinerary-days" type="number" min="1" max="3" value="1"></label>
+            <label for="itinerary-party"><span>People</span><input id="itinerary-party" type="number" min="1" max="20" value="2"></label>
+            <label class="itinerary-field-wide" for="itinerary-budget"><span>Activity budget</span><input id="itinerary-budget" type="number" min="25" max="100000" step="25" value="500"></label>
+            <label class="itinerary-field-wide" for="itinerary-pace"><span>Pace</span><select id="itinerary-pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="full">Full</option></select></label>
+            <label class="itinerary-field-wide" for="itinerary-start"><span>Day starts</span><input id="itinerary-start" type="time" value="08:00"></label>
+            <label class="itinerary-field-wide" for="itinerary-end"><span>Day ends</span><input id="itinerary-end" type="time" value="19:00"></label>
+          </div>
+          <div class="itinerary-form-footer">
+            <p>Proposed times must fit published windows. Pace controls daily density and conservative transition buffers, not measured travel time.</p>
+            <button type="submit" disabled id="itinerary-button">Build itinerary</button>
+          </div>
+        </form>
+
+        <section id="itinerary-view" class="interpolate-view" hidden aria-live="polite" tabindex="-1">
+          <div class="itinerary-view-heading">
+            <div>
+              <span class="kicker">PLANNING-ONLY ITINERARY</span>
+              <h3 id="itinerary-title">Activities arranged around your constraints</h3>
+            </div>
+            <span id="itinerary-status" class="itinerary-status">Ready for review</span>
+          </div>
+          <div id="itinerary-summary" class="itinerary-summary"></div>
+          <div id="itinerary-timeline" class="itinerary-timeline"></div>
+          <div id="itinerary-conflicts" class="itinerary-conflicts" hidden></div>
+          <details class="itinerary-source-details">
+            <summary>View source-grounded itinerary Markdown</summary>
+            <pre id="itinerary-markdown"></pre>
+          </details>
+          <p id="itinerary-warning" class="provenance-line"></p>
+        </section>
       </div>
 
       <aside class="agent-panel" aria-labelledby="activity-title">
@@ -182,10 +225,10 @@
           </div>
           <div class="panel-actions">
             <button id="download-dossier" type="button" class="trace-button" disabled>Download dossier</button>
-            <span class="read-only">Human approval required</span>
+            <span id="decision-boundary-label" class="read-only">Human approval required</span>
           </div>
         </div>
-        <p class="activity-intro">Agent calls and human previews use the same functions. Every result remains visible, and purchase proposals stop for review.</p>
+        <p class="activity-intro">Agent calls and human previews use the same functions. Every result remains visible. Purchase proposals stop for review, while service itineraries stop before booking or provider contact.</p>
         <section id="confirm-panel" class="confirm-panel" hidden tabindex="-1">
           <span class="kicker">Purchase review</span>
           <p id="confirm-copy">The agent prepared a selection for review.</p>
@@ -212,15 +255,15 @@
         </section>
         <div class="trust-note">
           <strong>Trust boundary</strong>
-          <p>Research tools are read-only. propose_add_to_cart only stages a visible review. Approval creates an in-page decision record, not an order. There is no checkout, account, or payment flow.</p>
+          <p>Research and itinerary tools are read-only. propose_add_to_cart only stages a visible goods review. Approval creates an in-page decision record, not an order. Service booking, provider messaging, checkout, accounts, and payment are not enabled.</p>
         </div>
       </aside>
     </section>
 
     <section class="why-grid" aria-label="Why WebMCP changes the experience">
-      <article><span>01</span><h3>Comparable evidence</h3><p>Condition, shipping, seller confidence, and returns become explicit fields instead of scattered page fragments.</p></article>
-      <article><span>02</span><h3>Explainable ranking</h3><p>Every shortlist exposes its scoring factors, source page, and delivered-price assumption.</p></article>
-      <article><span>03</span><h3>Human authority</h3><p>The agent can prepare a decision, but it cannot approve a purchase or handle payment.</p></article>
+      <article><span>01</span><h3>Comparable evidence</h3><p>Product condition and shipping, or service location and scheduling, become explicit fields instead of scattered page fragments.</p></article>
+      <article><span>02</span><h3>Explainable decisions</h3><p>Every result preserves its source page, normalized facts, evidence state, and important limitations.</p></article>
+      <article><span>03</span><h3>Human authority</h3><p>The agent can prepare a decision or itinerary, but it cannot approve a purchase, book a provider, or handle payment.</p></article>
     </section>
   </main>
 

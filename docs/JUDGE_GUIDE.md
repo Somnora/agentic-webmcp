@@ -10,7 +10,7 @@ The key interaction is not a chatbot transcript. Each WebMCP call updates the sa
 
 Open [the live app](https://agentic-webmcp.somnora.workers.dev/) in a WebMCP-capable client. Presenter mode is optional and changes only the recording layout.
 
-1. Confirm the page reports nine registered tools.
+1. Confirm the page reports ten registered tools.
 2. Ask: `List the allowlisted origins and select catalog-lab.`
 3. Ask: `Find the best electric guitars under 900 USD as a gift. Let me explore. The recipient prefers single-coil pickups. Emphasize taste, condition, and price.`
 4. At the decision checkpoint, choose one of the visible priorities. Confirm the resolved state names the applied choice, its 10-point rubric adjustment, and whether Best fit changed.
@@ -40,3 +40,5 @@ Open [the live app](https://agentic-webmcp.somnora.workers.dev/) in a WebMCP-cap
 ## Important limits
 
 The public origin and page fetches are live, but the four listings are original controlled demonstration data. The app does not search arbitrary websites, scrape eBay, place an order, handle money, or create a merchant account. The secondary Shopify origin may show a labeled research-only snapshot when public inventory is unavailable. Snapshot and stale Offers cannot create a proposal.
+
+The optional services proof uses `services-lab` on the same controlled hostname under a disjoint `/services/*` allowlist. Ask: `Select services-lab and search for Oahu experiences. Inspect north-shore-surf-foundations. Then create a balanced itinerary for two people on 2026-10-10 under 500 USD using north-shore-surf-foundations, haleiwa-food-story-walk, and oahu-sunset-photo-walk, between 08:00 and 19:00.` The result should verify the surf page across service JSON and JSON-LD, then schedule all three activities inside published windows with a 450.00 USD party total and 50.00 USD remaining. The visible timeline must label its times as proposals, preserve canonical sources, and stop before availability confirmation, provider contact, booking, or payment.

@@ -11,7 +11,17 @@ export type EvidenceClaim = {
   note?: string;
 };
 
-export type ReconciledEvidenceField = "pricing" | "availability" | "condition" | "shipping" | "returns";
+export type ReconciledEvidenceField =
+  | "pricing"
+  | "availability"
+  | "condition"
+  | "shipping"
+  | "returns"
+  | "provider"
+  | "location"
+  | "duration"
+  | "scheduling"
+  | "cancellation";
 
 export type EvidenceVerification = {
   state: EvidenceState;
@@ -33,6 +43,11 @@ export type OfferProvenance = {
   seller?: EvidenceClaim;
   shipping?: EvidenceClaim;
   returns?: EvidenceClaim;
+  provider?: EvidenceClaim;
+  location?: EvidenceClaim;
+  duration?: EvidenceClaim;
+  scheduling?: EvidenceClaim;
+  cancellation?: EvidenceClaim;
   verification: EvidenceVerification;
 };
 
@@ -81,12 +96,44 @@ export type MarketplaceEvidence = {
   deliveredPrice: Money;
 };
 
+export type ServiceCategory = "activity" | "wellness" | "home-service";
+export type ServiceVenue = "provider-location" | "customer-location" | "outdoor" | "remote";
+export type ServicePriceBasis = "fixed" | "hourly" | "per-person" | "estimate";
+
+export type ServiceEvidence = {
+  category: ServiceCategory;
+  provider: {
+    displayName: string;
+    verification: "controlled-demo" | "operator-attested";
+  };
+  location: {
+    city: string;
+    region: string;
+    countryCode: string;
+    venue: ServiceVenue;
+  };
+  durationMinutes: number;
+  priceBasis: ServicePriceBasis;
+  partySize: { min: number; max: number };
+  scheduling: {
+    timezone: string;
+    windows: Array<{ weekday: string; startLocal: string; endLocal: string }>;
+  };
+  cancellation: {
+    refundable: boolean;
+    windowHours: number | null;
+    fee: Money | null;
+  };
+  itineraryEligible: boolean;
+};
+
 export type HandoffReason =
   | "eligible"
   | "source-not-live"
   | "source-stale"
   | "source-timestamp-invalid"
   | "unavailable"
+  | "service-booking-not-enabled"
   | "evidence-conflict";
 
 export type HandoffEligibility = {
@@ -113,6 +160,7 @@ export type OfferInput = {
   variants: Variant[];
   constraints: Constraints;
   marketplace?: MarketplaceEvidence;
+  service?: ServiceEvidence;
   image?: { url: string; altText: string | null };
   source: {
     adapter: OfferSourceAdapter;
@@ -150,6 +198,9 @@ export function assessOfferHandoff(
   }
   if (!offer.constraints.available) {
     return { eligible: false, reason: "unavailable", freshness: "fresh", freshUntil, maxAgeSeconds };
+  }
+  if (offer.vertical === "services") {
+    return { eligible: false, reason: "service-booking-not-enabled", freshness: "fresh", freshUntil, maxAgeSeconds };
   }
   return { eligible: true, reason: "eligible", freshness: "fresh", freshUntil, maxAgeSeconds };
 }
@@ -190,6 +241,7 @@ function adapterLabel(adapter: OfferSourceAdapter): string {
     "shopify-storefront": "Storefront GraphQL",
     "shopify-products-json": "product JSON",
     "public-products-json": "product JSON",
+    "public-services-json": "service JSON",
     "json-ld": "page",
     "html-markdown": "page Markdown",
     "bundled-snapshot": "bundled snapshot",
@@ -202,7 +254,12 @@ function evidenceValue(offer: Offer, field: ReconciledEvidenceField): unknown {
   if (field === "availability") return offer.constraints.available;
   if (field === "condition") return offer.marketplace?.condition;
   if (field === "shipping") return offer.marketplace?.shipping;
-  return offer.marketplace?.returns;
+  if (field === "returns") return offer.marketplace?.returns;
+  if (field === "provider") return offer.service?.provider;
+  if (field === "location") return offer.service?.location;
+  if (field === "duration") return offer.service?.durationMinutes;
+  if (field === "scheduling") return offer.service?.scheduling;
+  return offer.service?.cancellation;
 }
 
 function sameEvidence(left: unknown, right: unknown): boolean {
@@ -219,7 +276,9 @@ export function reconcileOfferEvidence(primary: Offer, page: Offer, checkedAt = 
   if (primary.originId !== page.originId || primary.handle !== page.handle) {
     throw new RangeError("Evidence sources must describe the same origin and product handle.");
   }
-  const fields: ReconciledEvidenceField[] = ["pricing", "availability", "condition", "shipping", "returns"];
+  const fields: ReconciledEvidenceField[] = primary.service || page.service
+    ? ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"]
+    : ["pricing", "availability", "condition", "shipping", "returns"];
   const provenance: OfferProvenance = {
     ...primary.provenance,
     title: { ...primary.provenance.title, sources: [...primary.provenance.title.sources] },
@@ -231,6 +290,11 @@ export function reconcileOfferEvidence(primary: Offer, page: Offer, checkedAt = 
     ...(primary.provenance.seller ? { seller: { ...primary.provenance.seller, sources: [...primary.provenance.seller.sources] } } : {}),
     ...(primary.provenance.shipping ? { shipping: { ...primary.provenance.shipping, sources: [...primary.provenance.shipping.sources] } } : {}),
     ...(primary.provenance.returns ? { returns: { ...primary.provenance.returns, sources: [...primary.provenance.returns.sources] } } : {}),
+    ...(primary.provenance.provider ? { provider: { ...primary.provenance.provider, sources: [...primary.provenance.provider.sources] } } : {}),
+    ...(primary.provenance.location ? { location: { ...primary.provenance.location, sources: [...primary.provenance.location.sources] } } : {}),
+    ...(primary.provenance.duration ? { duration: { ...primary.provenance.duration, sources: [...primary.provenance.duration.sources] } } : {}),
+    ...(primary.provenance.scheduling ? { scheduling: { ...primary.provenance.scheduling, sources: [...primary.provenance.scheduling.sources] } } : {}),
+    ...(primary.provenance.cancellation ? { cancellation: { ...primary.provenance.cancellation, sources: [...primary.provenance.cancellation.sources] } } : {}),
     verification: { ...primary.provenance.verification, sources: [...primary.provenance.verification.sources], verifiedFields: [], singleSourceFields: [], conflictFields: [] },
   };
   const verifiedFields: ReconciledEvidenceField[] = [];

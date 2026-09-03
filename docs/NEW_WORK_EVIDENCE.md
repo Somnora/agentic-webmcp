@@ -1,6 +1,6 @@
 # Previous deployment evidence
 
-This file records the August 26, 2026 deployment before the guitar recommendation redesign. It is historical evidence, not the current judge script. Use `docs/JUDGE_GUIDE.md` and `docs/DEMO_SCRIPT.md` for the current nine-tool flow.
+This file records the August 26, 2026 deployment before the guitar recommendation redesign. It is historical evidence, not the current judge script. Use `docs/JUDGE_GUIDE.md` and `docs/DEMO_SCRIPT.md` for the current ten-tool flow.
 
 ## Project boundary
 
@@ -33,7 +33,7 @@ The current origin interpolation change stays entirely inside `agentic-webmcp`. 
 | `c5dfbb7` | August 25, 2026 | Earlier four-tool WebMCP browser evidence |
 | `7b4b81e` | August 25, 2026 | Last commit before the allowlisted origin interpolation WIP |
 
-The older screenshots and four-tool browser evidence do not represent the current nine-tool origin flow. They must not be used as current proof after this branch changes.
+The older screenshots and four-tool browser evidence do not represent the current ten-tool origin flow. They must not be used as current proof after this branch changes.
 
 ## August 26 verification boundary
 

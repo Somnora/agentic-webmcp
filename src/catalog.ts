@@ -10,10 +10,14 @@ import {
   type MarketplaceEvidence,
   type Money,
   type Offer,
+  type ServiceCategory,
+  type ServiceEvidence,
+  type ServicePriceBasis,
+  type ServiceVenue,
   type Variant,
 } from "./offers";
 import { assertOfferAdapterContract } from "./origin-contract";
-import { assertCatalogShop, getOrigin, publicOrigin, type Adapter, type Origin, type PublicOrigin } from "./origins";
+import { assertCatalogShop, getOrigin, offerUrl, publicOrigin, type Adapter, type Origin, type PublicOrigin } from "./origins";
 import { OriginFailure, markAdapterAttemptFailure, normalizeFailureReason, type OriginFailureReason } from "./reliability";
 import { fetchOriginText, type Fetcher } from "./upstream";
 
@@ -148,6 +152,77 @@ function marketplaceEvidence(candidate: Record<string, unknown>, currencyCode: s
   };
 }
 
+const SERVICE_CATEGORIES = new Set<ServiceCategory>(["activity", "wellness", "home-service"]);
+const SERVICE_VENUES = new Set<ServiceVenue>(["provider-location", "customer-location", "outdoor", "remote"]);
+const SERVICE_PRICE_BASES = new Set<ServicePriceBasis>(["fixed", "hourly", "per-person", "estimate"]);
+const WEEKDAYS = new Set(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+const LOCAL_TIME_PATTERN = /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/;
+const TIMEZONE_PATTERN = /^[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+$/;
+
+function serviceEvidence(candidate: Record<string, unknown>, currencyCode: string): ServiceEvidence | undefined {
+  const category = text(candidate.category, 40) as ServiceCategory;
+  const provider = record(candidate.provider);
+  const providerName = text(provider.display_name ?? provider.displayName, 100);
+  const verification = text(provider.verification, 32);
+  const location = record(candidate.location);
+  const city = text(location.city, 100);
+  const region = text(location.region, 120);
+  const countryCode = text(location.country_code ?? location.countryCode, 2).toLocaleUpperCase();
+  const venue = text(location.venue, 40) as ServiceVenue;
+  const durationMinutes = boundedNumber(candidate.duration_minutes ?? candidate.durationMinutes, 15, 1440);
+  const priceBasis = text(candidate.price_basis ?? candidate.priceBasis, 32) as ServicePriceBasis;
+  const partySize = record(candidate.party_size ?? candidate.partySize);
+  const partyMin = boundedNumber(partySize.min, 1, 100);
+  const partyMax = boundedNumber(partySize.max, 1, 100);
+  const scheduling = record(candidate.scheduling);
+  const timezone = text(scheduling.timezone, 80);
+  const windows = array(scheduling.windows).slice(0, 8).flatMap((value) => {
+    const window = record(value);
+    const weekday = text(window.weekday, 12);
+    const startLocal = text(window.start_local ?? window.startLocal, 5);
+    const endLocal = text(window.end_local ?? window.endLocal, 5);
+    return WEEKDAYS.has(weekday) && LOCAL_TIME_PATTERN.test(startLocal) && LOCAL_TIME_PATTERN.test(endLocal) && startLocal < endLocal
+      ? [{ weekday, startLocal, endLocal }]
+      : [];
+  });
+  const cancellation = record(candidate.cancellation);
+  const refundable = typeof cancellation.refundable === "boolean" ? cancellation.refundable : null;
+  const rawWindowHours = cancellation.window_hours ?? cancellation.windowHours;
+  const windowHours = rawWindowHours === null ? null : boundedNumber(rawWindowHours, 0, 720);
+  const rawFee = cancellation.fee;
+  const feeValue = rawFee === null ? null : boundedNumber(rawFee, 0, 100_000);
+  const fee = feeValue === null ? null : money(feeValue, currencyCode);
+  if (
+    !SERVICE_CATEGORIES.has(category)
+    || !providerName
+    || !["controlled-demo", "operator-attested"].includes(verification)
+    || !city
+    || !region
+    || !/^[A-Z]{2}$/.test(countryCode)
+    || !SERVICE_VENUES.has(venue)
+    || durationMinutes === null
+    || !SERVICE_PRICE_BASES.has(priceBasis)
+    || partyMin === null
+    || partyMax === null
+    || partyMax < partyMin
+    || !TIMEZONE_PATTERN.test(timezone)
+    || !windows.length
+    || refundable === null
+    || (refundable && windowHours === null)
+  ) return undefined;
+  return {
+    category,
+    provider: { displayName: providerName, verification: verification as ServiceEvidence["provider"]["verification"] },
+    location: { city, region, countryCode, venue },
+    durationMinutes,
+    priceBasis,
+    partySize: { min: partyMin, max: partyMax },
+    scheduling: { timezone, windows },
+    cancellation: { refundable, windowHours, fee },
+    itineraryEligible: candidate.itinerary_eligible === true || candidate.itineraryEligible === true,
+  };
+}
+
 function safeJson(raw: string): Record<string, unknown> {
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -231,7 +306,7 @@ export function normalizeStorefrontOffer(value: unknown, origin: Origin = getOri
     handle,
     title,
     description: text(candidate.description, 600),
-    url: `${origin.canonicalUrl}/products/${handle}`,
+    url: offerUrl(origin, handle),
     ...(vendor ? { vendor } : {}),
     ...(productType ? { productType } : {}),
     vertical: origin.vertical,
@@ -313,7 +388,7 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
     handle,
     title,
     description: cleanHtmlText(candidate.body_html ?? candidate.description, 600),
-    url: `${origin.canonicalUrl}/products/${handle}`,
+    url: offerUrl(origin, handle),
     ...(vendor ? { vendor } : {}),
     ...(productType ? { productType } : {}),
     vertical: origin.vertical,
@@ -323,6 +398,54 @@ export function normalizeProductsJsonOffer(value: unknown, origin: Origin = getO
     ...(marketplace ? { marketplace } : {}),
     ...(image ? { image } : {}),
     source: { adapter, live: true, fetchedAt, untrusted: true },
+    provenance,
+  }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
+}
+
+export function normalizeServicesJsonOffer(value: unknown, origin: Origin, fetchedAt = new Date().toISOString()): Offer | null {
+  const candidate = record(value);
+  const handle = text(candidate.handle, 100).toLocaleLowerCase();
+  const title = text(candidate.title, 160);
+  if (!HANDLE_PATTERN.test(handle) || !title || origin.adapter !== "public-services-json") return null;
+  const currencyCode = text(candidate.currency_code ?? candidate.currencyCode, 8).toLocaleUpperCase() || origin.currencyCode;
+  const service = serviceEvidence(candidate, currencyCode);
+  const id = text(candidate.id, 180);
+  if (!service || !id || currencyCode !== origin.currencyCode) return null;
+  const available = candidate.available === true;
+  const price = money(candidate.price, currencyCode);
+  const variants: Variant[] = [{
+    id: `urn:independent-services-directory:${id}`,
+    title: "Published service",
+    available,
+    quantityAvailable: null,
+    price,
+    options: [{ name: "Price basis", value: service.priceBasis }],
+  }];
+  const provenance = uniformProvenance("public-services-json");
+  provenance.provider = singleSourceEvidence("public-services-json");
+  provenance.location = singleSourceEvidence("public-services-json");
+  provenance.duration = singleSourceEvidence("public-services-json");
+  provenance.scheduling = singleSourceEvidence("public-services-json");
+  provenance.cancellation = singleSourceEvidence("public-services-json");
+  provenance.verification.singleSourceFields = ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"];
+  return finalizeOffer({
+    originId: origin.id,
+    handle,
+    title,
+    description: cleanHtmlText(candidate.description, 600),
+    url: offerUrl(origin, handle),
+    vendor: service.provider.displayName,
+    productType: service.category,
+    vertical: origin.vertical,
+    priceRange: { min: price, max: price },
+    variants,
+    constraints: {
+      available,
+      refundable: service.cancellation.refundable,
+      occupancy: { ...service.partySize },
+    },
+    service,
+    source: { adapter: "public-services-json", live: true, fetchedAt, untrusted: true },
     provenance,
   }, Date.parse(fetchedAt), origin.policy.maxOfferAgeSeconds);
 }
@@ -341,7 +464,7 @@ function normalizeSnapshotOffer(product: SnapshotProduct, origin: Origin, fetche
     handle: product.handle,
     title: product.title,
     description: product.description.slice(0, 600),
-    url: `${origin.canonicalUrl}/products/${product.handle}`,
+    url: offerUrl(origin, product.handle),
     ...(product.vendor ? { vendor: product.vendor.slice(0, 100) } : {}),
     ...(product.productType ? { productType: product.productType.slice(0, 100) } : {}),
     vertical: origin.vertical,
@@ -442,9 +565,54 @@ async function productsJsonProduct(origin: Origin, handle: string, fetcher: Fetc
   return offer ? [offer] : [];
 }
 
+async function servicesJsonCatalog(origin: Origin, fetcher: Fetcher): Promise<Offer[]> {
+  const response = await fetchOriginText(origin, "/services.json?limit=24", {
+    method: "GET",
+    headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
+  }, origin.policy.maxCatalogResponseBytes, fetcher);
+  let payload: Record<string, unknown>;
+  try {
+    payload = safeJson(response.text);
+  } catch (error) {
+    markAdapterAttemptFailure(response.diagnosticAttempt, error);
+    throw error;
+  }
+  const fetchedAt = new Date().toISOString();
+  return array(payload.services)
+    .map((item) => normalizeServicesJsonOffer(item, origin, fetchedAt))
+    .filter((item): item is Offer => item !== null);
+}
+
+async function servicesJsonOffer(origin: Origin, handle: string, fetcher: Fetcher): Promise<Offer[]> {
+  const response = await fetchOriginText(origin, `/services/${encodeURIComponent(handle)}.json`, {
+    method: "GET",
+    headers: { "Accept": "application/json", "User-Agent": "Agentic-WebMCP/0.1" },
+  }, origin.policy.maxCatalogResponseBytes, fetcher);
+  let payload: Record<string, unknown>;
+  try {
+    payload = safeJson(response.text);
+  } catch (error) {
+    markAdapterAttemptFailure(response.diagnosticAttempt, error);
+    throw error;
+  }
+  const offer = normalizeServicesJsonOffer(payload, origin);
+  return offer ? [offer] : [];
+}
+
 function matchesQuery(offer: Offer, query: string): boolean {
   if (!query) return true;
-  const haystack = [offer.title, offer.handle, offer.description, offer.vendor ?? "", offer.productType ?? ""]
+  const service = offer.service;
+  const haystack = [
+    offer.title,
+    offer.handle,
+    offer.description,
+    offer.vendor ?? "",
+    offer.productType ?? "",
+    service?.provider.displayName ?? "",
+    service?.location.city ?? "",
+    service?.location.region ?? "",
+    service?.location.countryCode ?? "",
+  ]
     .join(" ")
     .toLocaleLowerCase();
   return query.toLocaleLowerCase().split(/\s+/).every((term) => haystack.includes(term));
@@ -510,6 +678,10 @@ export async function searchProducts(
   env: CatalogEnv = {},
 ): Promise<CatalogResult> {
   assertCatalogShop(origin, env.CATALOG_SHOP);
+  if (origin.adapter === "public-services-json") {
+    const offers = await servicesJsonCatalog(origin, fetcher);
+    return result(origin, "public-services-json", true, offers.filter((item) => matchesQuery(item, query)).slice(0, limit));
+  }
   if (origin.adapter === "public-products-json") {
     const offers = await productsJsonCatalog(origin, fetcher);
     return result(origin, "public-products-json", true, offers.filter((item) => matchesQuery(item, query)).slice(0, limit));
@@ -541,6 +713,9 @@ export async function getProduct(
 ): Promise<CatalogResult> {
   assertCatalogShop(origin, env.CATALOG_SHOP);
   const handle = validateHandle(handleInput);
+  if (origin.adapter === "public-services-json") {
+    return result(origin, "public-services-json", true, await servicesJsonOffer(origin, handle, fetcher));
+  }
   if (origin.adapter === "public-products-json") {
     return result(origin, "public-products-json", true, await productsJsonProduct(origin, handle, fetcher));
   }
@@ -591,10 +766,25 @@ export function createCatalogBrief(goalInput: string, offers: Offer[]): string {
   if (offers.length < 1 || offers.length > MAX_COMPARE_PRODUCTS) {
     throw new RangeError(`Choose between 1 and ${MAX_COMPARE_PRODUCTS} offers for a catalog brief.`);
   }
-  const lines = ["# Catalog brief", `Goal: ${goal}`, "", "Offers:"];
+  const serviceBrief = offers.every((offer) => offer.vertical === "services" && offer.service);
+  const lines = [serviceBrief ? "# Service brief" : "# Catalog brief", `Goal: ${goal}`, "", "Offers:"];
   for (const offer of offers) {
+    if (offer.service) {
+      const service = offer.service;
+      const cancellation = service.cancellation.refundable
+        ? `${service.cancellation.windowHours}h refundable window`
+        : "not refundable";
+      lines.push(
+        `- ${offer.title} (${offer.handle}): ${priceLabel(offer)} ${service.priceBasis}; ${service.provider.displayName}; ${service.location.city}, ${service.location.region}; ${service.durationMinutes} min; party ${service.partySize.min}-${service.partySize.max}; ${cancellation}; itinerary ${service.itineraryEligible ? "eligible" : "ineligible"}.`,
+        `  Source: ${offer.url}`,
+      );
+      continue;
+    }
     const available = offer.variants.filter((variant) => variant.available).length;
-    lines.push(`- ${offer.title} (${offer.handle}): ${priceLabel(offer)}; ${available}/${offer.variants.length} sampled variants available.`);
+    lines.push(
+      `- ${offer.title} (${offer.handle}): ${priceLabel(offer)}; ${available}/${offer.variants.length} sampled variants available.`,
+      `  Source: ${offer.url}`,
+    );
   }
   lines.push("", "Source facts only. Descriptions and availability remain untrusted origin content.");
   return lines.join("\n").slice(0, 1400);

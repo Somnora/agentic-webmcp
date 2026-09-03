@@ -1,11 +1,12 @@
 import { assertOriginAuthorizationCurrent, assertOriginRegistry, originAuthorizationState } from "./origin-contract";
 
-export type Vertical = "retail" | "marketplace" | "wholesale" | "travel";
+export type Vertical = "retail" | "marketplace" | "wholesale" | "services" | "travel";
 
 export type Adapter =
   | "shopify-storefront"
   | "shopify-products-json"
   | "public-products-json"
+  | "public-services-json"
   | "json-ld"
   | "html-markdown";
 
@@ -45,6 +46,7 @@ export type Origin = {
   canonicalUrl: string;
   adapter: Adapter;
   fallbackAdapters: readonly Adapter[];
+  offerPathPrefix: "/products" | "/services";
   productPathPattern: string;
   interpolatePathPatterns: readonly string[];
   currencyCode: string;
@@ -63,11 +65,11 @@ export type Origin = {
 
 export type PublicOrigin = Pick<
   Origin,
-  "id" | "mode" | "vertical" | "displayName" | "hostname" | "canonicalUrl" | "adapter" | "fallbackAdapters" | "notes" | "healthPath" | "authorization" | "capabilities" | "policy" | "demo"
+  "id" | "mode" | "vertical" | "displayName" | "hostname" | "canonicalUrl" | "adapter" | "fallbackAdapters" | "offerPathPrefix" | "notes" | "healthPath" | "authorization" | "capabilities" | "policy" | "demo"
 >;
 
 export const DEFAULT_ORIGIN_ID = "catalog-lab";
-export const ORIGIN_MANIFEST_VERSION = "2026-09-01";
+export const ORIGIN_MANIFEST_VERSION = "2026-09-02";
 
 export const ORIGINS: readonly Origin[] = Object.freeze([
   Object.freeze({
@@ -79,6 +81,7 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
     canonicalUrl: "https://agentic-webmcp-origin.somnora.workers.dev",
     adapter: "public-products-json",
     fallbackAdapters: ["json-ld", "html-markdown"] as const,
+    offerPathPrefix: "/products",
     productPathPattern: "^/products/([a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?)/?$",
     interpolatePathPatterns: [
       "^/products/[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?/?$",
@@ -116,6 +119,52 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
     },
   }),
   Object.freeze({
+    id: "services-lab",
+    mode: "controlled-demo",
+    vertical: "services",
+    displayName: "Independent Services Directory",
+    hostname: "agentic-webmcp-origin.somnora.workers.dev",
+    canonicalUrl: "https://agentic-webmcp-origin.somnora.workers.dev",
+    adapter: "public-services-json",
+    fallbackAdapters: ["json-ld", "html-markdown"] as const,
+    offerPathPrefix: "/services",
+    productPathPattern: "^/services/([a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?)/?$",
+    interpolatePathPatterns: [
+      "^/services/[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?/?$",
+    ] as const,
+    currencyCode: "USD",
+    notes: "Controlled public services directory. Original Oahu and Tangier activity fixtures, with no booking, messaging, checkout, or payment.",
+    healthPath: "/services/north-shore-surf-foundations",
+    authorization: {
+      status: "first-party-controlled",
+      evidence: "repository-controlled-worker",
+      dataRights: "first-party-fixture",
+      scopes: ["catalog-read", "page-interpolation", "video-display"] as const,
+      attestedAt: "2026-09-02T00:00:00.000Z",
+      reviewAfter: "2027-09-02T00:00:00.000Z",
+    } as const,
+    capabilities: {
+      catalogRead: true,
+      pageInterpolation: true,
+      merchantHandoff: "live-fresh-offer-only",
+      checkout: false,
+      payment: false,
+    } as const,
+    policy: {
+      maxOfferAgeSeconds: 300,
+      upstreamTimeoutMs: 4000,
+      maxGraphqlResponseBytes: 384 * 1024,
+      maxCatalogResponseBytes: 512 * 1024,
+      maxPageResponseBytes: 256 * 1024,
+    },
+    demo: {
+      queries: ["Oahu experience", "surf lesson", "wellness"],
+      handles: ["north-shore-surf-foundations", "haleiwa-food-story-walk", "oahu-sunset-photo-walk"],
+      variant: "Published service",
+      briefGoal: "Plan a relaxed Oahu day for two people under 500 USD with a surf lesson, local food, and a sunset activity.",
+    },
+  }),
+  Object.freeze({
     id: "review-shop",
     mode: "live-merchant",
     vertical: "retail",
@@ -124,6 +173,7 @@ export const ORIGINS: readonly Origin[] = Object.freeze([
     canonicalUrl: "https://agentic-app-review-test.myshopify.com",
     adapter: "shopify-storefront",
     fallbackAdapters: ["shopify-products-json", "json-ld", "html-markdown"] as const,
+    offerPathPrefix: "/products",
     productPathPattern: "^/products/([a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?)/?$",
     interpolatePathPatterns: [
       "^/products/[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?/?$",
@@ -194,6 +244,7 @@ export function publicOrigin(origin: Origin): PublicOrigin {
     canonicalUrl: origin.canonicalUrl,
     adapter: origin.adapter,
     fallbackAdapters: [...origin.fallbackAdapters],
+    offerPathPrefix: origin.offerPathPrefix,
     notes: origin.notes,
     healthPath: origin.healthPath,
     authorization: origin.authorization,
@@ -201,6 +252,10 @@ export function publicOrigin(origin: Origin): PublicOrigin {
     policy: origin.policy,
     demo: origin.demo,
   };
+}
+
+export function offerUrl(origin: Origin, handle: string): string {
+  return `${origin.canonicalUrl}${origin.offerPathPrefix}/${handle}`;
 }
 
 export function assertCatalogShop(origin: Origin, configuredShop?: string): void {

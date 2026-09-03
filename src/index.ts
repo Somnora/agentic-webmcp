@@ -13,6 +13,7 @@ import { commitCartAdd, proposeCartAdd, type CartInput } from "./cart";
 import { runOriginConformance } from "./conformance";
 import { classifyError, fixedError, type ErrorCode } from "./errors";
 import { interpolatePage } from "./interpolate";
+import { createActivityItinerary } from "./itinerary";
 import { DEFAULT_ORIGIN_ID, ORIGIN_MANIFEST_VERSION, getOrigin, inspectOrigin, publicOrigin, runtimeOrigins, type Origin } from "./origins";
 import { findBestOptions } from "./recommendations";
 import { createDiagnosticSink, normalizeFailureReason, type DiagnosticSink } from "./reliability";
@@ -182,7 +183,7 @@ function selectedOrigin(url: URL): Origin {
 function fetcherForOrigin(env: Env, origin: Origin, reliability: RequestReliability): Fetcher {
   reliability.originId = origin.id;
   let originFetcher = fetch as Fetcher;
-  if (origin.id === DEFAULT_ORIGIN_ID) {
+  if (origin.mode === "controlled-demo") {
     const binding = Reflect.get(env, "DEMO_ORIGIN");
     const boundFetch = binding && typeof binding === "object" ? Reflect.get(binding, "fetch") : undefined;
     if (typeof boundFetch === "function") {
@@ -214,9 +215,9 @@ function cartInput(body: Record<string, unknown>, origin: Origin): CartInput {
   };
 }
 
-function decodedHandle(pathname: string): string {
+function decodedHandle(pathname: string, prefix = "/api/products/"): string {
   try {
-    return validateHandle(decodeURIComponent(pathname.slice("/api/products/".length)));
+    return validateHandle(decodeURIComponent(pathname.slice(prefix.length)));
   } catch {
     throw new RangeError("Product handle is invalid.");
   }
@@ -364,6 +365,7 @@ async function routeRequest(
     if (url.pathname === "/api/recommendations") {
       if (request.method === "GET") {
         const origin = selectedOrigin(url);
+        if (origin.vertical !== "marketplace") throw new RangeError("Evidence ranking is currently available for marketplace Offers only.");
         const originFetcher = fetcherForOrigin(env, origin, reliability);
         const query = url.searchParams.get("query") ?? "";
         const limit = url.searchParams.get("limit");
@@ -377,6 +379,7 @@ async function routeRequest(
       if (request.method === "POST") {
         const body = await readBoundedJson(request);
         const origin = bodyOrigin(url, body);
+        if (origin.vertical !== "marketplace") throw new RangeError("Evidence ranking is currently available for marketplace Offers only.");
         const originFetcher = fetcherForOrigin(env, origin, reliability);
         return jsonResponse(await findBestOptions(
           stringField(body, "query"),
@@ -398,6 +401,17 @@ async function routeRequest(
       return await cachedJson(request, ctx, async () => {
         const result = await getProduct(decodedHandle(url.pathname), origin, originFetcher, runtimeCatalogEnv);
         if (!result.offers.length) throw new RangeError("Product not found.");
+        return result;
+      });
+    }
+
+    if (url.pathname.startsWith("/api/offers/")) {
+      if (request.method !== "GET") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const origin = selectedOrigin(url);
+      const originFetcher = fetcherForOrigin(env, origin, reliability);
+      return await cachedJson(request, ctx, async () => {
+        const result = await getProduct(decodedHandle(url.pathname, "/api/offers/"), origin, originFetcher, runtimeCatalogEnv);
+        if (!result.offers.length) throw new RangeError("Offer not found.");
         return result;
       });
     }
@@ -437,6 +451,45 @@ async function routeRequest(
         ? await getProduct(handles[0]!, origin, originFetcher, runtimeCatalogEnv)
         : await compareProducts(handles, origin, originFetcher, runtimeCatalogEnv);
       return jsonResponse({ ...catalog, brief: createCatalogBrief(goal, catalog.offers) });
+    }
+
+    if (url.pathname === "/api/itinerary") {
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const body = await readBoundedJson(request);
+      const origin = bodyOrigin(url, body);
+      if (origin.vertical !== "services") throw new RangeError("Activity itineraries require a services origin.");
+      const rawHandles = body.handles;
+      if (!Array.isArray(rawHandles) || rawHandles.some((item) => typeof item !== "string")) {
+        throw new RangeError("handles must be an array of service handles.");
+      }
+      const handles = rawHandles.map((item) => validateHandle(String(item)));
+      if (handles.length < 1 || handles.length > 4 || new Set(handles).size !== handles.length) {
+        throw new RangeError("Choose between 1 and 4 unique service handles.");
+      }
+      const originFetcher = fetcherForOrigin(env, origin, reliability);
+      const projections = await Promise.all(handles.map((handle) => (
+        interpolatePage(origin, `${origin.offerPathPrefix}/${handle}`, originFetcher, runtimeCatalogEnv)
+      )));
+      const offers = projections.map((projection) => projection.offer);
+      const itinerary = createActivityItinerary({
+        goal: stringField(body, "goal"),
+        date: optionalString(body, "date"),
+        days: body.days,
+        partySize: body.partySize,
+        budget: body.budget,
+        pace: optionalString(body, "pace"),
+        earliestStart: optionalString(body, "earliestStart"),
+        latestEnd: optionalString(body, "latestEnd"),
+      }, offers);
+      const warnings = projections.flatMap((projection) => projection.warning ? [projection.warning] : []);
+      return jsonResponse({
+        origin: publicOrigin(origin),
+        source: projections[0]?.source ?? origin.adapter,
+        live: projections.every((projection) => projection.live),
+        offers,
+        ...(warnings.length ? { warning: warnings.join(" ").slice(0, 500) } : {}),
+        itinerary,
+      });
     }
 
     if (url.pathname === "/api/cart/propose" || url.pathname === "/api/cart/commit") {
