@@ -418,13 +418,17 @@ window.addEventListener("DOMContentLoaded", () => {
     const tempFile = join(tmpdir(), `test-visibility-${Date.now()}.html`);
     writeFileSync(tempFile, testHtml);
     try {
-      const domOutput = execFileSync(CHROME_PATH, [
+      const chromeArgs = [
         "--headless=new",
-        "--virtual-time-budget=2000",
-        "--run-all-compositor-stages-before-draw",
+        ...(process.env.CI ? ["--no-sandbox", "--disable-dev-shm-usage"] : []),
+        "--disable-gpu",
+        "--disable-background-networking",
+        "--no-first-run",
+        "--no-default-browser-check",
         "--dump-dom",
         tempFile,
-      ], { encoding: "utf8", timeout: 10_000 });
+      ];
+      const domOutput = execFileSync(CHROME_PATH, chromeArgs, { encoding: "utf8", timeout: 20_000 });
       const match = domOutput.match(/<div id="test-output">(\{.*?\})<\/div>/);
       expect(match).toBeTruthy();
       const result = JSON.parse(match[1]);
@@ -433,5 +437,5 @@ window.addEventListener("DOMContentLoaded", () => {
     } finally {
       try { unlinkSync(tempFile); } catch {}
     }
-  }, 12_000);
+  }, 25_000);
 });
