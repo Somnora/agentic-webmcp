@@ -57,6 +57,22 @@ function giftContext() {
   };
 }
 
+function shoppingContext() {
+  const interests = fact("shopping-interests", "profile-self", "interest", ["versatile tone", "classic shape"], ["shopping"]);
+  return {
+    brief: {
+      ...baseBrief("decision-shopping-1", "shopping", "Compare source-backed guitars for myself", ["profile-self"]),
+      intent: "self-treat",
+      subjectKind: "self",
+      decisionOnlyFacts: [interests],
+      softPreferences: [{ id: "shopping-style", kind: "interest", label: "My interests", value: interests.value, weight: "high", source: "profile", factId: interests.id }],
+      budget: { currencyCode: "USD", targetAmount: null, maximumAmount: "900.00", includesTaxes: null, includesFees: true, contingencyPercent: 0 },
+      output: "shortlist",
+    },
+    selectedFacts: [],
+  };
+}
+
 function dateContext() {
   const yourInterests = fact("date-your-interests", "date-you", "interest", ["photography", "local food"], ["date"]);
   const theirInterests = fact("date-their-interests", "date-partner", "interest", ["surf", "local history"], ["date"]);
@@ -166,6 +182,7 @@ const env: Env = {
 
 describe("unified decision orchestrator", () => {
   it("pins each supported vertical to one deterministic strategy", () => {
+    expect(decisionStrategy("shopping")).toMatchObject({ id: "shopping-marketplace-v1", originId: "catalog-lab" });
     expect(decisionStrategy("gift")).toMatchObject({ id: "gift-marketplace-v1", originId: "catalog-lab" });
     expect(decisionStrategy("date")).toMatchObject({ id: "date-services-v1", originId: "services-lab" });
     expect(decisionStrategy("vacation")).toMatchObject({ id: "vacation-package-v1", originId: "services-lab" });
@@ -175,6 +192,7 @@ describe("unified decision orchestrator", () => {
   });
 
   it.each([
+    ["shopping", shoppingContext(), "catalog-lab", "shopping-marketplace-v1", false, false, 3],
     ["gift", giftContext(), "catalog-lab", "gift-marketplace-v1", false, false, 3],
     ["date", dateContext(), "services-lab", "date-services-v1", true, false, 3],
     ["vacation", vacationContext(), "services-lab", "vacation-package-v1", true, false, 3],
@@ -183,7 +201,7 @@ describe("unified decision orchestrator", () => {
     vi.setSystemTime(new Date(timestamp));
     const response = await handleRequest(jsonRequest({
       originId,
-      query: vertical === "gift" ? "electric guitar" : undefined,
+      query: vertical === "gift" || vertical === "shopping" ? "guitar" : undefined,
       maxResults: 3,
       decisionContext,
     }, originId), env);

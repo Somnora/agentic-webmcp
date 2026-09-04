@@ -2,12 +2,13 @@
 
 Status: approved for publication during the September 3 deadline extension and deployed to the public Challenge URL.
 
-This release connects Ribband's original evidence workspace to one discoverable personalized decision agent. The homepage links to `/decide`, where one read-only `plan_decision` WebMCP tool routes an explicit gift, date, vacation, or staffing request through a fixed deterministic strategy and a shared `DecisionEnvelope`.
+This release connects Ribband's original evidence workspace to one discoverable personalized decision agent. The homepage links to `/decide`, where one read-only `plan_decision` WebMCP tool routes an explicit shopping, gift, date, vacation, or staffing request through a fixed deterministic strategy and a shared `DecisionEnvelope`.
 
 ## What is in the candidate
 
 | Surface | Current behavior | External action boundary |
 | --- | --- | --- |
+| Shopping | Self-directed product search with budget, interests, preferences, hard exclusions, and owned-item filtering | Recommendations only; no purchase, checkout, or payment |
 | Gift | Sparse or detailed recipient context, occasion, budget, interests, memories, hard exclusions, and owned-item filtering | Recommendations only; no purchase, checkout, or payment |
 | Date | Two-person interests, prior activities, mood, hard dislikes, one date, and three cost bands | Planning only; no booking, provider contact, or payment |
 | Vacation | Past places, fond memories, liked experiences, exploration mode, lodging, dining, dates, travelers, and value/balanced/signature packages | Research and planning only; no reservation, booking, or payment |
@@ -32,12 +33,13 @@ npm run verify:rc
 git diff --check
 ```
 
-`npm run verify:rc` checks all four personalized routes and strategies against the running Worker, including gift phrase exclusions, three date cost bands, complete vacation package categories, a two-role staffing plan, the Atlantis service-area failure, and proposal-only outcome memory.
+`npm run verify:rc` checks all five personalized strategies against the running Worker, including self-directed shopping, gift phrase exclusions, three date cost bands, complete vacation package categories, a two-role staffing plan, the Atlantis service-area failure, and proposal-only outcome memory.
 
 The browser acceptance matrix must also confirm:
 
 - the homepage entry point opens `/decide`;
-- `plan_decision` registers once and works for all four verticals;
+- `plan_decision` registers once and works for all five verticals;
+- a general shopping request is visibly self-directed and returns source-backed product options;
 - a sparse gift request returns options without inventing age suitability;
 - complete date and vacation inputs render source-backed plans;
 - staffing source links are absent until the controlled crew and envelope are action eligible;
@@ -69,4 +71,4 @@ After deployment:
 
 ## Next product slice after release
 
-The next product build is a shared local-first people and preferences layer. It should let a person reuse explicitly selected facts, relationships, memories, dislikes, accessibility needs, and prior outcomes across all four strategies while preserving correction, deletion, export, and decision-scoped consent. Cloud accounts and cross-device sync remain deferred until that local trust model is validated.
+The next product build is a shared local-first people and preferences layer. It should let a person reuse explicitly selected facts, relationships, memories, dislikes, accessibility needs, and prior outcomes across all five strategies while preserving correction, deletion, export, and decision-scoped consent. Cloud accounts and cross-device sync remain deferred until that local trust model is validated.

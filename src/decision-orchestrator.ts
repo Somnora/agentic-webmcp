@@ -5,7 +5,7 @@ import type { PersonalizedStaffingResult } from "./personalized-staffing";
 import type { PersonalizedVacationResult } from "./personalized-vacation";
 import type { DecisionVertical } from "./profile";
 
-export type OrchestratedDecisionVertical = "gift" | "date" | "vacation" | "staffing";
+export type OrchestratedDecisionVertical = "shopping" | "gift" | "date" | "vacation" | "staffing";
 export type OrchestratedDecisionResult = PersonalizedGiftResult | PersonalizedDateResult | PersonalizedVacationResult | PersonalizedStaffingResult;
 
 export type DecisionEvidence = {
@@ -16,7 +16,7 @@ export type DecisionEvidence = {
 };
 
 export type DecisionStrategy = {
-  id: "gift-marketplace-v1" | "date-services-v1" | "vacation-package-v1" | "staffing-provider-v1";
+  id: "shopping-marketplace-v1" | "gift-marketplace-v1" | "date-services-v1" | "vacation-package-v1" | "staffing-provider-v1";
   vertical: OrchestratedDecisionVertical;
   originId: "catalog-lab" | "services-lab";
   resultKind: "recommendations" | "plan-packages";
@@ -55,6 +55,13 @@ export type OrchestratedDecisionEnvelope = {
 };
 
 const STRATEGIES: Record<OrchestratedDecisionVertical, DecisionStrategy> = {
+  shopping: {
+    id: "shopping-marketplace-v1",
+    vertical: "shopping",
+    originId: "catalog-lab",
+    resultKind: "recommendations",
+    deterministic: true,
+  },
   gift: {
     id: "gift-marketplace-v1",
     vertical: "gift",
@@ -162,7 +169,7 @@ export function orchestrateDecisionResult(
         requiresHumanApproval: true,
         effect: strategy.vertical === "date" || strategy.vertical === "vacation"
           ? "After you report an outcome, Ribband may propose a profile change. Only a visible human approval may save it on-device."
-          : "Gift-recipient and staffing outcomes remain decision-only in the unified agent.",
+          : "Shopping, gift-recipient, and staffing outcomes remain decision-only in the unified agent.",
       },
     ],
     result,

@@ -29,9 +29,10 @@ function chromeExecutable() {
 const CHROME_PATH = chromeExecutable();
 
 describe("unified decision workspace", () => {
-  it("ships one visible intake across gift, date, vacation, and staffing", () => {
+  it("ships one visible intake across shopping, gift, date, vacation, and staffing", () => {
     const page = read("public/decide.html");
     expect(page).toContain('id="decision-form"');
+    expect(page).toContain('<option value="shopping">General shopping</option>');
     expect(page).toContain('<option value="gift">');
     expect(page).toContain('<option value="date">');
     expect(page).toContain('<option value="vacation">');
@@ -52,7 +53,7 @@ describe("unified decision workspace", () => {
     expect(runtime).toContain('name: "plan_decision"');
     expect(runtime.match(/name: "/g)).toHaveLength(1);
     expect(runtime).toContain("readOnlyHint: true");
-    expect(runtime).toContain('enum: ["gift", "date", "vacation", "staffing"]');
+    expect(runtime).toContain('enum: ["shopping", "gift", "date", "vacation", "staffing"]');
     expect(runtime).not.toMatch(/name: ["'](?:save|update|delete|book|buy|contact|pay)_/);
   });
 
@@ -141,6 +142,7 @@ describe("unified decision workspace", () => {
     expect(runtime).toContain("intent: { type: \"string\", enum: [\"gift\", \"self-treat\"] }");
     expect(runtime).toContain("existingItems: { type: \"array\"");
     expect(runtime).toContain("occasionDeadline");
+    expect(runtime).toContain("buildRetail");
   });
 
   it("supports vacation exploration mode in the WebMCP tool schema and runtime builder", () => {
@@ -160,7 +162,7 @@ describe("unified decision workspace", () => {
   it("replaces optional WebMCP input instead of inheriting hidden form state", () => {
     const runtime = read("public/decide.js");
     expect(runtime).toContain('elements.giftExistingItems.value = values(input.existingItems).join(", ")');
-    expect(runtime).toContain('elements.giftDeadline.value = clean(input.occasionDeadline, 10)');
+    expect(runtime).toContain('elements.giftDeadline.value = input.vertical === "shopping" ? "" : clean(input.occasionDeadline, 10)');
     expect(runtime).toContain('elements.staffingRoles.value = values(input.roles).join(", ")');
     expect(runtime).toContain('elements.staffingCredentials.value = values(input.credentials).join(", ")');
     expect(runtime).toContain('elements.staffingEquipment.value = values(input.equipment).join(", ")');

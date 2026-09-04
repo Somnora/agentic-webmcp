@@ -49,7 +49,7 @@ const LOCATION_KEYS = new Set(["label", "city", "region", "countryCode", "timezo
 const TIME_WINDOW_KEYS = new Set(["start", "end", "timezone", "flexible"]);
 const MISSING_INFORMATION_KEYS = new Set(["id", "question", "impact", "required"]);
 const CONTEXT_REQUEST_KEYS = new Set(["brief", "selectedFacts"]);
-const VERTICALS = ["vacation", "gift", "date", "staffing"] as const;
+const VERTICALS = ["shopping", "vacation", "gift", "date", "staffing"] as const;
 const OUTPUTS = ["shortlist", "single-choice", "package"] as const;
 const SUBJECT_KINDS = ["self", "recipient", "partner", "collaborator"] as const;
 const CONSTRAINT_KINDS = [
@@ -343,6 +343,9 @@ export function validateDecisionBrief(input: unknown): DecisionBrief {
 
   if (intent === "self-treat" && subjectKind !== null && subjectKind !== "self") {
     throw new RangeError("self-treat intent requires a self subject.");
+  }
+  if (vertical === "shopping" && (intent !== "self-treat" || subjectKind !== "self")) {
+    throw new RangeError("Shopping decisions require self-treat intent and a self subject.");
   }
   if (occasionDeadline && Date.parse(occasionDeadline) < Date.now()) {
     throw new RangeError("Occasion deadline cannot be in the past.");

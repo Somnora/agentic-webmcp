@@ -16,6 +16,14 @@ const elements = {
   location: document.querySelector("#decision-location"),
   subject: document.querySelector("#decision-subject"),
   giftFields: document.querySelector("#gift-fields"),
+  retailContextTitle: document.querySelector("#retail-context-title"),
+  retailContextNote: document.querySelector("#retail-context-note"),
+  giftIntentField: document.querySelector("#gift-intent-field"),
+  giftOccasionField: document.querySelector("#gift-occasion-field"),
+  giftDeadlineField: document.querySelector("#gift-deadline-field"),
+  retailQueryLabel: document.querySelector("#retail-query-label"),
+  retailInterestsLabel: document.querySelector("#retail-interests-label"),
+  retailMemoryLabel: document.querySelector("#retail-memory-label"),
   giftIntent: document.querySelector("#gift-intent"),
   giftOccasion: document.querySelector("#gift-occasion"),
   giftDeadline: document.querySelector("#gift-deadline"),
@@ -78,6 +86,11 @@ const elements = {
 };
 
 const verticalDefaults = {
+  shopping: {
+    budget: 900,
+    goal: "Compare the strongest source-backed options for what I need",
+    strategy: "General shopping marketplace strategy",
+  },
   gift: {
     budget: 900,
     goal: "Find a thoughtful electric guitar for my nephew",
@@ -218,39 +231,40 @@ function commonBrief({ id, vertical, goal, subjectIds, intent = null, subjectKin
   };
 }
 
-function buildGift(now, token, amount) {
-  const selectedSubjectId = elements.subject?.value || "profile-recipient";
-  const intent = elements.giftIntent?.value || "gift";
+function buildRetail(now, token, amount, vertical) {
+  const isShopping = vertical === "shopping";
+  const selectedSubjectId = isShopping ? "profile-self" : (elements.subject?.value || "profile-recipient");
+  const intent = isShopping ? "self-treat" : (elements.giftIntent?.value || "gift");
   const isSelf = intent === "self-treat" || selectedSubjectId === "profile-self";
   const subjectId = isSelf ? "profile-self" : selectedSubjectId;
   const subjectKind = isSelf ? "self" : "recipient";
-  const occasion = clean(elements.giftOccasion?.value, 80) || "Birthday";
-  const rawDeadline = elements.giftDeadline?.value ? `${clean(elements.giftDeadline.value, 10)}T23:59:59.000Z` : null;
+  const occasion = isShopping ? null : (clean(elements.giftOccasion?.value, 80) || "Birthday");
+  const rawDeadline = !isShopping && elements.giftDeadline?.value ? `${clean(elements.giftDeadline.value, 10)}T23:59:59.000Z` : null;
   const occasionDeadline = rawDeadline && Date.parse(rawDeadline) >= Date.now() ? rawDeadline : null;
 
-  const memoryParts = selectedMemoryParts("gift", subjectId, token);
+  const memoryParts = selectedMemoryParts(vertical, subjectId, token);
   const interests = values(elements.giftInterests.value);
   const memories = values(elements.giftMemory.value, 3);
   const existingItems = values(elements.giftExistingItems?.value, 4);
   const avoid = values(elements.avoid.value, 4);
   const facts = [];
-  if (interests.length) facts.push(createFact({ id: `${token}-gift-interests`, subjectId, kind: "interest", value: interests, allowedUse: "gift", now }));
-  if (memories.length) facts.push(createFact({ id: `${token}-gift-memory`, subjectId, kind: "fond-memory-signal", value: memories, allowedUse: "gift", now, sensitivity: "private", lifeStage: "recent" }));
-  if (avoid.length) facts.push(createFact({ id: `${token}-gift-avoid`, subjectId, kind: "avoidance", value: avoid, allowedUse: "gift", now }));
+  if (interests.length) facts.push(createFact({ id: `${token}-${vertical}-interests`, subjectId, kind: "interest", value: interests, allowedUse: vertical, now }));
+  if (memories.length) facts.push(createFact({ id: `${token}-${vertical}-memory`, subjectId, kind: "fond-memory-signal", value: memories, allowedUse: vertical, now, sensitivity: "private", lifeStage: "recent" }));
+  if (avoid.length) facts.push(createFact({ id: `${token}-${vertical}-avoid`, subjectId, kind: "avoidance", value: avoid, allowedUse: vertical, now }));
   if (existingItems.length) {
     for (let i = 0; i < existingItems.length; i++) {
-      facts.push(createFact({ id: `${token}-gift-existing-${i}`, subjectId, kind: "existing-item", value: existingItems[i], allowedUse: "gift", now }));
+      facts.push(createFact({ id: `${token}-${vertical}-existing-${i}`, subjectId, kind: "existing-item", value: existingItems[i], allowedUse: vertical, now }));
     }
   }
   const constraints = [
-    ...(avoid.length ? [{ id: `${token}-gift-avoid-constraint`, kind: "avoid", label: "Hard exclusions", value: avoid, source: "profile", factId: `${token}-gift-avoid` }] : []),
+    ...(avoid.length ? [{ id: `${token}-${vertical}-avoid-constraint`, kind: "avoid", label: "Hard exclusions", value: avoid, source: "profile", factId: `${token}-${vertical}-avoid` }] : []),
     ...existingItems.map((item, i) => ({
-      id: `${token}-gift-existing-constraint-${i}`,
+      id: `${token}-${vertical}-existing-constraint-${i}`,
       kind: "existing-item",
       label: `Already owned: ${item}`,
       value: item,
       source: "profile",
-      factId: `${token}-gift-existing-${i}`,
+      factId: `${token}-${vertical}-existing-${i}`,
     })),
     ...memoryParts.constraints,
   ];
@@ -271,8 +285,8 @@ function buildGift(now, token, amount) {
     query: clean(elements.giftQuery.value, 80),
     context: {
       brief: commonBrief({
-        id: `decision-gift-${crypto.randomUUID()}`,
-        vertical: "gift",
+        id: `decision-${vertical}-${crypto.randomUUID()}`,
+        vertical,
         goal: clean(elements.goal.value, 180),
         subjectIds: [subjectId],
         intent,
@@ -485,7 +499,9 @@ function buildDecision() {
   const token = crypto.randomUUID().slice(0, 8);
   const amount = Number(elements.budget.value);
   if (!Number.isFinite(amount)) throw new Error("Enter a valid maximum budget.");
-  if (elements.vertical.value === "gift") return buildGift(now, token, amount);
+  if (elements.vertical.value === "gift" || elements.vertical.value === "shopping") {
+    return buildRetail(now, token, amount, elements.vertical.value);
+  }
   if (elements.vertical.value === "date") return buildDate(now, token, amount);
   if (elements.vertical.value === "vacation") return buildVacation(now, token, amount);
   return buildStaffing(now, token, amount);
@@ -505,7 +521,7 @@ function updateApprovedMemory(fact) {
 
 function renderMemoryBank(message = "") {
   const vertical = elements.vertical.value;
-  const supported = vertical === "date" || vertical === "vacation" || vertical === "gift";
+  const supported = vertical === "date" || vertical === "vacation" || vertical === "gift" || vertical === "shopping";
   elements.memoryFields.hidden = !supported;
   elements.memoryList.replaceChildren();
   if (!supported) return;
@@ -615,26 +631,47 @@ function resetOutcomePanels() {
 }
 
 function setVertical(vertical, reset = true) {
-  const selected = verticalDefaults[vertical] ? vertical : "gift";
+  const selected = verticalDefaults[vertical] ? vertical : "shopping";
+  const isShopping = selected === "shopping";
+  const isRetail = isShopping || selected === "gift";
   elements.vertical.value = selected;
-  elements.giftFields.hidden = selected !== "gift";
+  elements.giftFields.hidden = !isRetail;
   elements.dateFields.hidden = selected !== "date";
   elements.vacationFields.hidden = selected !== "vacation";
   elements.staffingFields.hidden = selected !== "staffing";
   elements.strategyLabel.textContent = verticalDefaults[selected].strategy;
-  elements.location.closest("label").hidden = selected === "gift";
-  elements.giftQuery.required = selected === "gift";
+  elements.location.closest("label").hidden = isRetail;
+  elements.subject.closest("label").hidden = isShopping;
+  elements.giftQuery.required = isRetail;
   elements.dateDay.required = selected === "date";
   elements.vacationArrival.required = selected === "vacation";
   elements.vacationDeparture.required = selected === "vacation";
   elements.staffingDate.required = selected === "staffing";
   elements.staffingRoles.required = selected === "staffing";
   selectedMemoryIds.clear();
-  renderMemoryBank();
   if (reset) {
     elements.budget.value = verticalDefaults[selected].budget;
     elements.goal.value = verticalDefaults[selected].goal;
     elements.avoid.value = "";
+    if (isShopping) {
+      elements.subject.value = "profile-self";
+      elements.giftIntent.value = "self-treat";
+      elements.giftOccasion.value = "";
+      elements.giftDeadline.value = "";
+      elements.giftQuery.value = "guitar";
+      elements.giftInterests.value = "versatile tone, classic shapes";
+      elements.giftMemory.value = "";
+      elements.giftExistingItems.value = "";
+    } else if (selected === "gift") {
+      elements.subject.value = "profile-recipient";
+      elements.giftIntent.value = "gift";
+      elements.giftOccasion.value = "Birthday";
+      elements.giftDeadline.value = "";
+      elements.giftQuery.value = "electric guitar";
+      elements.giftInterests.value = "single coil guitars, classic shapes";
+      elements.giftMemory.value = "learning favorite songs together";
+      elements.giftExistingItems.value = "";
+    }
     currentDecisionId = null;
     elements.revision.hidden = true;
     elements.submit.textContent = "Plan this decision";
@@ -652,6 +689,17 @@ function setVertical(vertical, reset = true) {
     currentDecision = null;
     resetOutcomePanels();
   }
+  elements.giftIntentField.hidden = isShopping;
+  elements.giftOccasionField.hidden = isShopping;
+  elements.giftDeadlineField.hidden = isShopping;
+  elements.retailContextTitle.textContent = isShopping ? "Shopping context" : "Gift context";
+  elements.retailContextNote.textContent = isShopping
+    ? "Tell Ribband what you need, what you like, what you already own, and what must be excluded. The current controlled catalog demonstrates guitars; the strategy is designed for any authorized product catalog."
+    : "Age can be useful context, but the controlled marketplace cannot verify age suitability. The agent will not pretend it can.";
+  elements.retailQueryLabel.textContent = isShopping ? "What are you shopping for?" : "What kind of gift?";
+  elements.retailInterestsLabel.textContent = isShopping ? "What do you already like?" : "What do they already like?";
+  elements.retailMemoryLabel.textContent = isShopping ? "Preference or personal signal" : "Fond memory or personal signal";
+  renderMemoryBank();
 }
 
 function appendContextRow(label, value) {
@@ -703,7 +751,9 @@ function selectOutcomeOption(option) {
     ? "This outcome is page-only. Submit it to create a reviewable proposal, not a saved fact."
     : (currentDecision.vertical === "staffing"
       ? "Staffing crew outcomes remain decision-only in this unified self-profile loop."
-      : "Gift-recipient outcomes remain decision-only in this unified self-profile loop.");
+      : currentDecision.vertical === "shopping"
+        ? "Shopping outcomes remain decision-only in this unified profile loop."
+        : "Gift-recipient outcomes remain decision-only in this unified self-profile loop.");
 }
 
 function outcomeButton(option) {
@@ -938,7 +988,7 @@ function renderResult(payload) {
   elements.resultsEmpty.hidden = payload.optionCount > 0;
   elements.resultsEmpty.textContent = payload.result.warning || "No complete option met the current constraints.";
   const handoffAction = (payload.nextActions || []).find((action) => action.id === "handoff");
-  if (payload.vertical === "gift") renderGift(payload.result);
+  if (payload.vertical === "gift" || payload.vertical === "shopping") renderGift(payload.result);
   if (payload.vertical === "date") renderDate(payload.result);
   if (payload.vertical === "vacation") renderVacation(payload.result);
   if (payload.vertical === "staffing") renderStaffing(payload.result, handoffAction);
@@ -952,7 +1002,7 @@ function renderResult(payload) {
 
   elements.summary.append(
     textNode("strong", "", `${payload.optionCount} ${payload.optionCount === 1 ? "option" : "options"} from ${payload.strategy.id}`),
-    textNode("p", "", `${payload.evidence.live ? "Live" : "Fallback"} ${payload.evidence.source} evidence. Revision is available. ${payload.vertical === "gift" || payload.vertical === "staffing" ? `${payload.vertical === "gift" ? "Gift-recipient" : "Staffing crew"} memory remains decision-only.` : "A chosen outcome can become a reviewable memory proposal."} ${handoffNote}`),
+    textNode("p", "", `${payload.evidence.live ? "Live" : "Fallback"} ${payload.evidence.source} evidence. Revision is available. ${payload.vertical === "shopping" || payload.vertical === "gift" || payload.vertical === "staffing" ? `${payload.vertical === "shopping" ? "Shopping" : payload.vertical === "gift" ? "Gift-recipient" : "Staffing crew"} memory remains decision-only.` : "A chosen outcome can become a reviewable memory proposal."} ${handoffNote}`),
   );
 }
 
@@ -1053,7 +1103,9 @@ async function proposeSelectedOutcome() {
   if (currentDecision.vertical !== "date" && currentDecision.vertical !== "vacation") {
     throw new Error(currentDecision.vertical === "staffing"
       ? "Staffing crew outcomes remain decision-only in this unified self-profile loop."
-      : "Gift-recipient outcomes remain decision-only in this unified self-profile loop.");
+      : currentDecision.vertical === "shopping"
+        ? "Shopping outcomes remain decision-only in this unified profile loop."
+        : "Gift-recipient outcomes remain decision-only in this unified self-profile loop.");
   }
   const feedback = clean(elements.outcomeFeedback.value, 180);
   if (!feedback) throw new Error("Add a short reason before creating a memory proposal.");
@@ -1100,14 +1152,14 @@ function applyToolInput(input) {
   elements.goal.value = clean(input.goal, 180) || verticalDefaults[input.vertical].goal;
   elements.budget.value = input.maximumBudget;
   elements.avoid.value = values(input.avoid, 4).join(", ");
-  if (input.vertical === "gift") {
-    const intent = input.intent === "self-treat" ? "self-treat" : "gift";
+  if (input.vertical === "gift" || input.vertical === "shopping") {
+    const intent = input.vertical === "shopping" || input.intent === "self-treat" ? "self-treat" : "gift";
     if (elements.subject) elements.subject.value = intent === "self-treat" || input.subjectId === "profile-self" ? "profile-self" : "profile-recipient";
     if (elements.giftIntent) elements.giftIntent.value = intent;
-    if (elements.giftOccasion) elements.giftOccasion.value = clean(input.occasion, 80) || "Birthday";
-    if (elements.giftDeadline) elements.giftDeadline.value = clean(input.occasionDeadline, 10);
+    if (elements.giftOccasion) elements.giftOccasion.value = input.vertical === "shopping" ? "" : (clean(input.occasion, 80) || "Birthday");
+    if (elements.giftDeadline) elements.giftDeadline.value = input.vertical === "shopping" ? "" : clean(input.occasionDeadline, 10);
     if (elements.giftExistingItems) elements.giftExistingItems.value = values(input.existingItems).join(", ");
-    elements.giftQuery.value = clean(input.query, 80) || "electric guitar";
+    elements.giftQuery.value = clean(input.query, 80) || (input.vertical === "shopping" ? "guitar" : "electric guitar");
     elements.giftInterests.value = values(input.primaryInterests).join(", ");
     elements.giftMemory.value = values(input.memorySignals, 3).join(", ");
   }
@@ -1192,11 +1244,11 @@ async function registerWebMcpTool() {
   }
   await document.modelContext.registerTool({
     name: "plan_decision",
-    description: "Plan a gift, date, vacation, or project staffing decision through Ribband's unified typed decision orchestrator. The tool updates the visible page, uses request-only context, and cannot buy, book, contact providers, pay, or save inferred facts.",
+    description: "Plan a general shopping, gift, date, vacation, or project staffing decision through Ribband's unified typed decision orchestrator. The tool updates the visible page, uses request-only context, and cannot buy, book, contact providers, pay, or save inferred facts.",
     inputSchema: {
       type: "object",
       properties: {
-        vertical: { type: "string", enum: ["gift", "date", "vacation", "staffing"] },
+        vertical: { type: "string", enum: ["shopping", "gift", "date", "vacation", "staffing"] },
         subjectId: { type: "string", enum: ["profile-recipient", "profile-self"] },
         intent: { type: "string", enum: ["gift", "self-treat"] },
         occasion: { type: "string", maxLength: 80 },
@@ -1237,7 +1289,7 @@ async function registerWebMcpTool() {
   elements.webmcp.textContent = "1 unified decision tool registered";
 }
 
-setVertical("gift", false);
+setVertical("shopping", true);
 loadApprovedMemoryFacts()
   .then((facts) => {
     approvedMemories = facts.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));

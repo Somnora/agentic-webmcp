@@ -68,6 +68,24 @@ function giftContext(timestamp) {
   };
 }
 
+function shoppingContext(timestamp) {
+  const interests = fact("rc-shopping-interests", "profile-self", "interest", ["versatile tone", "classic shapes"], "shopping", timestamp);
+  return {
+    brief: {
+      ...baseBrief("rc-decision-shopping", "shopping", "Compare source-backed guitars for myself", ["profile-self"], timestamp),
+      intent: "self-treat",
+      subjectKind: "self",
+      occasion: null,
+      occasionDeadline: null,
+      decisionOnlyFacts: [interests],
+      softPreferences: [{ id: "rc-shopping-interest-preference", kind: "interest", label: "My interests", value: interests.value, weight: "high", source: "profile", factId: interests.id }],
+      budget: budget("900.00", 0),
+      output: "shortlist",
+    },
+    selectedFacts: [],
+  };
+}
+
 function dateContext(timestamp) {
   const yours = fact("rc-date-yours", "date-you", "interest", ["photography", "local food"], "date", timestamp);
   const theirs = fact("rc-date-theirs", "date-partner", "interest", ["surf", "local history"], "date", timestamp);
@@ -167,6 +185,15 @@ export function releaseCandidateChecks(baseUrl) {
           const html = await response.text();
           if (response.status !== 200 || !html.includes(marker)) throw new Error(`${path} is unavailable`);
         }
+      },
+    },
+    {
+      name: "unified shopping strategy",
+      run: async () => {
+        const body = await postDecision(baseUrl, "catalog-lab", shoppingContext(timestamp), "guitar");
+        if (body.status !== "planned" || body.optionCount !== 3 || body.strategy?.id !== "shopping-marketplace-v1") throw new Error("shopping strategy did not return three planned options");
+        if (body.result?.goal?.intent?.shoppingFor !== "self" || body.result?.personalization?.vertical !== "shopping") throw new Error("shopping strategy did not preserve explicit self-shopping intent");
+        if (body.handling?.externalAction !== "none") throw new Error("shopping strategy exposed an external action");
       },
     },
     {

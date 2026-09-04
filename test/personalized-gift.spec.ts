@@ -109,6 +109,36 @@ describe("personalized gift decisions", () => {
     expect(giftBudgetInput(context, "650")).toBe("650.00");
   });
 
+  it("reuses the bounded marketplace engine for first-class general shopping", () => {
+    const input = decisionContext({
+      id: "shopping-self",
+      vertical: "shopping",
+      goal: "Compare source-backed guitars for myself",
+      subjectIds: ["subject-self"],
+      intent: "self-treat",
+      subjectKind: "self",
+      occasion: null,
+      occasionDeadline: null,
+    });
+    input.selectedFacts = [selectedFact({ subjectId: "subject-self", allowedUses: ["shopping"] })];
+    const context = validateDecisionContextRequest(input, Date.parse(timestamp));
+    expect(giftRecommendationIntent(context)).toMatchObject({
+      shoppingFor: "self",
+      tasteContext: "single coil, classic shape",
+    });
+    const result = personalizeGiftResult({
+      origin: { id: "catalog-lab" } as any,
+      goal: { query: "guitar", maxResults: 1, maxDeliveredPrice: 900, intent: { shoppingFor: "self", tasteContext: "single coil, classic shape" } },
+      source: "public-products-json",
+      live: true,
+      offers: [],
+      rubric: {} as any,
+      refinement: {} as any,
+      recommendations: [],
+    } as unknown as RecommendationResult, context);
+    expect(result.personalization).toMatchObject({ vertical: "shopping", handling: "request-only" });
+  });
+
   it("validates a request-only decision projection with no-store handling", async () => {
     const response = await handleRequest(jsonRequest("https://example.test/api/decision-briefs/validate", decisionContext()), env);
     expect(response.status).toBe(200);

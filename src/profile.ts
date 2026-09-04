@@ -1,7 +1,7 @@
 export type SubjectKind = "self" | "recipient" | "partner" | "collaborator";
 export type AgeBand = "child" | "teen" | "adult" | "older-adult" | "not-provided";
 export type ProfilePersistence = "decision-only" | "saved-on-device" | "saved-to-account";
-export type DecisionVertical = "vacation" | "gift" | "date" | "staffing";
+export type DecisionVertical = "shopping" | "vacation" | "gift" | "date" | "staffing";
 
 export type ProfileSubject = {
   version: "1";
@@ -105,7 +105,7 @@ const FACT_SOURCES = ["user-stated", "imported", "inferred-and-confirmed"] as co
 const CONFIDENCE_VALUES = ["confirmed", "tentative"] as const;
 const SENSITIVITY_VALUES = ["standard", "private"] as const;
 const LIFE_STAGES = ["childhood", "adulthood", "honeymoon", "recent"] as const;
-const DECISION_VERTICALS = ["vacation", "gift", "date", "staffing"] as const;
+const DECISION_VERTICALS = ["shopping", "vacation", "gift", "date", "staffing"] as const;
 const ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,63}$/;
 const MAX_PROFILE_FACTS_PER_DECISION = 24;
 
@@ -245,7 +245,7 @@ export function validateProfileFact(input: unknown): ProfileFact {
     confidence,
     sensitivity: enumValue(value.sensitivity, "Profile fact sensitivity", SENSITIVITY_VALUES),
     lifeStage,
-    allowedUses: uniqueEnums(value.allowedUses, "Profile fact allowedUses", DECISION_VERTICALS, 4),
+    allowedUses: uniqueEnums(value.allowedUses, "Profile fact allowedUses", DECISION_VERTICALS, 5),
     lastConfirmedAt,
     expiresAt,
     createdAt,

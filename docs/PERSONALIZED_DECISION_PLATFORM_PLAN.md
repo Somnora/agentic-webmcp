@@ -2,17 +2,17 @@
 
 Status: Personalized decision release approved and published during the September 3 deadline extension
 
-Current checkpoint, September 3, 2026: the shared profile and decision contracts, the gift planner at `/workspace`, the two-person date planner at `/date`, the vacation-package planner at `/vacation`, the unified decision agent at `/decide`, and the verified staffing vertical (Milestone 6) are implemented, tested, and published. The unified agent exposes one `plan_decision` WebMCP tool, one bounded planning endpoint, and a separate no-store profile-proposal endpoint. It dispatches each explicit vertical (gift, date, vacation, staffing) through a fixed strategy registry, pins the evidence origin, returns one inspectable envelope, and supports linked full-context replacement without storing a decision. Professional service Offers, controlled trade and creative fixtures, credential and equipment requirement matching, quote-mode accounting, missing role detection, and human-only provider review boundaries are verified. The fuller Milestone 4 and Milestone 5 scopes, including distance evidence, accessibility evidence, date-specific inventory revalidation, item-level revision, broader supply, destination discovery, and account sync (Milestone 7), remain roadmap work.
+Current checkpoint, September 3, 2026: the shared profile and decision contracts, first-class general shopping, the gift planner at `/workspace`, the two-person date planner at `/date`, the vacation-package planner at `/vacation`, the unified decision agent at `/decide`, and the verified staffing vertical (Milestone 6) are implemented and tested. The unified agent exposes one `plan_decision` WebMCP tool, one bounded planning endpoint, and a separate no-store profile-proposal endpoint. It dispatches each explicit vertical (shopping, gift, date, vacation, staffing) through a fixed strategy registry, pins the evidence origin, returns one inspectable envelope, and supports linked full-context replacement without storing a decision. Shopping and gifts share the category-neutral marketplace Offer compiler but use distinct self and recipient contracts. Professional service Offers, controlled trade and creative fixtures, credential and equipment requirement matching, quote-mode accounting, missing role detection, and human-only provider review boundaries are verified. The fuller Milestone 4 and Milestone 5 scopes, including distance evidence, accessibility evidence, date-specific inventory revalidation, item-level revision, broader supply, destination discovery, and account sync (Milestone 7), remain roadmap work.
 
 Repository: `agentic-webmcp`
 
 Baseline: `main` at `7191a54b48c0a39b0fa49eec068ac4ac0c0df54b`
 
-Primary objective: Expand Ribband from an evidence-first product and activity decision demo into a permissioned personal decision workspace that can recommend and package vacations, gifts, dates, and project staffing while keeping source evidence visible and every external action under human control.
+Primary objective: Expand Ribband from an evidence-first product and activity decision demo into a permissioned personal decision workspace that can support general shopping and recommend or package gifts, vacations, dates, and project staffing while keeping source evidence visible and every external action under human control.
 
 ## 1. Executive decision
 
-Build this as an extension of the existing Ribband architecture, not as four separate products.
+Build this as an extension of the existing Ribband architecture, not as five separate products.
 
 The shared pipeline is:
 
@@ -214,7 +214,7 @@ export type ProfileFact = {
   confidence: "confirmed" | "tentative";
   sensitivity: "standard" | "private";
   lifeStage: "childhood" | "adulthood" | "honeymoon" | "recent" | null;
-  allowedUses: Array<"vacation" | "gift" | "date" | "staffing">;
+  allowedUses: Array<"shopping" | "vacation" | "gift" | "date" | "staffing">;
   lastConfirmedAt: string;
   expiresAt: string | null;
 };
@@ -232,7 +232,7 @@ Implementation rules:
 ### 6.3 Decision brief
 
 ```ts
-export type DecisionVertical = "vacation" | "gift" | "date" | "staffing";
+export type DecisionVertical = "shopping" | "vacation" | "gift" | "date" | "staffing";
 
 export type BudgetEnvelope = {
   currencyCode: string;
@@ -687,7 +687,7 @@ Onboarding should be progressive and tied to an immediate decision.
 
 ### First-use flow
 
-1. Choose a task: vacation, gift, date, or project.
+1. Choose a task: shopping, vacation, gift, date, or project.
 2. Enter a one-sentence goal.
 3. Add the minimum hard constraints for that task.
 4. Optionally add people, prior experiences, or memories.
@@ -1187,7 +1187,7 @@ Exit gate:
 - Crew plans expose missing roles and schedule gaps (verified in `test/personalized-staffing.spec.ts`).
 - Credential provenance is visible (verified in `test/services.spec.ts` and `test/demo-origin.spec.ts`).
 - The user must approve before any provider page is opened or any future message is sent (verified in `test/decision-orchestrator.spec.ts` and `test/personalized-staffing.spec.ts`).
-- The unified workspace and WebMCP `plan_decision` tool handle staffing alongside gift, date, and vacation with read-only guarantees (verified in `test/decision-workspace.spec.js`).
+- The unified workspace and WebMCP `plan_decision` tool handle general shopping and staffing alongside gift, date, and vacation with read-only guarantees (verified in `test/decision-workspace.spec.js`).
 
 ### Milestone 7: authenticated persistence
 
@@ -1241,7 +1241,7 @@ Tasks:
 - Complete privacy, security, accessibility, mobile, and keyboard review.
 - Add rate limits and abuse controls.
 - Run WebMCP discovery and cancellation tests in supported Chrome builds.
-- Run full browser QA for all four verticals.
+- Run full browser QA for all five verticals.
 - Run live-origin expiry, stale-price, conflict, redirect, and oversized-response tests.
 - Verify observability contains no personal text.
 - Refresh all docs, demo evidence, and submission claims.
@@ -1478,7 +1478,7 @@ Each release remains useful without the next. Release D must not be treated as r
 
 | Risk | Consequence | Mitigation |
 | --- | --- | --- |
-| Four verticals become four codebases | Slow development and inconsistent trust rules | Enforce Offer, Profile, DecisionBrief, Recommendation, Plan, and Handoff boundaries |
+| Five verticals become five codebases | Slow development and inconsistent trust rules | Enforce Offer, Profile, DecisionBrief, Recommendation, Plan, and Handoff boundaries |
 | Personal memories create a sensitive data store | Privacy and breach harm | Decision-only default, signal summaries, local-first storage, explicit consent, deletion |
 | Sparse input yields generic results | Low user trust | Conservative defaults, visible assumptions, one high-value refinement question |
 | Rich profile overwhelms the agent | Privacy leakage and noisy ranking | Decision-scoped profile projection with selected fact IDs |
@@ -1512,10 +1512,10 @@ These defaults let implementation begin without blocking on product questions.
 
 The MVP is complete when all of the following are true:
 
-- A first-time user can start with a one-sentence vacation, gift, date, or staffing request.
+- A first-time user can start with a one-sentence shopping, vacation, gift, date, or staffing request.
 - The user can add personal context, memories, recipients, or collaborators without creating an account.
 - The user can see exactly which profile facts are used.
-- The same profile contracts work across all four verticals.
+- The same profile contracts work across all five verticals.
 - Offers remain source-grounded and separate from personal inference.
 - Hard constraints filter before ranking.
 - Recommendations explain fit, tradeoffs, assumptions, price, and evidence.
@@ -1541,9 +1541,9 @@ Implemented locally:
 6. Visible matched-fact explanations, participant coverage, exclusions, evidence, transition allowances, and whole-date cost ranges.
 7. One read-only `plan_personalized_date` WebMCP tool with no booking, contact, payment, or profile mutation capability.
 8. A request-only vacation package proof with value, balanced, and signature tiers across lodging, transport, dining, and activities.
-9. One typed decision orchestrator endpoint, a fixed gift, date, and vacation strategy registry, and a shared result envelope.
+9. One typed decision orchestrator endpoint, a fixed shopping, gift, date, vacation, and staffing strategy registry, and a shared result envelope.
 10. One `/decide` workspace and one read-only `plan_decision` WebMCP tool with linked full-context revision.
 11. A request-only profile-update proposal endpoint plus explicit on-device approval, rejection, correction, deletion, and later fact selection.
 12. Focused contract, planner, endpoint, privacy, and static workspace tests while preserving existing routes and compatibility tools.
 
-Verified staffing supply is now implemented. The release-candidate convergence pass makes the unified agent discoverable from the homepage, exercises all four strategies through WebMCP and a running Worker, verifies the outcome-memory lifecycle, adds a repeatable personalized smoke suite, and reconciles product and release documentation. The next product slice after release is the shared local-first people and preferences layer: reusable but explicitly selected facts, relationships, memories, dislikes, accessibility needs, and prior outcomes across all four strategies. Account sync and cross-device memory remain later work and must not weaken the local-first consent model.
+Verified staffing supply and first-class general shopping are now implemented. The release-candidate convergence pass makes the unified agent discoverable from the homepage, exercises all five strategies through WebMCP and a running Worker, verifies the outcome-memory lifecycle, adds a repeatable personalized smoke suite, and reconciles product and release documentation. The next product slice after release is the shared local-first people and preferences layer: reusable but explicitly selected facts, relationships, memories, dislikes, accessibility needs, and prior outcomes across all five strategies. Account sync and cross-device memory remain later work and must not weaken the local-first consent model.

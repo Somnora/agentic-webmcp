@@ -87,6 +87,30 @@ describe("decision brief contracts", () => {
     });
   });
 
+  it("accepts explicit self shopping and rejects recipient-shaped shopping", () => {
+    const shoppingBrief = brief({
+      id: "decision-shopping-self",
+      vertical: "shopping",
+      goal: "Compare source-backed guitars for myself",
+      subjectIds: ["subject-self"],
+      intent: "self-treat",
+      subjectKind: "self",
+      occasion: null,
+      occasionDeadline: null,
+      selectedFactIds: [],
+      decisionOnlyFacts: [],
+      hardConstraints: [],
+      softPreferences: [],
+    });
+    expect(validateDecisionBrief(shoppingBrief)).toMatchObject({
+      vertical: "shopping",
+      intent: "self-treat",
+      subjectKind: "self",
+    });
+    expect(() => validateDecisionBrief({ ...shoppingBrief, intent: "gift", subjectKind: "recipient" }))
+      .toThrow("Shopping decisions require self-treat intent and a self subject");
+  });
+
   it("builds a context from only the explicitly selected saved facts", () => {
     const selected = validateProfileFact(profileFact());
     const unrelated = validateProfileFact(profileFact({

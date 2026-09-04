@@ -1,6 +1,6 @@
 import type { DecisionContext, RetailIntent } from "./decision-types";
 import type { Offer } from "./offers";
-import { profileFactText, type ProfileFact, type SubjectKind } from "./profile";
+import { profileFactText, type DecisionVertical, type ProfileFact, type SubjectKind } from "./profile";
 import {
   validateRecommendationIntent,
   type Recommendation,
@@ -39,7 +39,7 @@ export type GiftPersonalization = {
   status: "applied" | "partial" | "not-applied";
   actionEligible: boolean;
   briefId: string;
-  vertical: "gift";
+  vertical: "shopping" | "gift";
   handling: "request-only";
   appliedFacts: AppliedProfileFact[];
   deferredFacts: DeferredProfileFact[];
@@ -63,6 +63,10 @@ const AVOID_FACT_KINDS = new Set<ProfileFact["kind"]>([
 ]);
 const SUPPORTED_CONSTRAINT_KINDS = new Set(["must-have", "avoid", "existing-item"]);
 const STOP_WORDS = new Set(["and", "for", "from", "into", "near", "that", "the", "their", "they", "this", "with"]);
+
+function isRetailVertical(vertical: DecisionVertical): vertical is "shopping" | "gift" {
+  return vertical === "shopping" || vertical === "gift";
+}
 
 function compactJoin(values: readonly string[], maximum: number, separator = " "): string | null {
   let output = "";
@@ -107,8 +111,11 @@ export function giftRecommendationIntent(
   explicitInput: Record<string, unknown> = {},
   now = Date.now(),
 ): RecommendationIntent {
-  if (context.brief.vertical !== "gift") throw new RangeError("Gift personalization requires a gift decision brief.");
-  const intent = (explicitInput.intent as RetailIntent | undefined) ?? context.brief.intent ?? "gift";
+  const vertical = context.brief.vertical;
+  if (!isRetailVertical(vertical)) throw new RangeError("Marketplace personalization requires a shopping or gift decision brief.");
+  const intent = (explicitInput.intent as RetailIntent | undefined)
+    ?? context.brief.intent
+    ?? (vertical === "shopping" ? "self-treat" : "gift");
   const subjectKind = (explicitInput.subjectKind as SubjectKind | undefined)
     ?? context.brief.subjectKind
     ?? (context.brief.subjectIds.some((id) => id.includes("self")) ? "self" : "recipient");
@@ -179,8 +186,9 @@ export function personalizeGiftResult(
   result: RecommendationResult,
   context: DecisionContext,
 ): PersonalizedGiftResult {
-  if (context.brief.vertical !== "gift") throw new RangeError("Gift personalization requires a gift decision brief.");
-  const intent = context.brief.intent ?? "gift";
+  const vertical = context.brief.vertical;
+  if (!isRetailVertical(vertical)) throw new RangeError("Marketplace personalization requires a shopping or gift decision brief.");
+  const intent = context.brief.intent ?? (vertical === "shopping" ? "self-treat" : "gift");
   const existingItemFacts = context.selectedFacts.filter((fact) => fact.kind === "existing-item");
   const maxAmount = context.brief.budget?.maximumAmount ? Number(context.brief.budget.maximumAmount) : null;
   const budgetCurrency = context.brief.budget?.currencyCode ?? null;
@@ -242,7 +250,7 @@ export function personalizeGiftResult(
       status,
       actionEligible,
       briefId: context.brief.id,
-      vertical: "gift",
+      vertical,
       handling: "request-only",
       appliedFacts: applied.map((fact) => appliedFact(fact, context)),
       deferredFacts: deferred.map((fact) => ({

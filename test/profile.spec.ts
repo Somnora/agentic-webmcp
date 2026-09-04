@@ -178,6 +178,9 @@ describe("profile contracts", () => {
     })).toThrow("unsupported fields");
     expect(() => validateProfileFact(fact({ value: "x".repeat(241) }))).toThrow("240 characters");
     expect(() => validateProfileFact(fact({ allowedUses: ["vacation", "vacation"] }))).toThrow("must not contain duplicates");
+    expect(validateProfileFact(fact({ allowedUses: ["shopping", "vacation", "gift", "date", "staffing"] }))).toMatchObject({
+      allowedUses: ["shopping", "vacation", "gift", "date", "staffing"],
+    });
   });
 
   it("requires inferred facts to be confirmed before entering the profile", () => {

@@ -446,7 +446,7 @@ async function routeRequest(
       const origin = strategyOrigin(url, body, strategy.originId);
       const originFetcher = fetcherForOrigin(env, origin, reliability);
 
-      if (strategy.vertical === "gift") {
+      if (strategy.vertical === "gift" || strategy.vertical === "shopping") {
         const recommendationResult = await findBestOptions(
           optionalString(body, "query") ?? context.brief.goal,
           optionalScalar(body, "maxResults") ?? "3",

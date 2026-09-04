@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Ribband routes gift, date, vacation, and staffing decisions through one explainable, request-only agent.">
+  <meta name="description" content="Ribband routes general shopping, gift, date, vacation, and staffing decisions through one explainable, request-only agent.">
   <title>Unified decision agent | Ribband</title>
   <link rel="icon" href="/ribband-symbol.png" type="image/png">
   <link rel="apple-touch-icon" href="/ribband-symbol.png">
@@ -23,11 +23,12 @@
 
   <main>
     <section class="alpha-hero" aria-labelledby="decision-title">
-      <p class="eyebrow">ONE CONTEXT BOUNDARY, FOUR STRATEGIES</p>
+      <p class="eyebrow">ONE CONTEXT BOUNDARY, FIVE STRATEGIES</p>
       <h1 id="decision-title">Tell it what matters.<br><span>See how it decided.</span></h1>
-      <p>Ribband turns the details you choose to share into source-backed gift, date, vacation, or project staffing options. The agent selects a bounded strategy, keeps evidence and tradeoffs visible, and lets you revise the complete context without silently remembering anything.</p>
+      <p>Ribband turns the details you choose to share into source-backed shopping, gift, date, vacation, or project staffing options. The agent selects a bounded strategy, keeps evidence and tradeoffs visible, and lets you revise the complete context without silently remembering anything.</p>
       <div class="vertical-roadmap" aria-label="Personalized decision roadmap">
         <span class="active">Decision agent</span>
+        <span class="active">Shopping planner</span>
         <a href="/workspace">Gift planner</a>
         <a href="/date">Date planner</a>
         <a href="/vacation">Vacation planner</a>
@@ -46,7 +47,7 @@
         </div>
 
         <div class="decision-core-grid">
-          <label for="decision-vertical"><span>Decision type</span><select id="decision-vertical"><option value="gift">Birthday gift</option><option value="date">Date plan</option><option value="vacation">Vacation package</option><option value="staffing">Project staffing</option></select></label>
+          <label for="decision-vertical"><span>Decision type</span><select id="decision-vertical"><option value="shopping">General shopping</option><option value="gift">Gift for someone</option><option value="date">Date plan</option><option value="vacation">Vacation package</option><option value="staffing">Project staffing</option></select></label>
           <label for="decision-subject"><span>Subject</span><select id="decision-subject"><option value="profile-recipient">Loved One (Recipient)</option><option value="profile-self">Myself</option></select></label>
           <label for="decision-budget"><span>Maximum total budget, USD</span><input id="decision-budget" type="number" min="25" max="100000" step="25" value="900" required></label>
           <label class="wide" for="decision-goal"><span>Goal</span><input id="decision-goal" maxlength="180" value="Find a thoughtful electric guitar for my nephew" required autocomplete="off"></label>
@@ -54,15 +55,15 @@
         </div>
 
         <fieldset id="gift-fields" class="decision-specific">
-          <legend>Gift &amp; Retail context</legend>
-          <p>Age can be useful context, but the controlled marketplace cannot verify age suitability. The agent will not pretend it can.</p>
+          <legend id="retail-context-title">Shopping context</legend>
+          <p id="retail-context-note">Tell Ribband what you need, what you like, what you already own, and what must be excluded. The current controlled catalog demonstrates guitars; the strategy is designed for any authorized product catalog.</p>
           <div class="decision-field-grid">
-            <label for="gift-intent"><span>Retail intent</span><select id="gift-intent"><option value="gift">Gift for loved one</option><option value="self-treat">Self-treat / treat myself</option></select></label>
-            <label for="gift-occasion"><span>Occasion</span><input id="gift-occasion" maxlength="80" value="Birthday" autocomplete="off"></label>
-            <label for="gift-deadline"><span>Occasion deadline</span><input id="gift-deadline" type="date"></label>
-            <label for="gift-query"><span>What kind of item?</span><input id="gift-query" maxlength="80" value="electric guitar" required autocomplete="off"></label>
-            <label for="gift-interests"><span>What do they already like?</span><input id="gift-interests" maxlength="180" value="single coil guitars, classic shapes" autocomplete="off"></label>
-            <label class="wide" for="gift-memory"><span>Fond memory or personal signal</span><input id="gift-memory" maxlength="180" value="learning favorite songs together" autocomplete="off"></label>
+            <label id="gift-intent-field" for="gift-intent" hidden><span>Retail intent</span><select id="gift-intent"><option value="gift">Gift for loved one</option><option value="self-treat">Self-treat / treat myself</option></select></label>
+            <label id="gift-occasion-field" for="gift-occasion" hidden><span>Occasion</span><input id="gift-occasion" maxlength="80" value="" autocomplete="off"></label>
+            <label id="gift-deadline-field" for="gift-deadline" hidden><span>Occasion deadline</span><input id="gift-deadline" type="date"></label>
+            <label for="gift-query"><span id="retail-query-label">What are you shopping for?</span><input id="gift-query" maxlength="80" value="guitar" required autocomplete="off"></label>
+            <label for="gift-interests"><span id="retail-interests-label">What do you already like?</span><input id="gift-interests" maxlength="180" value="versatile tone, classic shapes" autocomplete="off"></label>
+            <label class="wide" for="gift-memory"><span id="retail-memory-label">Preference or personal signal</span><input id="gift-memory" maxlength="180" value="" autocomplete="off"></label>
             <label class="wide" for="gift-existing-items"><span>Items already owned (anti-duplicate)</span><input id="gift-existing-items" maxlength="180" placeholder="e.g. Sunburst S-Style Electric" autocomplete="off"></label>
           </div>
         </fieldset>
@@ -208,7 +209,7 @@
   </main>
 
   <footer class="alpha-footer">
-    <span>Ribband unified decision agent release candidate</span>
+    <span>Ribband personalized decision agent</span>
     <span><a href="/privacy.html">Privacy</a> | <a href="https://github.com/Somnora/agentic-webmcp">Source</a></span>
   </footer>
 </body>

@@ -4,7 +4,7 @@ const STORE_NAME = "facts";
 const ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,63}$/;
 const KINDS = new Set(["liked-experience", "disliked-experience", "interest", "avoidance", "existing-item"]);
 const SOURCES = new Set(["user-stated", "inferred-and-confirmed"]);
-const ALLOWED_USES = new Set(["date", "vacation", "gift", "staffing"]);
+const ALLOWED_USES = new Set(["shopping", "date", "vacation", "gift", "staffing"]);
 
 function clean(value, maximum) {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, maximum);
@@ -17,7 +17,7 @@ function timestamp(value, fallback) {
 
 function uses(value) {
   const source = Array.isArray(value) ? value : [];
-  return [...new Set(source.filter((item) => ALLOWED_USES.has(item)))].slice(0, 4);
+  return [...new Set(source.filter((item) => ALLOWED_USES.has(item)))].slice(0, 5);
 }
 
 export function getDefaultSubjects(now = new Date().toISOString()) {
