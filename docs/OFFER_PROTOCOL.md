@@ -325,7 +325,7 @@ Uncertainty refinement extends the recommendation projection, not the Offer mode
 ## Default Challenge origins
 
 1. `catalog-lab`: controlled public guitar marketplace with original listings, public product JSON, and allowlisted product pages.
-2. `services-lab`: controlled public service directory on the same first-party hostname with a disjoint `/services/*` allowlist, twenty original fixtures (4 activities, 4 lodging, 4 dining, 2 transport, and 6 professional services), public service JSON, and allowlisted service pages.
+2. `services-lab`: controlled public service directory on the same first-party hostname with a disjoint `/services/*` allowlist, twenty original fixtures (5 activities, 1 wellness, 1 home service, 3 lodging, 2 dining, 2 transportation, and 6 professional services), public service JSON, and allowlisted service pages.
 3. `review-shop`: `agentic-app-review-test.myshopify.com`, using optional Storefront GraphQL, public product JSON, then a labeled bundled snapshot.
 
 Do not add unrelated retailer names or scrape third-party catalogs without permission.

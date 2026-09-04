@@ -66,7 +66,8 @@ fieldset > p { margin: 0 0 12px; color: var(--muted); font-size: 0.68rem; line-h
 .vacation-profile-grid .wide { grid-column: 1 / -1; }
 .decision-core-grid, .decision-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .decision-core-grid .wide, .decision-field-grid .wide { grid-column: 1 / -1; }
-.decision-specific[hidden] { display: none; }
+[hidden] { display: none !important; }
+.decision-specific[hidden] { display: none !important; }
 .revision-note { margin-top: 14px; padding: 13px 14px; border: 1px solid #aac0b4; border-radius: 10px; background: var(--forest-soft); }
 .revision-note[hidden] { display: none; }
 .revision-note strong { color: var(--forest-dark); font-size: 0.7rem; }
@@ -165,6 +166,7 @@ fieldset > p { margin: 0 0 12px; color: var(--muted); font-size: 0.68rem; line-h
 .source-review-container { margin-top: 6px; }
 .source-review-container button { padding: 6px 9px; font-size: 0.62rem; }
 .source-review-panel { margin-top: 6px; padding: 10px 12px; border: 1px solid #cbdacf; border-radius: 8px; background: var(--forest-soft); display: grid; gap: 4px; }
+.source-review-panel[hidden] { display: none !important; }
 .source-review-provider { color: var(--forest-dark); font-size: 0.68rem; }
 .source-review-destination { color: var(--ink); font-size: 0.62rem; word-break: break-all; }
 .source-review-disclosure { color: var(--muted); font-size: 0.6rem; line-height: 1.4; }

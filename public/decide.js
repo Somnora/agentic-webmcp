@@ -793,8 +793,8 @@ function renderVacation(result) {
   }
 }
 
-function renderStaffing(result) {
-  const viewModel = adaptStaffingResult(result);
+function renderStaffing(result, handoffAction = null) {
+  const viewModel = adaptStaffingResult(result, handoffAction);
   for (const crew of viewModel.crews) {
     const article = document.createElement("article");
     const header = document.createElement("header");
@@ -825,7 +825,7 @@ function renderStaffing(result) {
       const sourceSection = document.createElement("div");
       sourceSection.className = "source-review-container";
 
-      if (viewModel.actionEligible && crew.status === "ready-for-review") {
+      if (assignment.sourceReviewEligible && crew.status === "ready-for-review") {
         const reviewButton = document.createElement("button");
         reviewButton.type = "button";
         reviewButton.className = "secondary-button review-source-button";
@@ -839,7 +839,7 @@ function renderStaffing(result) {
         try {
           destinationHost = new URL(assignment.sourceUrl).hostname;
         } catch {
-          destinationHost = assignment.sourceUrl;
+          destinationHost = assignment.sourceUrl || "unknown";
         }
 
         const panelHeader = textNode("strong", "source-review-provider", `Provider: ${assignment.providerName}`);
@@ -876,7 +876,7 @@ function renderStaffing(result) {
 
         sourceSection.append(reviewButton, confirmPanel);
       } else {
-        const unavailNote = textNode("span", "source-review-status", `Provider source handoff unavailable for partial or unverified crew (${assignment.providerName}).`);
+        const unavailNote = textNode("span", "source-review-status", `Provider source handoff unavailable for ${assignment.providerName || "unverified provider"}.`);
         sourceSection.append(unavailNote);
       }
 
@@ -937,14 +937,14 @@ function renderResult(payload) {
   elements.results.dataset.vertical = payload.vertical;
   elements.resultsEmpty.hidden = payload.optionCount > 0;
   elements.resultsEmpty.textContent = payload.result.warning || "No complete option met the current constraints.";
+  const handoffAction = (payload.nextActions || []).find((action) => action.id === "handoff");
   if (payload.vertical === "gift") renderGift(payload.result);
   if (payload.vertical === "date") renderDate(payload.result);
   if (payload.vertical === "vacation") renderVacation(payload.result);
-  if (payload.vertical === "staffing") renderStaffing(payload.result);
+  if (payload.vertical === "staffing") renderStaffing(payload.result, handoffAction);
   elements.summary.replaceChildren();
   elements.summary.dataset.status = payload.status === "planned" ? "ready" : "attention";
 
-  const handoffAction = (payload.nextActions || []).find((action) => action.id === "handoff");
   const handoffAvailable = handoffAction?.available === true;
   const handoffNote = handoffAvailable
     ? "A human may review and explicitly open a controlled provider source page. Contact, quote requests, contracts, booking, and payment remain unavailable."

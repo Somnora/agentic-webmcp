@@ -7,28 +7,70 @@ function formatMoney(amount, currencyCode = "USD") {
   return `$${formatted} ${currencyCode}`;
 }
 
-export function adaptStaffingResult(result) {
+export function isControlledServicesHttpsUrl(urlString) {
+  if (typeof urlString !== "string" || !urlString.trim()) return false;
+  try {
+    const url = new URL(urlString);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "agentic-webmcp-origin.somnora.workers.dev" &&
+      url.pathname.startsWith("/services/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function adaptStaffingResult(result, handoffAction = null) {
   if (!result || typeof result !== "object") {
     throw new TypeError("Staffing result must be an object.");
   }
   if (!Array.isArray(result.crews)) {
     throw new TypeError("Staffing result must contain a crews array.");
   }
+  if (!result.staffing || typeof result.staffing !== "object") {
+    throw new TypeError("Staffing result must contain a staffing metadata object.");
+  }
+  if (handoffAction !== undefined && handoffAction !== null && typeof handoffAction !== "object") {
+    throw new TypeError("handoffAction must be an object when provided.");
+  }
 
-  const providerSourceReview = result.staffing?.providerSourceReview ?? "human-only";
-  const actionEligible = Boolean(result.staffing?.actionEligible);
+  const providerSourceReview = typeof result.staffing.providerSourceReview === "string"
+    ? result.staffing.providerSourceReview
+    : null;
+  const actionEligible = typeof result.staffing.actionEligible === "boolean"
+    ? result.staffing.actionEligible
+    : false;
   const status = result.status ?? (actionEligible ? "planned" : "needs-attention");
   const warning = typeof result.warning === "string" ? result.warning : null;
 
+  const envelopeHandoffEligible = Boolean(
+    handoffAction &&
+    handoffAction.available === true &&
+    handoffAction.requiresHumanApproval === true &&
+    actionEligible === true &&
+    providerSourceReview === "human-only"
+  );
+
   const crews = result.crews.map((crew) => {
     const assignments = (crew.assignments ?? []).map((assignment) => {
-      const providerName = assignment.providerName ?? "";
-      const role = assignment.role ?? "";
-      const offerHandle = assignment.offerHandle ?? "";
-      const offerTitle = assignment.offerTitle ?? "";
-      const sourceUrl = assignment.sourceReview?.url ?? "";
-      const transmittedInformation = assignment.sourceReview?.transmittedInformation ?? "";
-      const sourceAction = assignment.sourceReview?.action ?? "human-only";
+      if (!assignment || typeof assignment !== "object") {
+        throw new TypeError("Assignment must be an object.");
+      }
+      if (!assignment.sourceReview || typeof assignment.sourceReview !== "object") {
+        throw new TypeError(`Staffing assignment for role "${assignment.role || "unknown"}" is missing sourceReview.`);
+      }
+
+      const providerName = typeof assignment.providerName === "string" ? assignment.providerName : "";
+      const role = typeof assignment.role === "string" ? assignment.role : "";
+      const offerHandle = typeof assignment.offerHandle === "string" ? assignment.offerHandle : "";
+      const offerTitle = typeof assignment.offerTitle === "string" ? assignment.offerTitle : "";
+
+      const sourceUrl = typeof assignment.sourceReview.url === "string" ? assignment.sourceReview.url : null;
+      const transmittedInformation = typeof assignment.sourceReview.transmittedInformation === "string"
+        ? assignment.sourceReview.transmittedInformation
+        : null;
+      const sourceAction = typeof assignment.sourceReview.action === "string" ? assignment.sourceReview.action : null;
 
       const quoteMode = assignment.price?.quoteMode ?? "estimate-only";
       const quoteModeLabel = quoteMode === "published-rate" ? "Published rate" : "Estimate only";
@@ -54,9 +96,27 @@ export function adaptStaffingResult(result) {
 
       const equipment = Array.isArray(assignment.equipment) ? [...assignment.equipment] : [];
 
-      const serviceAreaLabel = assignment.serviceArea?.label ?? "";
-      const proximityFit = assignment.serviceArea?.proximityFit ?? "local-match";
-      const proximityLabel = proximityFit === "local-match" ? "Local subregion match" : "Cross-subregion service";
+      const rawProximityFit = assignment.serviceArea?.proximityFit;
+      let proximityFit = null;
+      let proximityLabel = null;
+      if (rawProximityFit === "local-match") {
+        proximityFit = "local-match";
+        proximityLabel = "Local subregion match";
+      } else if (rawProximityFit === "cross-subregion-service") {
+        proximityFit = "cross-subregion-service";
+        proximityLabel = "Cross-subregion service";
+      }
+
+      const serviceAreaLabel = typeof assignment.serviceArea?.label === "string" ? assignment.serviceArea.label : "";
+
+      const isControlledUrl = isControlledServicesHttpsUrl(sourceUrl);
+      const sourceReviewEligible = Boolean(
+        envelopeHandoffEligible &&
+        sourceAction === "human-only" &&
+        isControlledUrl &&
+        transmittedInformation &&
+        proximityFit !== null
+      );
 
       return {
         role,
@@ -67,6 +127,8 @@ export function adaptStaffingResult(result) {
         sourceUrl,
         transmittedInformation,
         sourceAction,
+        isControlledUrl,
+        sourceReviewEligible,
         quoteMode,
         quoteModeLabel,
         priceDisplay,
@@ -132,6 +194,7 @@ export function adaptStaffingResult(result) {
     warning,
     providerSourceReview,
     actionEligible,
+    envelopeHandoffEligible,
     crews,
   };
 }

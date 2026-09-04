@@ -786,8 +786,8 @@ export function createPersonalizedStaffingPlans(context: DecisionContext, offers
     ? localCount === assignments.length
       ? "Proximity fit: all assigned providers are local subregion matches."
       : crossCount === assignments.length
-        ? "Proximity fit: all assigned providers provide cross-subregion service within verified travel radius."
-        : `Proximity fit: ${localCount} local subregion match${localCount === 1 ? "" : "es"} and ${crossCount} cross-subregion service provider${crossCount === 1 ? "" : "s"} within verified travel radius.`
+        ? "Proximity fit: all assigned providers provide cross-subregion service within the provider-declared radius using planning-distance estimates."
+        : `Proximity fit: ${localCount} local subregion match${localCount === 1 ? "" : "es"} and ${crossCount} cross-subregion service provider${crossCount === 1 ? "" : "s"} within the provider-declared radius using planning-distance estimates.`
     : "";
   const plan: StaffingCrewPlan = {
     id: `${context.brief.id}-crew-1`,
