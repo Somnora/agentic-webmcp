@@ -5,6 +5,7 @@ import {
   projectApprovedMemoryFact,
   saveApprovedMemoryFact,
 } from "./decision-memory.js";
+import { adaptStaffingResult } from "./staffing-view-model.js";
 
 const elements = {
   form: document.querySelector("#decision-form"),
@@ -793,7 +794,8 @@ function renderVacation(result) {
 }
 
 function renderStaffing(result) {
-  for (const crew of result.crews) {
+  const viewModel = adaptStaffingResult(result);
+  for (const crew of viewModel.crews) {
     const article = document.createElement("article");
     const header = document.createElement("header");
     header.append(textNode("span", "result-rank", crew.label), textNode("strong", "result-score", `${crew.score}/100`));
@@ -804,19 +806,85 @@ function renderStaffing(result) {
       row.append(textNode("span", "package-category", assignment.roleLabel || assignment.role));
       const detail = document.createElement("div");
       detail.append(
-        sourceLink(assignment.provider.name, assignment.offer.url),
-        textNode("span", "", `${assignment.price.quoteMode === "published-rate" ? "Published rate" : "Estimate only"} | ${money(assignment.price.published)} (${assignment.price.basis})`),
+        textNode("strong", "assignment-provider-name", assignment.providerName),
+        textNode("span", "assignment-price", assignment.priceDisplay),
       );
-      if (assignment.credentialEvidence?.length) {
-        detail.append(textNode("span", "", `Verified: ${assignment.credentialEvidence.map((c) => c.label).join(", ")}`));
+      if (assignment.verifiedCredentials.length) {
+        detail.append(textNode("span", "assignment-verified-credentials", `Verified: ${assignment.verifiedCredentials.map((c) => c.label).join(", ")}`));
       }
-      if (assignment.equipment?.length) {
-        detail.append(textNode("span", "", `Equipment: ${assignment.equipment.join(", ")}`));
+      if (assignment.otherCredentials.length) {
+        detail.append(textNode("span", "assignment-other-credentials", assignment.otherCredentials.map((c) => `${c.label} (${c.status})`).join(", ")));
       }
+      if (assignment.equipment.length) {
+        detail.append(textNode("span", "assignment-equipment", `Equipment: ${assignment.equipment.join(", ")}`));
+      }
+      if (assignment.serviceAreaLabel) {
+        detail.append(textNode("span", "assignment-proximity", `${assignment.proximityLabel} (${assignment.serviceAreaLabel})`));
+      }
+
+      const sourceSection = document.createElement("div");
+      sourceSection.className = "source-review-container";
+
+      if (viewModel.actionEligible && crew.status === "ready-for-review") {
+        const reviewButton = document.createElement("button");
+        reviewButton.type = "button";
+        reviewButton.className = "secondary-button review-source-button";
+        reviewButton.textContent = "Review provider source";
+
+        const confirmPanel = document.createElement("div");
+        confirmPanel.className = "source-review-panel";
+        confirmPanel.hidden = true;
+
+        let destinationHost = "";
+        try {
+          destinationHost = new URL(assignment.sourceUrl).hostname;
+        } catch {
+          destinationHost = assignment.sourceUrl;
+        }
+
+        const panelHeader = textNode("strong", "source-review-provider", `Provider: ${assignment.providerName}`);
+        const panelDestination = textNode("p", "source-review-destination", `Destination: ${destinationHost} (${assignment.sourceUrl})`);
+        const panelDisclosure = textNode("p", "source-review-disclosure", assignment.transmittedInformation);
+
+        const panelActions = document.createElement("div");
+        panelActions.className = "source-review-actions";
+
+        const openLink = document.createElement("a");
+        openLink.className = "button-link open-source-link";
+        openLink.href = assignment.sourceUrl;
+        openLink.target = "_blank";
+        openLink.rel = "noopener noreferrer";
+        openLink.textContent = "Open provider source";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "secondary-button cancel-source-button";
+        cancelBtn.textContent = "Cancel";
+
+        panelActions.append(openLink, cancelBtn);
+        confirmPanel.append(panelHeader, panelDestination, panelDisclosure, panelActions);
+
+        reviewButton.addEventListener("click", () => {
+          confirmPanel.hidden = false;
+          reviewButton.hidden = true;
+        });
+
+        cancelBtn.addEventListener("click", () => {
+          confirmPanel.hidden = true;
+          reviewButton.hidden = false;
+        });
+
+        sourceSection.append(reviewButton, confirmPanel);
+      } else {
+        const unavailNote = textNode("span", "source-review-status", `Provider source handoff unavailable for partial or unverified crew (${assignment.providerName}).`);
+        sourceSection.append(unavailNote);
+      }
+
+      detail.append(sourceSection);
       row.append(detail);
       items.append(row);
     }
-    if (crew.missingRoles?.length) {
+    if (crew.missingRoles.length) {
       const gapBox = document.createElement("ul");
       gapBox.className = "package-unknowns";
       for (const gap of crew.missingRoles) {
@@ -824,11 +892,11 @@ function renderStaffing(result) {
       }
       items.append(gapBox);
     }
-    if (crew.scheduleGaps?.length) {
+    if (crew.scheduleGaps.length) {
       const gapBox = document.createElement("ul");
       gapBox.className = "package-unknowns";
       for (const gap of crew.scheduleGaps) {
-        gapBox.append(textNode("li", "", `Schedule gap for ${gap.role}: ${gap.gapDescription}`));
+        gapBox.append(textNode("li", "", `Schedule gap for ${gap.role} on ${gap.date}: ${gap.reason}`));
       }
       items.append(gapBox);
     }
@@ -838,15 +906,15 @@ function renderStaffing(result) {
       textNode("li", "", `Project Date: ${crew.projectDate} (${crew.estimatedHours}h estimated)`),
       textNode("li", "", `Quote accounting: ${crew.quoteAccounting.publishedRateAssignments} published-rate, ${crew.quoteAccounting.estimateOnlyAssignments} estimate-only`),
     );
-    if (crew.quoteAccounting.unknownCosts?.length) {
+    if (crew.quoteAccounting.unknownCosts.length) {
       for (const costNote of crew.quoteAccounting.unknownCosts) {
         matches.append(textNode("li", "", costNote));
       }
     }
     const footer = document.createElement("footer");
     footer.append(
-      textNode("strong", "", `${money(crew.costs.publishedSubtotal)}-${crew.costs.planningHigh.amount} ${crew.costs.planningHigh.currencyCode}`),
-      textNode("span", "", `Ceiling ${money(crew.budgetCeiling)} (${crew.costs.withinBudget ? "within budget" : "over budget"})`),
+      textNode("strong", "", `${crew.publishedSubtotal}-${crew.planningHigh}`),
+      textNode("span", "", `Ceiling ${crew.budgetCeiling} (${crew.withinBudget ? "within budget" : "over budget"})`),
     );
     article.append(
       header,
@@ -855,7 +923,7 @@ function renderStaffing(result) {
       items,
       matches,
       textNode("p", "result-tradeoff", `Tradeoff: ${crew.tradeoff}`),
-      textNode("p", "result-evidence", `Evidence: ${crew.evidenceConfidence} | Provider review: ${crew.providerSourceReview}`),
+      textNode("p", "result-evidence", `Evidence: ${crew.evidenceConfidence} | Provider source review: ${crew.providerSourceReview}`),
       footer,
       outcomeButton({ id: crew.id, title: crew.title }),
     );
@@ -875,9 +943,16 @@ function renderResult(payload) {
   if (payload.vertical === "staffing") renderStaffing(payload.result);
   elements.summary.replaceChildren();
   elements.summary.dataset.status = payload.status === "planned" ? "ready" : "attention";
+
+  const handoffAction = (payload.nextActions || []).find((action) => action.id === "handoff");
+  const handoffAvailable = handoffAction?.available === true;
+  const handoffNote = handoffAvailable
+    ? "A human may review and explicitly open a controlled provider source page. Contact, quote requests, contracts, booking, and payment remain unavailable."
+    : "Provider handoff is unavailable.";
+
   elements.summary.append(
     textNode("strong", "", `${payload.optionCount} options from ${payload.strategy.id}`),
-    textNode("p", "", `${payload.evidence.live ? "Live" : "Fallback"} ${payload.evidence.source} evidence. Revision is available. ${payload.vertical === "gift" || payload.vertical === "staffing" ? `${payload.vertical === "gift" ? "Gift-recipient" : "Staffing crew"} memory remains decision-only.` : "A chosen outcome can become a reviewable memory proposal."} Provider handoff remains unavailable.`),
+    textNode("p", "", `${payload.evidence.live ? "Live" : "Fallback"} ${payload.evidence.source} evidence. Revision is available. ${payload.vertical === "gift" || payload.vertical === "staffing" ? `${payload.vertical === "gift" ? "Gift-recipient" : "Staffing crew"} memory remains decision-only.` : "A chosen outcome can become a reviewable memory proposal."} ${handoffNote}`),
   );
 }
 

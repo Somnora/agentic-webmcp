@@ -233,6 +233,8 @@ export const OAHU_SUBREGIONS: readonly OahuSubregion[] = [
   "leeward",
 ] as const;
 
+// Hard-coded driving distances between Oahu subregions in miles.
+// These distances are planning estimates, not verified travel measurements.
 export const OAHU_DRIVING_DISTANCES: Record<OahuSubregion, Record<OahuSubregion, number>> = {
   honolulu: {
     honolulu: 0,
@@ -379,7 +381,7 @@ export function projectLocationName(context: DecisionContext): string {
   return loc.label || loc.city || "the requested location";
 }
 
-export function resolveProjectSubregion(context: DecisionContext): OahuSubregion {
+export function resolveProjectSubregion(context: DecisionContext): OahuSubregion | null {
   const loc = context.brief.location;
   if (loc?.city) {
     const subregion = resolveOahuSubregion(loc.city);
@@ -397,10 +399,10 @@ export function resolveProjectSubregion(context: DecisionContext): OahuSubregion
     const subregionFromLabel = resolveOahuSubregion(constraint.label);
     if (subregionFromLabel) return subregionFromLabel;
   }
-  return "honolulu";
+  return null;
 }
 
-export function resolveProviderSubregion(offer: Offer): OahuSubregion {
+export function resolveProviderSubregion(offer: Offer): OahuSubregion | null {
   const city = offer.service?.location.city;
   if (city) {
     const subregion = resolveOahuSubregion(city);
@@ -411,7 +413,7 @@ export function resolveProviderSubregion(offer: Offer): OahuSubregion {
     const subregion = resolveOahuSubregion(region);
     if (subregion) return subregion;
   }
-  return "honolulu";
+  return null;
 }
 
 export function isIslandwideProvider(serviceArea: { label: string }): boolean {
@@ -442,8 +444,8 @@ export type GeographicEvaluation = {
   disqualificationReason?: "outside-service-area" | "radius-exceeded";
   distanceMiles: number;
   radiusLimit: number;
-  providerSubregion: OahuSubregion;
-  projectSubregion: OahuSubregion;
+  providerSubregion: OahuSubregion | null;
+  projectSubregion: OahuSubregion | null;
   projectLocationLabel: string;
 };
 
@@ -456,12 +458,12 @@ export function evaluateGeographicProximity(offer: Offer, context: DecisionConte
   const providerSubregion = resolveProviderSubregion(offer);
   const locationLabel = projectLocationName(context);
 
-  if (!service || !professional || !location) {
+  if (!service || !professional || !location || !projectSubregion || !providerSubregion) {
     return {
       eligible: false,
       tier: 0,
       disqualificationReason: "outside-service-area",
-      distanceMiles: 0,
+      distanceMiles: Infinity,
       radiusLimit: 0,
       providerSubregion,
       projectSubregion,
@@ -626,8 +628,16 @@ function gapReason(
 ): string {
   if (!roleOffers.length) return "No verified provider Offer declares this role.";
   if (!locationOffers.length) {
-    const evaluations = roleOffers.map((offer) => evaluateGeographicProximity(offer, context));
+    const projectSubregion = resolveProjectSubregion(context);
     const locationLabel = projectLocationName(context);
+    if (!projectSubregion) {
+      return `The project location (${locationLabel}) service area could not be verified.`;
+    }
+    const evaluations = roleOffers.map((offer) => evaluateGeographicProximity(offer, context));
+    const unverifiedProvider = evaluations.find((ev) => !ev.providerSubregion);
+    if (unverifiedProvider) {
+      return "Provider service area could not be verified for this role.";
+    }
     const radiusExceeded = evaluations.find((ev) => ev.disqualificationReason === "radius-exceeded");
     if (radiusExceeded) {
       return `Role supply exists, but project location exceeds provider travel radius (distance exceeds ${radiusExceeded.radiusLimit} miles).`;
@@ -807,7 +817,7 @@ export function createPersonalizedStaffingPlans(context: DecisionContext, offers
     why: complete
       ? `Every assigned provider matches the requested role, controlled-verified qualification requirements, service area, published schedule, listed equipment, and planning budget.${proximityNote ? ` ${proximityNote}` : ""}`
       : `Only providers that passed every applicable hard constraint were assigned. Missing qualifications, schedule coverage, unsupported constraints, or budget conflicts remain visible instead of being softened into preferences.${proximityNote ? ` ${proximityNote}` : ""}`,
-    tradeoff: "This proof uses original controlled provider fixtures. It verifies evidence flow and decision boundaries, not real-world provider availability or licensure.",
+    tradeoff: "This proof uses original controlled provider fixtures. Driving distances are planning estimates, not verified travel measurements. It verifies evidence flow and decision boundaries, not real-world provider availability or licensure.",
     evidenceConfidence: complete
       ? "All assignment-critical provider fields were reconciled across controlled service JSON and semantic page evidence."
       : "Assigned roles have reconciled evidence, but the complete requested crew is not currently actionable.",

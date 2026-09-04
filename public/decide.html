@@ -102,14 +102,14 @@
 
         <fieldset id="staffing-fields" class="decision-specific" hidden>
           <legend>Staffing context</legend>
-          <p>Provider credentials, equipment, and quote modes are verified against authorized Offer records. Provider contact and booking remain human-only.</p>
+          <p>Provider credentials, equipment, and quote modes are verified against authorized Offer records. Specify credentials and equipment scoped by role (e.g. <code>residential electrician: state electrical license</code>). Provider contact and booking remain human-only.</p>
           <div class="decision-field-grid">
             <label for="staffing-location"><span>Project site or neighborhood</span><input id="staffing-location" maxlength="120" value="Honolulu" placeholder="e.g. Kailua, Honolulu, North Shore" autocomplete="off"></label>
             <label for="staffing-date"><span>Project date</span><input id="staffing-date" type="date" value="2026-10-17"></label>
             <label for="staffing-hours"><span>Project hours</span><input id="staffing-hours" type="number" min="1" max="16" value="8"></label>
             <label class="wide" for="staffing-roles"><span>Required roles</span><input id="staffing-roles" maxlength="180" value="residential electrician, finish carpenter" autocomplete="off"></label>
-            <label for="staffing-credentials"><span>Required credentials</span><input id="staffing-credentials" maxlength="180" value="state electrical license" autocomplete="off"></label>
-            <label for="staffing-equipment"><span>Required equipment</span><input id="staffing-equipment" maxlength="180" value="dust extraction saws" autocomplete="off"></label>
+            <label for="staffing-credentials"><span>Required credentials (role: requirement)</span><input id="staffing-credentials" maxlength="180" value="residential electrician: state electrical license, finish carpenter: general liability coverage" autocomplete="off" placeholder="residential electrician: state electrical license, finish carpenter: general liability coverage"></label>
+            <label for="staffing-equipment"><span>Required equipment (role: requirement)</span><input id="staffing-equipment" maxlength="180" value="residential electrician: electrical diagnostic meter, finish carpenter: finish nailer" autocomplete="off" placeholder="residential electrician: electrical diagnostic meter, finish carpenter: finish nailer"></label>
           </div>
         </fieldset>
 

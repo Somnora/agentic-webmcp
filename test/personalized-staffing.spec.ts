@@ -684,4 +684,78 @@ describe("personalized staffing planning", () => {
     expect(assignment.serviceArea.proximityFit).toBe("local-match");
     expect(result.crews[0]!.why).toContain("Proximity fit: all assigned providers are local subregion matches.");
   });
+
+  describe("geographic resolution and fail-closed boundaries", () => {
+    it("qualifies providers for Honolulu and known Oahu subregions", async () => {
+      const offers = await loadVerifiedStaffingOffers();
+      const honoluluResult = createPersonalizedStaffingPlans(
+        validateDecisionContextRequest(baseStaffingContext({ roles: ["residential electrician"], locationCity: "Honolulu", locationLabel: "Honolulu", budgetAmount: "3000.00" })),
+        offers,
+      );
+      expect(honoluluResult.status).toBe("planned");
+      expect(honoluluResult.crews[0]!.assignments[0]!.serviceArea.proximityFit).toBe("local-match");
+
+      const windwardResult = createPersonalizedStaffingPlans(
+        validateDecisionContextRequest(baseStaffingContext({ roles: ["residential electrician"], locationCity: "Kailua", locationLabel: "Kailua", budgetAmount: "3000.00" })),
+        offers,
+      );
+      expect(windwardResult.status).toBe("planned");
+      expect(windwardResult.crews[0]!.assignments[0]!.serviceArea.proximityFit).toBe("cross-subregion-service");
+    });
+
+    it("fails closed on Atlantis and empty unsupported location without qualifying Honolulu providers", async () => {
+      const offers = await loadVerifiedStaffingOffers();
+
+      const atlantisResult = createPersonalizedStaffingPlans(
+        validateDecisionContextRequest(baseStaffingContext({ roles: ["residential electrician"], locationCity: "Atlantis", locationLabel: "Atlantis", budgetAmount: "3000.00" })),
+        offers,
+      );
+      expect(atlantisResult.status).toBe("needs-attention");
+      expect(atlantisResult.crews[0]!.assignments).toHaveLength(0);
+      expect(atlantisResult.crews[0]!.missingRoles[0]!.reason).toBe(
+        "The project location (Atlantis) service area could not be verified.",
+      );
+
+      const emptyLocContext = baseStaffingContext({ roles: ["residential electrician"], budgetAmount: "3000.00" });
+      emptyLocContext.brief.hardConstraints = emptyLocContext.brief.hardConstraints.filter((c) => c.kind !== "location");
+      (emptyLocContext.brief as unknown as { location: unknown }).location = null;
+
+      const emptyResult = createPersonalizedStaffingPlans(
+        validateDecisionContextRequest(emptyLocContext),
+        offers,
+      );
+      expect(emptyResult.status).toBe("needs-attention");
+      expect(emptyResult.crews[0]!.assignments).toHaveLength(0);
+      expect(emptyResult.crews[0]!.missingRoles[0]!.reason).toBe(
+        "The project location (the requested location) service area could not be verified.",
+      );
+    });
+
+    it("fails closed when provider location cannot be resolved", async () => {
+      const offers = await loadVerifiedStaffingOffers();
+      const baseElectrician = offers.find((o) => o.handle === "oahu-residential-electrician")!;
+      const unknownProviderElectrician: Offer = {
+        ...baseElectrician,
+        handle: "unknown-location-electrician",
+        service: {
+          ...baseElectrician.service!,
+          location: {
+            ...baseElectrician.service!.location,
+            city: "Atlantis",
+            region: "Lost Continent",
+          },
+        },
+      };
+
+      const result = createPersonalizedStaffingPlans(
+        validateDecisionContextRequest(baseStaffingContext({ roles: ["residential electrician"], locationCity: "Honolulu", locationLabel: "Honolulu", budgetAmount: "3000.00" })),
+        [unknownProviderElectrician],
+      );
+      expect(result.status).toBe("needs-attention");
+      expect(result.crews[0]!.assignments).toHaveLength(0);
+      expect(result.crews[0]!.missingRoles[0]!.reason).toBe(
+        "Provider service area could not be verified for this role.",
+      );
+    });
+  });
 });
