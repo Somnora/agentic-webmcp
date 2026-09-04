@@ -10,6 +10,10 @@ import {
   type MarketplaceEvidence,
   type Money,
   type Offer,
+  type ProfessionalServiceEvidence,
+  type ProviderCredential,
+  type ProviderCredentialStatus,
+  type ProviderVerificationSource,
   type ServiceCategory,
   type ServiceEvidence,
   type ServicePriceBasis,
@@ -152,18 +156,110 @@ function marketplaceEvidence(candidate: Record<string, unknown>, currencyCode: s
   };
 }
 
-const SERVICE_CATEGORIES = new Set<ServiceCategory>(["activity", "wellness", "home-service"]);
+const SERVICE_CATEGORIES = new Set<ServiceCategory>(["activity", "wellness", "home-service", "lodging", "dining", "transport", "professional-service"]);
 const SERVICE_VENUES = new Set<ServiceVenue>(["provider-location", "customer-location", "outdoor", "remote"]);
-const SERVICE_PRICE_BASES = new Set<ServicePriceBasis>(["fixed", "hourly", "per-person", "estimate"]);
+const SERVICE_PRICE_BASES = new Set<ServicePriceBasis>(["fixed", "hourly", "per-person", "per-night", "per-day", "estimate"]);
 const WEEKDAYS = new Set(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
 const LOCAL_TIME_PATTERN = /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/;
 const TIMEZONE_PATTERN = /^[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+$/;
+const PROVIDER_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/;
+const CREDENTIAL_STATUSES = new Set<ProviderCredentialStatus>(["controlled-verified", "provider-attested", "unverified", "not-required"]);
+
+function safeHttpsUrl(value: unknown): string {
+  const candidate = text(value, 500);
+  if (!candidate) return "";
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function isoTimestamp(value: unknown): string {
+  const candidate = text(value, 40);
+  const milliseconds = Date.parse(candidate);
+  return candidate && Number.isFinite(milliseconds) ? new Date(milliseconds).toISOString() : "";
+}
+
+function boundedTextArray(value: unknown, maximumItems: number, itemLength: number): string[] {
+  const items = array(value).slice(0, maximumItems).map((item) => text(item, itemLength)).filter(Boolean);
+  return [...new Set(items)];
+}
+
+function verificationSource(value: unknown): ProviderVerificationSource | undefined {
+  const candidate = record(value);
+  const label = text(candidate.label, 120);
+  const url = safeHttpsUrl(candidate.url);
+  const checkedAt = isoTimestamp(candidate.checked_at ?? candidate.checkedAt);
+  return label && url && checkedAt ? { label, url, checkedAt } : undefined;
+}
+
+function professionalServiceEvidence(candidate: Record<string, unknown>): ProfessionalServiceEvidence | undefined {
+  const roles = boundedTextArray(candidate.roles, 6, 80);
+  const serviceArea = record(candidate.service_area ?? candidate.serviceArea);
+  const areaLabel = text(serviceArea.label, 120);
+  const regions = boundedTextArray(serviceArea.regions, 8, 100);
+  const rawRadius = serviceArea.travel_radius_miles ?? serviceArea.travelRadiusMiles;
+  const travelRadiusMiles = rawRadius === null ? null : boundedNumber(rawRadius, 0, 500);
+  const credentials = array(candidate.credentials).slice(0, 8).flatMap((value): ProviderCredential[] => {
+    const credential = record(value);
+    const id = text(credential.id, 100).toLocaleLowerCase();
+    const label = text(credential.label, 120);
+    const status = text(credential.status, 32) as ProviderCredentialStatus;
+    const issuer = credential.issuer === null ? null : text(credential.issuer, 120) || null;
+    const source = verificationSource(credential.verification_source ?? credential.verificationSource);
+    const rawExpiry = credential.expires_at ?? credential.expiresAt;
+    const expiresAt = rawExpiry === null ? null : isoTimestamp(rawExpiry);
+    if (
+      !PROVIDER_ID_PATTERN.test(id)
+      || !label
+      || !CREDENTIAL_STATUSES.has(status)
+      || !source
+      || (status === "controlled-verified" && !issuer)
+      || (rawExpiry !== null && !expiresAt)
+      || (expiresAt && Date.parse(expiresAt) <= Date.parse(source.checkedAt))
+    ) return [];
+    return [{ id, label, status, issuer, verificationSource: source, expiresAt }];
+  });
+  const equipment = boundedTextArray(candidate.equipment, 10, 100);
+  const portfolio = array(candidate.portfolio).slice(0, 6).flatMap((value) => {
+    const item = record(value);
+    const title = text(item.title, 140);
+    const category = text(item.category, 80);
+    const url = safeHttpsUrl(item.url);
+    const verification = text(item.verification, 32);
+    return title && category && url && ["controlled-demo", "provider-attested"].includes(verification)
+      ? [{ title, category, url, verification: verification as "controlled-demo" | "provider-attested" }]
+      : [];
+  });
+  const quoteMode = text(candidate.quote_mode ?? candidate.quoteMode, 32);
+  if (
+    !roles.length
+    || !areaLabel
+    || !regions.length
+    || (rawRadius !== null && travelRadiusMiles === null)
+    || array(candidate.credentials).length !== credentials.length
+    || !portfolio.length
+    || !["published-rate", "estimate-only"].includes(quoteMode)
+  ) return undefined;
+  return {
+    roles,
+    serviceArea: { label: areaLabel, regions, travelRadiusMiles },
+    credentials,
+    equipment,
+    portfolio,
+    quoteMode: quoteMode as ProfessionalServiceEvidence["quoteMode"],
+  };
+}
 
 function serviceEvidence(candidate: Record<string, unknown>, currencyCode: string): ServiceEvidence | undefined {
   const category = text(candidate.category, 40) as ServiceCategory;
   const provider = record(candidate.provider);
   const providerName = text(provider.display_name ?? provider.displayName, 100);
+  const providerId = text(provider.id, 100).toLocaleLowerCase();
   const verification = text(provider.verification, 32);
+  const providerSource = verificationSource(provider.verification_source ?? provider.verificationSource);
   const location = record(candidate.location);
   const city = text(location.city, 100);
   const region = text(location.region, 120);
@@ -192,6 +288,11 @@ function serviceEvidence(candidate: Record<string, unknown>, currencyCode: strin
   const rawFee = cancellation.fee;
   const feeValue = rawFee === null ? null : boundedNumber(rawFee, 0, 100_000);
   const fee = feeValue === null ? null : money(feeValue, currencyCode);
+  const stay = record(candidate.stay_nights ?? candidate.stayNights);
+  const hasStay = Object.keys(stay).length > 0;
+  const stayMin = hasStay ? boundedNumber(stay.min, 1, 30) : null;
+  const stayMax = hasStay ? boundedNumber(stay.max, 1, 30) : null;
+  const professional = professionalServiceEvidence(record(candidate.professional));
   if (
     !SERVICE_CATEGORIES.has(category)
     || !providerName
@@ -209,17 +310,29 @@ function serviceEvidence(candidate: Record<string, unknown>, currencyCode: strin
     || !windows.length
     || refundable === null
     || (refundable && windowHours === null)
+    || (hasStay && (stayMin === null || stayMax === null || stayMax < stayMin))
+    || (category === "professional-service" && (!PROVIDER_ID_PATTERN.test(providerId) || !providerSource || !professional))
+    || (category !== "professional-service" && Object.keys(record(candidate.professional)).length > 0)
+    || (professional?.quoteMode === "estimate-only" && priceBasis !== "estimate")
+    || (professional?.quoteMode === "published-rate" && priceBasis === "estimate")
   ) return undefined;
   return {
     category,
-    provider: { displayName: providerName, verification: verification as ServiceEvidence["provider"]["verification"] },
+    provider: {
+      ...(providerId ? { id: providerId } : {}),
+      displayName: providerName,
+      verification: verification as ServiceEvidence["provider"]["verification"],
+      ...(providerSource ? { verificationSource: providerSource } : {}),
+    },
     location: { city, region, countryCode, venue },
     durationMinutes,
     priceBasis,
     partySize: { min: partyMin, max: partyMax },
     scheduling: { timezone, windows },
     cancellation: { refundable, windowHours, fee },
+    ...(stayMin !== null && stayMax !== null ? { stayNights: { min: stayMin, max: stayMax } } : {}),
     itineraryEligible: candidate.itinerary_eligible === true || candidate.itineraryEligible === true,
+    ...(professional ? { professional } : {}),
   };
 }
 
@@ -425,9 +538,28 @@ export function normalizeServicesJsonOffer(value: unknown, origin: Origin, fetch
   provenance.provider = singleSourceEvidence("public-services-json");
   provenance.location = singleSourceEvidence("public-services-json");
   provenance.duration = singleSourceEvidence("public-services-json");
+  provenance.priceBasis = singleSourceEvidence("public-services-json");
   provenance.scheduling = singleSourceEvidence("public-services-json");
   provenance.cancellation = singleSourceEvidence("public-services-json");
-  provenance.verification.singleSourceFields = ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"];
+  if (service.stayNights) provenance.stay = singleSourceEvidence("public-services-json");
+  if (service.professional) {
+    provenance.credentials = singleSourceEvidence("public-services-json");
+    provenance.serviceArea = singleSourceEvidence("public-services-json");
+    provenance.equipment = singleSourceEvidence("public-services-json");
+    provenance.portfolio = singleSourceEvidence("public-services-json");
+  }
+  provenance.verification.singleSourceFields = [
+    "pricing",
+    "availability",
+    "provider",
+    "location",
+    "duration",
+    "priceBasis",
+    "scheduling",
+    "cancellation",
+    ...(service.stayNights ? ["stay" as const] : []),
+    ...(service.professional ? ["credentials" as const, "serviceArea" as const, "equipment" as const, "portfolio" as const] : []),
+  ];
   return finalizeOffer({
     originId: origin.id,
     handle,
@@ -443,6 +575,7 @@ export function normalizeServicesJsonOffer(value: unknown, origin: Origin, fetch
       available,
       refundable: service.cancellation.refundable,
       occupancy: { ...service.partySize },
+      ...(service.stayNights ? { stayNights: { ...service.stayNights } } : {}),
     },
     service,
     source: { adapter: "public-services-json", live: true, fetchedAt, untrusted: true },
@@ -612,6 +745,8 @@ function matchesQuery(offer: Offer, query: string): boolean {
     service?.location.city ?? "",
     service?.location.region ?? "",
     service?.location.countryCode ?? "",
+    ...(service?.professional?.roles ?? []),
+    ...(service?.professional?.equipment ?? []),
   ]
     .join(" ")
     .toLocaleLowerCase();
@@ -775,7 +910,7 @@ export function createCatalogBrief(goalInput: string, offers: Offer[]): string {
         ? `${service.cancellation.windowHours}h refundable window`
         : "not refundable";
       lines.push(
-        `- ${offer.title} (${offer.handle}): ${priceLabel(offer)} ${service.priceBasis}; ${service.provider.displayName}; ${service.location.city}, ${service.location.region}; ${service.durationMinutes} min; party ${service.partySize.min}-${service.partySize.max}; ${cancellation}; itinerary ${service.itineraryEligible ? "eligible" : "ineligible"}.`,
+        `- ${offer.title} (${offer.handle}): ${priceLabel(offer)} ${service.priceBasis}; ${service.provider.displayName}; ${service.location.city}, ${service.location.region}; ${service.durationMinutes} min; party ${service.partySize.min}-${service.partySize.max}${service.stayNights ? `; stay ${service.stayNights.min}-${service.stayNights.max} nights` : ""}; ${cancellation}; itinerary ${service.itineraryEligible ? "eligible" : "ineligible"}.`,
         `  Source: ${offer.url}`,
       );
       continue;

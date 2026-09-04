@@ -37,6 +37,7 @@ describe("service Offer foundation", () => {
       "provider",
       "location",
       "duration",
+      "priceBasis",
       "scheduling",
       "cancellation",
     ]);
@@ -64,13 +65,72 @@ describe("service Offer foundation", () => {
         provenance: {
           verification: {
             state: "verified",
-            verifiedFields: ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"],
+            verifiedFields: ["pricing", "availability", "provider", "location", "duration", "priceBasis", "scheduling", "cancellation"],
             conflictFields: [],
           },
         },
       },
     });
     expect(result.markdown).toContain("Schedule timezone: Pacific/Honolulu");
+  });
+
+  it("normalizes and reconciles lodging stay evidence in the same Offer model", async () => {
+    const lodging = DEMO_SERVICES.find((service) => service.handle === "waikiki-courtyard-studio")!;
+    expect(normalizeServicesJsonOffer(lodging, origin, "2026-09-03T18:00:00.000Z")).toMatchObject({
+      service: {
+        category: "lodging",
+        priceBasis: "per-night",
+        stayNights: { min: 2, max: 7 },
+      },
+      constraints: { stayNights: { min: 2, max: 7 } },
+      handoff: { eligible: false, reason: "service-booking-not-enabled" },
+    });
+    const result = await interpolatePage(origin, "/services/waikiki-courtyard-studio", fixtureFetcher);
+    expect(result.offer.provenance.verification).toMatchObject({
+      state: "verified",
+      verifiedFields: expect.arrayContaining(["stay"]),
+      conflictFields: [],
+    });
+    expect(result.markdown).toContain("Stay: 2 to 7 nights");
+  });
+
+  it("normalizes and reconciles professional provider and credential evidence", async () => {
+    const electrician = DEMO_SERVICES.find((service) => service.handle === "oahu-residential-electrician")!;
+    expect(normalizeServicesJsonOffer(electrician, origin, "2026-09-03T18:00:00.000Z")).toMatchObject({
+      service: {
+        category: "professional-service",
+        priceBasis: "hourly",
+        provider: { id: "provider-kai-line-electric" },
+        professional: {
+          roles: ["licensed electrician", "residential electrician"],
+          credentials: [
+            { id: "credential-kai-electrical-license", status: "controlled-verified" },
+          ],
+        },
+      },
+    });
+
+    const result = await interpolatePage(origin, "/services/oahu-residential-electrician", fixtureFetcher);
+    expect(result.offer.provenance.verification).toMatchObject({
+      state: "verified",
+      verifiedFields: expect.arrayContaining([
+        "pricing",
+        "availability",
+        "provider",
+        "location",
+        "duration",
+        "priceBasis",
+        "scheduling",
+        "cancellation",
+        "credentials",
+        "serviceArea",
+        "equipment",
+        "portfolio",
+      ]),
+      conflictFields: [],
+    });
+    expect(result.markdown).toContain("Provider identity: provider-kai-line-electric");
+    expect(result.markdown).toContain("state electrical license");
   });
 
   it("creates a source-linked brief from the shared Offer model", () => {

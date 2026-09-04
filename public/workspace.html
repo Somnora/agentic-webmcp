@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ribband personalized decisions alpha uses permissioned recipient context to rank source-backed gift options.">
+  <title>Personalized decisions alpha | Ribband</title>
+  <link rel="icon" href="/ribband-symbol.png" type="image/png">
+  <link rel="apple-touch-icon" href="/ribband-symbol.png">
+  <link rel="stylesheet" href="/workspace.css">
+  <script type="module" src="/workspace.js"></script>
+</head>
+<body>
+  <header class="alpha-header">
+    <a class="alpha-brand" href="/" aria-label="Ribband home">
+      <img src="/ribband-lockup.png" alt="" width="980" height="520">
+    </a>
+    <div class="alpha-status">
+      <span>Personalized decisions alpha</span>
+      <small id="workspace-webmcp-status">Detecting WebMCP...</small>
+    </div>
+  </header>
+
+  <main>
+    <section class="alpha-hero" aria-labelledby="alpha-title">
+      <p class="eyebrow">ONE PROFILE, DECISION-SCOPED CONTEXT</p>
+      <h1 id="alpha-title">The person comes first.<br><span>The evidence keeps it honest.</span></h1>
+      <p>This first implementation proves Ribband can use only the recipient details you select, rank real Offers against them, and explain the match. Use the context once or save it only in this browser. The Worker stores nothing.</p>
+      <div class="vertical-roadmap" aria-label="Personalized decision roadmap">
+        <a href="/decide">Decision agent</a>
+        <span class="active">Gift proof</span>
+        <a href="/date">Date proof</a>
+        <a href="/vacation">Vacation proof</a>
+        <span>Project crew awaits verified providers</span>
+      </div>
+    </section>
+
+    <section class="alpha-workspace" aria-label="Personalized gift decision workspace">
+      <form id="gift-profile-form" class="profile-form">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Current decision</p>
+            <h2>Find a gift that fits</h2>
+          </div>
+          <span>Controlled marketplace Offers</span>
+        </div>
+
+        <label for="gift-query">What kind of gift?</label>
+        <div class="query-row">
+          <input id="gift-query" maxlength="80" value="electric guitar" required autocomplete="off">
+          <label for="gift-budget"><span>Maximum delivered price</span><input id="gift-budget" type="number" min="25" max="100000" step="25" value="900"></label>
+        </div>
+
+        <fieldset>
+          <legend>Recipient context</legend>
+          <p>Give as little or as much as you know. Every field is optional except the gift itself.</p>
+          <div class="profile-grid">
+            <label for="recipient-label"><span>Who is it for?</span><input id="recipient-label" maxlength="60" value="My nephew" autocomplete="off"></label>
+            <label for="recipient-age-band"><span>Age band</span><select id="recipient-age-band"><option value="not-provided">Not provided</option><option value="child">Child</option><option value="teen">Teen</option><option value="adult">Adult</option><option value="older-adult">Older adult</option></select></label>
+            <label class="wide" for="recipient-interests"><span>Interests</span><input id="recipient-interests" maxlength="180" value="single coil, classic shape" placeholder="drawing, dinosaurs, animation" autocomplete="off"></label>
+            <label class="wide" for="recipient-memory"><span>Experience or memory signal</span><input id="recipient-memory" maxlength="120" placeholder="We used to sketch together after school" autocomplete="off"></label>
+            <label class="wide" for="recipient-avoid"><span>Avoid or already owns</span><input id="recipient-avoid" maxlength="80" placeholder="final sale" autocomplete="off"></label>
+          </div>
+        </fieldset>
+
+        <div class="profile-controls">
+          <label for="profile-persistence"><span>Profile handling</span><select id="profile-persistence"><option value="decision-only">Use once</option><option value="saved-on-device">Save on this device</option></select></label>
+          <button id="gift-submit" type="submit">Find source-backed options</button>
+        </div>
+        <div class="local-profile-row">
+          <p id="local-profile-status">Nothing has been saved.</p>
+          <button id="delete-profile" class="text-button" type="button" hidden>Delete saved profile</button>
+        </div>
+      </form>
+
+      <aside class="context-panel" aria-labelledby="context-title">
+        <div class="section-heading compact">
+          <div>
+            <p class="kicker">Permissioned context</p>
+            <h2 id="context-title">What Ribband will use</h2>
+          </div>
+          <span>Visible before ranking</span>
+        </div>
+        <p id="context-empty" class="empty-copy">Submit a decision to see its exact profile projection.</p>
+        <ul id="context-list" class="context-list"></ul>
+        <div class="boundary-note">
+          <strong>Context boundary</strong>
+          <p>Only the facts shown here enter this request. Other saved facts are not sent. The Worker response is no-store and application logs exclude request bodies and profile values.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="results-section" aria-labelledby="results-title">
+      <div class="section-heading">
+        <div>
+          <p class="kicker">Explainable recommendation</p>
+          <h2 id="results-title">Ranked options</h2>
+        </div>
+        <span id="request-status" aria-live="polite">Waiting for a decision</span>
+      </div>
+      <div id="coverage-panel" class="coverage-panel" data-status="idle">
+        <strong>No profile context applied yet</strong>
+        <p>Ribband will show which facts were scored and stop when a hard constraint cannot be verified.</p>
+      </div>
+      <p id="results-empty" class="empty-copy">No options ranked yet.</p>
+      <div id="gift-results" class="gift-results" aria-live="polite"></div>
+    </section>
+
+    <section class="alpha-principles" aria-label="Ribband personalized decision principles">
+      <article><span>01</span><h3>Useful without a profile</h3><p>Use once is the default. A saved profile is optional.</p></article>
+      <article><span>02</span><h3>Personal facts stay separate</h3><p>Recipient context shapes ranking but never becomes merchant evidence.</p></article>
+      <article><span>03</span><h3>Hard constraints fail closed</h3><p>If current Offers cannot verify an age or safety requirement, Ribband withholds the recommendation.</p></article>
+      <article><span>04</span><h3>Action stays human</h3><p>This alpha ranks options. It does not order, pay, contact, or persist agent inference.</p></article>
+    </section>
+  </main>
+
+  <footer class="alpha-footer">
+    <span>Ribband personalized decisions alpha</span>
+    <span><a href="/">Current Challenge demo</a> | <a href="/privacy.html">Privacy</a> | <a href="https://github.com/Somnora/agentic-webmcp">Source</a></span>
+  </footer>
+</body>
+</html>

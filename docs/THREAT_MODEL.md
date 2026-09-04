@@ -39,7 +39,7 @@
 
 - Controlled public product JSON, public service JSON, Storefront GraphQL, Shopify products JSON, JSON-LD, HTML interpolation, and the bundled snapshot all project into one `Offer` protocol.
 - Marketplace evidence is accepted only when condition, seller, shipping, returns, and delivered price form a complete bounded record.
-- Service evidence is accepted only when provider label, coarse location, duration, price basis, party-size limits, timezone, published windows, and cancellation terms form a complete bounded record.
+- Service evidence is accepted only when provider label, coarse location, duration, price basis, party-size limits, timezone, published windows, and cancellation terms form a complete bounded record. Lodging additionally requires a bounded stay-length range before it can enter a vacation package.
 - Recommendation scores are deterministic and expose relevance, preference fit, condition, delivered price, seller confidence, returns, and delivery factors.
 - Taste, recipient context, priorities, must-have terms, and avoid terms are bounded decision inputs. They use a no-store POST request, never enter the request URL, and are not retained by the Worker.
 - A refinement answer is accepted only when the same bounded inputs produce a genuine competing-tradeoff checkpoint and the answer matches one of its evidence-derived choices. Clear leaders, insufficient candidates, unknown choices, and unavailable choices fail closed.
@@ -56,6 +56,11 @@
 - The controlled origin contains original guitar listing text, no external images, no forms, and no checkout or payment routes.
 - The controlled service scope contains original provider fixtures, coarse public locations, and no booking, messaging, account, or payment routes.
 - `create_activity_itinerary` is read-only. It checks destination, calendar date, one-to-three-day range, party size, budget, pace, day hours, evidence, availability, published windows, and explicit transition buffers. It preserves source URLs and returns typed conflicts. Proposed times are not reservations, and transition buffers are planning allowances rather than measured travel time.
+- `plan_personalized_vacation` is read-only and page-specific. Its bounded no-store request filters location, party size, availability, stay length, evidence conflicts, and hard dislikes before combination scoring. It itemizes published subtotals and unknown costs, and cannot save a profile, contact a provider, book, or pay.
+- `plan_decision` is read-only and page-specific. It accepts one validated `DecisionContext`, then dispatches only by its typed vertical to a fixed strategy registry. Gift is pinned to `catalog-lab`; date and vacation are pinned to `services-lab`. It cannot infer a route from free-form prompt text, switch to a caller-selected source, or dispatch staffing without verified provider and credential Offers.
+- The unified decision body is capped at 16 KiB and returns `Cache-Control: no-store`. A bounded `revisionOf` id links a replacement request, but the Worker keeps no mutable decision or profile state. The complete visible context is resubmitted on every revision.
+- Outcome proposals are bounded to date and vacation self-profile facts. Gift-recipient and partner-specific outcome memory is not persisted by the unified loop. The proposal route validates the decision id, option id, option title, outcome, feedback, and allowed-use scope, returns `persistence: none`, and stores nothing.
+- A proposal remains tentative until a human reviews the exact fact text and clicks the on-device approval control. Approval, correction, and two-step deletion occur only in browser IndexedDB and are not exposed through WebMCP or Worker routes. Approved facts are never selected automatically for a later decision.
 
 ## Approval controls
 
@@ -95,6 +100,14 @@
 | Proposal for a service Offer | HTTP 409 with `SERVICE_BOOKING_NOT_ENABLED` and no quote |
 | Itinerary with a goods Offer | HTTP 400 with no itinerary |
 | Non-eligible, cross-destination, unavailable, conflicted, out-of-window, over-budget, or party-size-incompatible service | Planning-only itinerary returns `needs-attention` with a typed blocking conflict and no reservation action |
+| Vacation request with unsupported hard evidence, excluded required categories, or no complete package under its tier ceiling | Planning-only package response returns `needs-attention`; no booking, contact, or payment action exists |
+| Oversized personalized vacation request | HTTP 400 before profile context is parsed or used |
+| Unified decision with an incompatible caller-selected origin | HTTP 400 before an origin fetch |
+| Unified staffing decision without verified provider and credential Offers | HTTP 400 with no provider recommendation or contact action |
+| Malformed revision id or unified request above 16 KiB | HTTP 400 with no stored partial decision |
+| Outcome proposal for gift, staffing, an unsupported scope, empty feedback, unknown fields, or a body above 4 KiB | HTTP 400 with no saved fact |
+| Agent attempts to approve, edit, delete, or select an on-device memory | Impossible because no WebMCP or Worker mutation route is registered |
+| Approved memory exists but the user did not select it for the current decision | The fact remains on-device and is absent from the Worker request |
 | Oversized upstream body | Stream is cancelled and live data is not claimed |
 | Origin stalls before or during body streaming | Time budget aborts the attempt and reports `timeout` |
 | Prompt injection in origin text | Shown as untrusted text and never executed |

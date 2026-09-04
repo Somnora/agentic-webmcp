@@ -148,6 +148,7 @@ export type Offer = {
     duration?: EvidenceClaim;
     scheduling?: EvidenceClaim;
     cancellation?: EvidenceClaim;
+    stay?: EvidenceClaim;
     verification: EvidenceVerification;
   };
   handoff: {
@@ -166,7 +167,7 @@ export type Offer = {
     deliveredPrice: Money;
   };
   service?: {
-    category: "activity" | "wellness" | "home-service";
+    category: "activity" | "wellness" | "home-service" | "lodging" | "dining" | "transport";
     provider: { displayName: string; verification: "controlled-demo" | "operator-attested" };
     location: {
       city: string;
@@ -175,8 +176,9 @@ export type Offer = {
       venue: "provider-location" | "customer-location" | "outdoor" | "remote";
     };
     durationMinutes: number;
-    priceBasis: "fixed" | "hourly" | "per-person" | "estimate";
+    priceBasis: "fixed" | "hourly" | "per-person" | "per-night" | "per-day" | "estimate";
     partySize: { min: number; max: number };
+    stayNights?: { min: number; max: number };
     scheduling: {
       timezone: string;
       windows: Array<{ weekday: string; startLocal: string; endLocal: string }>;
@@ -209,11 +211,13 @@ facts, normalize into `Offer`, discard chrome (nav, footer, scripts, forms). Pre
 Storefront GraphQL, then `products.json`, then JSON-LD, then HTML-to-Markdown. Never
 present HTML interpolation as live inventory if a structured adapter succeeded.
 
-When a structured Offer and page JSON-LD both exist for the same handle, the compiler reconciles the decision fields appropriate to that vertical. Marketplace fields are price, availability, condition, shipping, and returns. Service fields are price, availability, provider, location, duration, scheduling, and cancellation. Matching values become `verified`; missing corroboration remains `single-source`; mismatches become `conflict`. The structured adapter remains primary, conflict details remain visible, and a conflicted reconciled Offer is research-only.
+When a structured Offer and page JSON-LD both exist for the same handle, the compiler reconciles the decision fields appropriate to that vertical. Marketplace fields are price, availability, condition, shipping, and returns. Service fields are price, availability, provider, location, duration, scheduling, cancellation, and lodging stay length when supplied. Matching values become `verified`; missing corroboration remains `single-source`; mismatches become `conflict`. The structured adapter remains primary, conflict details remain visible, and a conflicted reconciled Offer is research-only.
 
 Service Offers are always planning-only in this Challenge build. A live service can be searched, inspected, compared, interpolated, and added to an activity itinerary, but its handoff reason is `service-booking-not-enabled`.
 
 The itinerary is a deterministic projection of one to four service Offers. It accepts a start date, one to three days, party size, optional activity budget, relaxed or balanced or full pace, earliest start, and latest end. The planner keeps one destination and timezone, matches weekday windows, applies explicit same-city or cross-city transition buffers, enforces a daily activity cap, totals party-aware prices, and returns scheduled items plus typed conflicts. Missing dates, destination mismatches, party-size failures, unavailable or conflicted evidence, window mismatches, daily-capacity failures, and budget exclusions remain visible instead of being silently discarded. Published windows are not reservations or availability for a particular date. Transition buffers are planning allowances, not measured travel times.
+
+The vacation package planner is another deterministic projection of the same service Offers. For a controlled two or three night Oahu request, it filters location, party size, published availability, stay length, evidence conflicts, and hard dislikes before bounded combination scoring. It returns value, balanced, and signature packages containing lodging, transport, dining, and one to three activities. Each package keeps category subtotals, an integer-cent contingency, explicit unknown costs, and canonical source URLs. It does not confirm date-specific inventory, contact a provider, book, or pay.
 
 ## Purchase review, approval, and decision record
 
@@ -275,6 +279,12 @@ Read-only (`readOnlyHint: true`, `untrustedContentHint: true`):
    into an Offer plus compact Markdown. Path only, never a free-form URL.
 8. `create_catalog_brief` : `{ goal, handles }` : deterministic Markdown from selected offers.
 9. `create_activity_itinerary` : `{ goal, handles, date?, days?, partySize?, budget?, pace?, earliestStart?, latestEnd? }` : constraint-aware, planning-only schedule with source URLs, proposed local times, party-aware totals, typed conflicts, and explicit booking limitations.
+
+The personalized pages register one page-specific read-only tool each. `/workspace` exposes `recommend_gift`, `/date` exposes `plan_personalized_date`, and `/vacation` exposes `plan_personalized_vacation`. The unified `/decide` page exposes only `plan_decision`. Its required `vertical` field selects one deterministic gift, date, or vacation strategy. The strategy pins its authorized origin, validates the same `DecisionContext`, and returns a shared result envelope with strategy, source evidence, exact context projection, option count, action boundary, and revision linkage. These tools project request-only decision context into the same Offer compiler and do not add mutation capability to the top-level Challenge workspace.
+
+`POST /api/decisions/plan` is the single orchestrator endpoint. Its body is capped at 16 KiB. Gift routes only to `catalog-lab`; date and vacation route only to `services-lab`. A supplied query or body origin must match the selected strategy. Staffing fails closed until provider identity, credential status, and service-area evidence can be represented by verified Offers. Revisions send the complete context again with a bounded `revisionOf` id. The Worker stores no decision graph or hidden conversation state.
+
+`POST /api/profile-updates/propose` closes the outcome loop without adding Worker persistence. It accepts a bounded date or vacation outcome, option reference, user feedback, and allowed-use scope. It returns a tentative `liked-experience` or `disliked-experience` draft plus `awaiting-human-confirmation`. The response always reports `persistence: none`. The page may convert that draft to `inferred-and-confirmed` only after a visible human approval, then save it in browser IndexedDB. Editing before approval changes its source to `user-stated`. Saved facts remain unselected until the user explicitly includes them in another complete `DecisionContext`. The WebMCP surface contains no proposal, approval, profile-write, correction, or deletion tool.
 
 Confirm-write (`readOnlyHint: false`, `destructiveHint: false`):
 

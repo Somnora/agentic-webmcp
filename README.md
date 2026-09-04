@@ -43,9 +43,15 @@ The first nine tools are read-only and untrusted-content annotated. `propose_add
 
 The origin is a separate public Worker with live HTTPS JSON and semantic HTML responses. The interface labels it as first-party controlled demonstration data. It is not eBay and it is not presented as inventory from an unrelated merchant. The `services-lab` record uses the same controlled hostname with a disjoint `/services/*` allowlist and the `public-services-json` adapter. The secondary `review-shop` record preserves the operator-authorized Shopify adapter and a labeled research-only snapshot fallback.
 
-The services directory contains seven original fixtures. Five are Oahu experiences covering surf, food, botanical sketching, sunset photography, and massage. A Tangier archery lesson proves destination conflict handling, while a home repair walkthrough proves that not every service is itinerary-eligible. Each Offer carries provider identity, coarse location, duration, price basis, party-size limits, timezone, published weekly windows, cancellation terms, and itinerary eligibility. Product JSON and service JSON remain separate adapters, but both normalize into the same Offer graph and provenance system.
+The services directory contains fourteen original fixtures. Five Oahu experiences cover surf, food, botanical sketching, sunset photography, and massage. Three lodging, two transportation, and two dining Offers support the local vacation-package proof. A Tangier archery lesson proves destination conflict handling, while a home repair walkthrough proves that not every service is itinerary-eligible. Each Offer carries provider identity, coarse location, duration, price basis, party-size limits, timezone, published weekly windows, cancellation terms, and itinerary eligibility. Lodging also carries a verified stay-length range. Product JSON and service JSON remain separate adapters, but both normalize into the same Offer graph and provenance system.
 
 The itinerary planner proposes local times only when a service fits the selected dates, published weekday windows, party size, budget, pace, and day hours. Relaxed, balanced, and full pace policies set explicit daily capacity and conservative same-city or cross-city transition buffers. The output separates scheduled activities from conflicts, preserves every canonical source, and records the plan in the downloadable dossier. Proposed times are not reservations, transition buffers are not measured travel times, and Ribband does not contact a provider or take payment.
+
+The post-submission `/vacation` proof uses request-only memories, past trips, preferences, dates, party size, and budget to build value, balanced, and signature packages from those controlled Offers. Every package includes lodging, transportation, dining, activities, category totals, contingency, unknown costs, and source evidence. This local branch has not been deployed to the live Challenge URL or added to the submitted Devpost entry.
+
+The post-submission `/decide` proof is the unified decision orchestrator. One read-only `plan_decision` WebMCP tool and one bounded `POST /api/decisions/plan` endpoint accept the shared `DecisionContext`, dispatch by an explicit gift, date, or vacation vertical, and return one envelope containing the strategy, evidence origin, exact context projection, options, action boundary, and revision linkage. A revision resubmits the complete visible context and points to the prior page-memory decision id. The Worker stores neither request. Staffing fails closed until the Offer protocol has verified provider and credential evidence. This local branch has not been deployed to the live Challenge URL or added to the submitted Devpost entry.
+
+The same local `/decide` proof now closes one outcome loop. A user can choose a date or vacation option, report whether it was selected, completed, or not for them, and send a bounded reason to `POST /api/profile-updates/propose`. The Worker returns a tentative profile diff with `persistence: none`. Only the visible Approve and save on this device control can turn it into a confirmed IndexedDB fact. The user may edit, reject, correct, or delete that fact, and must explicitly select it before a later decision includes it. Gift-recipient outcomes remain decision-only. No WebMCP tool can write profile memory.
 
 Each origin is an authorization manifest with exact host and path rules, adapter capabilities, an upstream time budget, byte limits, freshness policy, and a review date. See [Origin onboarding](docs/ORIGIN_ONBOARDING.md). Anchored catch-all and nested product patterns are rejected during registry validation. Runtime requests fail closed at `reviewAfter`, expired origins disappear from selection, and conformance reports the expiry without contacting the origin. Offer contract validation checks every normalized Offer against its manifest before it reaches an API response.
 
@@ -169,6 +175,13 @@ Select `Independent Services Directory`, then search `Oahu` to explore the local
 | `honolulu-restorative-massage` | Oahu wellness service limited to two people |
 | `tangier-traditional-archery` | Deliberate non-Oahu destination conflict |
 | `home-repair-walkthrough` | Deliberately not itinerary-eligible |
+| `waikiki-courtyard-studio` | Lower-cost lodging with a two-night minimum |
+| `ko-olina-garden-rooms` | Quiet lodging with a three-night minimum |
+| `north-shore-cottage-stay` | Higher-cost lodging matched to coastal interests |
+| `oahu-shared-airport-transfer` | Fixed arrival and departure transport |
+| `oahu-compact-car` | Per-day transport with explicit excluded costs |
+| `honolulu-garden-supper` | Plant-forward source-backed dining |
+| `haleiwa-harbor-table` | North Shore source-backed dining |
 
 Copy-paste service tasks:
 

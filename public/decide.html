@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ribband routes gift, date, vacation, and staffing decisions through one explainable, request-only agent.">
+  <title>Unified decision agent | Ribband</title>
+  <link rel="icon" href="/ribband-symbol.png" type="image/png">
+  <link rel="apple-touch-icon" href="/ribband-symbol.png">
+  <link rel="stylesheet" href="/workspace.css">
+  <script type="module" src="/decide.js"></script>
+</head>
+<body>
+  <header class="alpha-header">
+    <a class="alpha-brand" href="/" aria-label="Ribband home">
+      <img src="/ribband-lockup.png" alt="" width="980" height="520">
+    </a>
+    <div class="alpha-status">
+      <span>Unified decision agent</span>
+      <small id="decision-webmcp-status">Detecting WebMCP...</small>
+    </div>
+  </header>
+
+  <main>
+    <section class="alpha-hero" aria-labelledby="decision-title">
+      <p class="eyebrow">ONE CONTEXT BOUNDARY, FOUR STRATEGIES</p>
+      <h1 id="decision-title">Tell it what matters.<br><span>See how it decided.</span></h1>
+      <p>Ribband turns the details you choose to share into source-backed gift, date, vacation, or project staffing options. The agent selects a bounded strategy, keeps evidence and tradeoffs visible, and lets you revise the complete context without silently remembering anything.</p>
+      <div class="vertical-roadmap" aria-label="Personalized decision roadmap">
+        <span class="active">Decision agent</span>
+        <a href="/workspace">Gift proof</a>
+        <a href="/date">Date proof</a>
+        <a href="/vacation">Vacation proof</a>
+        <span class="active">Staffing verified</span>
+      </div>
+    </section>
+
+    <section class="alpha-workspace decision-workspace" aria-label="Unified decision workspace">
+      <form id="decision-form" class="profile-form">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Decision brief</p>
+            <h2>What are we deciding?</h2>
+          </div>
+          <span id="decision-strategy-label">Gift marketplace strategy</span>
+        </div>
+
+        <div class="decision-core-grid">
+          <label for="decision-vertical"><span>Decision type</span><select id="decision-vertical"><option value="gift">Birthday gift</option><option value="date">Date plan</option><option value="vacation">Vacation package</option><option value="staffing">Project staffing</option></select></label>
+          <label for="decision-subject"><span>Subject</span><select id="decision-subject"><option value="profile-recipient">Loved One (Recipient)</option><option value="profile-self">Myself</option></select></label>
+          <label for="decision-budget"><span>Maximum total budget, USD</span><input id="decision-budget" type="number" min="25" max="100000" step="25" value="900" required></label>
+          <label class="wide" for="decision-goal"><span>Goal</span><input id="decision-goal" maxlength="180" value="Find a thoughtful electric guitar for my nephew" required autocomplete="off"></label>
+          <label class="wide" for="decision-avoid"><span>Hard dislikes or exclusions</span><input id="decision-avoid" maxlength="120" placeholder="Anything that must be filtered before scoring" autocomplete="off"></label>
+        </div>
+
+        <fieldset id="gift-fields" class="decision-specific">
+          <legend>Gift &amp; Retail context</legend>
+          <p>Age can be useful context, but the controlled marketplace cannot verify age suitability. The agent will not pretend it can.</p>
+          <div class="decision-field-grid">
+            <label for="gift-intent"><span>Retail intent</span><select id="gift-intent"><option value="gift">Gift for loved one</option><option value="self-treat">Self-treat / treat myself</option></select></label>
+            <label for="gift-occasion"><span>Occasion</span><input id="gift-occasion" maxlength="80" value="Birthday" autocomplete="off"></label>
+            <label for="gift-deadline"><span>Occasion deadline</span><input id="gift-deadline" type="date"></label>
+            <label for="gift-query"><span>What kind of item?</span><input id="gift-query" maxlength="80" value="electric guitar" required autocomplete="off"></label>
+            <label for="gift-interests"><span>What do they already like?</span><input id="gift-interests" maxlength="180" value="single coil guitars, classic shapes" autocomplete="off"></label>
+            <label class="wide" for="gift-memory"><span>Fond memory or personal signal</span><input id="gift-memory" maxlength="180" value="learning favorite songs together" autocomplete="off"></label>
+            <label class="wide" for="gift-existing-items"><span>Items already owned (anti-duplicate)</span><input id="gift-existing-items" maxlength="180" placeholder="e.g. Sunburst S-Style Electric" autocomplete="off"></label>
+          </div>
+        </fieldset>
+
+        <fieldset id="date-fields" class="decision-specific" hidden>
+          <legend>Date context</legend>
+          <p>Ribband looks for overlap across both people and filters repeats or hard dislikes before scoring.</p>
+          <div class="decision-field-grid">
+            <label for="date-day"><span>Date</span><input id="date-day" type="date" value="2026-10-10"></label>
+            <label for="date-mood"><span>Desired mood</span><select id="date-mood"><option value="calm and connected">Calm and connected</option><option value="playful and active">Playful and active</option><option value="creative and curious">Creative and curious</option></select></label>
+            <label for="date-your-interests"><span>Your interests</span><input id="date-your-interests" maxlength="180" value="photography, local food" autocomplete="off"></label>
+            <label for="date-their-interests"><span>Their interests</span><input id="date-their-interests" maxlength="180" value="surf, local history" autocomplete="off"></label>
+            <label class="wide" for="date-previous"><span>Activities already done together</span><input id="date-previous" maxlength="180" value="movie night" autocomplete="off"></label>
+          </div>
+        </fieldset>
+
+        <fieldset id="vacation-fields" class="decision-specific" hidden>
+          <legend>Vacation context</legend>
+          <p>Past places, memories, and liked experiences are only used when you include them in this request.</p>
+          <div class="decision-field-grid">
+            <label for="vacation-arrival"><span>Arrival</span><input id="vacation-arrival" type="date" value="2026-10-09"></label>
+            <label for="vacation-departure"><span>Departure</span><input id="vacation-departure" type="date" value="2026-10-12"></label>
+            <label for="vacation-travelers"><span>Travelers</span><input id="vacation-travelers" type="number" min="1" max="8" value="2"></label>
+            <label for="vacation-pace"><span>Pace</span><select id="vacation-pace"><option value="one anchor activity per day">One anchor per day</option><option value="balanced">Balanced</option><option value="full days">Full days</option></select></label>
+            <label for="vacation-visited"><span>Countries or places visited</span><input id="vacation-visited" maxlength="180" value="Portugal, Canada" autocomplete="off"></label>
+            <label for="vacation-experiences"><span>Experiences that resonated</span><input id="vacation-experiences" maxlength="180" value="coastal photography, beginner surf" autocomplete="off"></label>
+            <label class="wide" for="vacation-memories"><span>Fond memories</span><input id="vacation-memories" maxlength="180" value="quiet childhood mornings near water, walkable local food" autocomplete="off"></label>
+            <label for="vacation-lodging"><span>Lodging style</span><input id="vacation-lodging" maxlength="120" value="small quiet lodging near water" autocomplete="off"></label>
+            <label for="vacation-dining"><span>Dining preference</span><input id="vacation-dining" maxlength="120" value="local plant-forward food" autocomplete="off"></label>
+            <label for="vacation-exploration-mode"><span>Exploration mode</span><select id="vacation-exploration-mode">
+              <option value="balanced">Balanced (familiar anchor + new adventure)</option>
+              <option value="comfort-seeking">Comfort-seeking (proven favorites & fond memories)</option>
+              <option value="novelty-seeking">Novelty-seeking (experience gaps & new horizons)</option>
+            </select></label>
+          </div>
+        </fieldset>
+
+        <fieldset id="staffing-fields" class="decision-specific" hidden>
+          <legend>Staffing context</legend>
+          <p>Provider credentials, equipment, and quote modes are verified against authorized Offer records. Provider contact and booking remain human-only.</p>
+          <div class="decision-field-grid">
+            <label for="staffing-location"><span>Project site or neighborhood</span><input id="staffing-location" maxlength="120" value="Honolulu" placeholder="e.g. Kailua, Honolulu, North Shore" autocomplete="off"></label>
+            <label for="staffing-date"><span>Project date</span><input id="staffing-date" type="date" value="2026-10-17"></label>
+            <label for="staffing-hours"><span>Project hours</span><input id="staffing-hours" type="number" min="1" max="16" value="8"></label>
+            <label class="wide" for="staffing-roles"><span>Required roles</span><input id="staffing-roles" maxlength="180" value="residential electrician, finish carpenter" autocomplete="off"></label>
+            <label for="staffing-credentials"><span>Required credentials</span><input id="staffing-credentials" maxlength="180" value="state electrical license" autocomplete="off"></label>
+            <label for="staffing-equipment"><span>Required equipment</span><input id="staffing-equipment" maxlength="180" value="dust extraction saws" autocomplete="off"></label>
+          </div>
+        </fieldset>
+
+        <fieldset id="approved-memory-fields" class="memory-bank" hidden>
+          <legend>Approved on-device memory</legend>
+          <p>Saved facts are never used automatically. Select only the memories you want included in this decision.</p>
+          <p id="approved-memory-empty" class="empty-copy">No approved memories are available for this decision type.</p>
+          <ul id="approved-memory-list" class="memory-list"></ul>
+          <p id="approved-memory-status" class="memory-status" aria-live="polite">On-device memory is loading.</p>
+        </fieldset>
+
+        <div id="decision-revision" class="revision-note" hidden>
+          <strong>Revision mode</strong>
+          <p>Edit any field and submit again. Ribband sends the entire visible context as a replacement and links it to the prior decision.</p>
+        </div>
+
+        <div class="profile-controls decision-submit-row">
+          <label for="decision-location"><span>Controlled evidence area</span><select id="decision-location"><option value="oahu-hawaii">Oahu, Hawaii</option></select></label>
+          <button id="decision-submit" type="submit">Plan this decision</button>
+        </div>
+        <div class="local-profile-row"><p>The decision request is not saved. Only a separately reviewed memory can be stored on this device.</p></div>
+      </form>
+
+      <aside class="context-panel" aria-labelledby="decision-context-title">
+        <div class="section-heading compact">
+          <div>
+            <p class="kicker">Permissioned context</p>
+            <h2 id="decision-context-title">What the agent used</h2>
+          </div>
+          <span>Inspectable after every run</span>
+        </div>
+        <p id="decision-context-empty" class="empty-copy">Plan a decision to see the exact facts, constraints, strategy, and evidence origin.</p>
+        <ul id="decision-context-list" class="context-list"></ul>
+        <div class="boundary-note">
+          <strong>Human action boundary</strong>
+          <p>Results are proposals only. The agent cannot contact a provider, book, buy, contract, or pay. An inferred memory requires a separate visible approval.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="results-section" aria-labelledby="decision-results-title">
+      <div class="section-heading">
+        <div>
+          <p class="kicker">Orchestrated result</p>
+          <h2 id="decision-results-title">Options with visible tradeoffs</h2>
+        </div>
+        <span id="decision-request-status" aria-live="polite">Waiting for a decision</span>
+      </div>
+      <div id="decision-summary" class="coverage-panel" data-status="idle">
+        <strong>No strategy has run yet</strong>
+        <p>The result will identify the selected strategy, source state, context projection, and available next actions.</p>
+      </div>
+      <p id="decision-results-empty" class="empty-copy">No options planned yet.</p>
+      <div id="decision-results" class="decision-results" aria-live="polite"></div>
+
+      <section id="decision-outcome-panel" class="outcome-panel" aria-labelledby="decision-outcome-title" hidden>
+        <div>
+          <p class="kicker">Outcome signal</p>
+          <h3 id="decision-outcome-title">What happened with this option?</h3>
+          <p id="decision-outcome-selection"></p>
+        </div>
+        <div class="outcome-grid">
+          <label for="decision-outcome"><span>Outcome</span><select id="decision-outcome"><option value="selected">I selected it</option><option value="completed">I did it and liked it</option><option value="not-for-me">It was not for me</option></select></label>
+          <label for="decision-memory-scope"><span>Allowed future use</span><select id="decision-memory-scope"><option value="current">This decision type only</option><option value="experiences">Dates and vacations</option></select></label>
+          <label class="wide" for="decision-outcome-feedback"><span>Why did it work or not work?</span><input id="decision-outcome-feedback" maxlength="180" placeholder="A short reason the agent can turn into a reviewable memory" autocomplete="off"></label>
+        </div>
+        <div class="outcome-actions">
+          <button id="decision-propose-memory" type="button">Propose a memory</button>
+          <button id="decision-dismiss-outcome" class="secondary-button" type="button">Keep this outcome decision-only</button>
+        </div>
+        <p id="decision-outcome-status" class="memory-status" aria-live="polite">Nothing has been saved.</p>
+      </section>
+
+      <section id="decision-proposal-panel" class="proposal-panel" aria-labelledby="decision-proposal-title" hidden>
+        <div>
+          <p class="kicker">Approval required</p>
+          <h3 id="decision-proposal-title">Review the proposed profile change</h3>
+        </div>
+        <label for="decision-proposal-value"><span>Exact memory text</span><input id="decision-proposal-value" maxlength="240" autocomplete="off"></label>
+        <dl id="decision-proposal-details" class="proposal-details"></dl>
+        <p id="decision-proposal-reason"></p>
+        <div class="outcome-actions">
+          <button id="decision-approve-memory" type="button">Approve and save on this device</button>
+          <button id="decision-reject-memory" class="secondary-button" type="button">Reject proposal</button>
+        </div>
+        <p>Approval stores only the text and scope shown above in this browser. The Worker does not receive the approval or store the fact.</p>
+      </section>
+    </section>
+
+    <section class="alpha-principles" aria-label="Unified decision agent principles">
+      <article><span>01</span><h3>One typed brief</h3><p>Every vertical enters through the same validated context and result envelope.</p></article>
+      <article><span>02</span><h3>Bounded routing</h3><p>The selected vertical, not an inferred prompt label, chooses one fixed strategy and evidence origin.</p></article>
+      <article><span>03</span><h3>Full-context revision</h3><p>A revision replaces the complete visible context and points back to the prior decision.</p></article>
+      <article><span>04</span><h3>No silent action</h3><p>Handoff and memory remain unavailable until a person explicitly approves a future capability.</p></article>
+    </section>
+  </main>
+
+  <footer class="alpha-footer">
+    <span>Ribband unified decision agent alpha</span>
+    <span><a href="/privacy.html">Privacy</a> | <a href="https://github.com/Somnora/agentic-webmcp">Source</a></span>
+  </footer>
+</body>
+</html>

@@ -94,11 +94,27 @@ function jsonLdServiceOffer(service: Record<string, unknown>, origin: Origin, ha
   const offers = array(service.offers).map(record);
   const offer = offers[0] ?? {};
   const availability = text(offer.availability, 200).toLocaleLowerCase();
+  function parsedProperty(name: string, maximumLength = 8000): unknown {
+    const raw = text(properties.get(name), maximumLength);
+    if (!raw) return undefined;
+    return JSON.parse(raw) as unknown;
+  }
   let windows: unknown[] = [];
-  const rawWindows = text(properties.get("scheduling_windows"), 1600);
+  let providerVerificationSource: unknown;
+  let professionalRoles: unknown;
+  let professionalServiceArea: unknown;
+  let professionalCredentials: unknown;
+  let professionalEquipment: unknown;
+  let professionalPortfolio: unknown;
   try {
-    const parsed: unknown = JSON.parse(rawWindows);
+    const parsed = parsedProperty("scheduling_windows", 1600);
     windows = Array.isArray(parsed) ? parsed : [];
+    providerVerificationSource = parsedProperty("provider_verification_source", 1200);
+    professionalRoles = parsedProperty("professional_roles", 1200);
+    professionalServiceArea = parsedProperty("professional_service_area", 2000);
+    professionalCredentials = parsedProperty("professional_credentials", 8000);
+    professionalEquipment = parsedProperty("professional_equipment", 2000);
+    professionalPortfolio = parsedProperty("professional_portfolio", 6000);
   } catch {
     return null;
   }
@@ -109,8 +125,10 @@ function jsonLdServiceOffer(service: Record<string, unknown>, origin: Origin, ha
     title: text(service.name, 160),
     description: text(service.description, 600),
     provider: {
+      id: properties.get("provider_id") ?? provider.identifier,
       display_name: text(provider.name, 100),
       verification: properties.get("provider_verification"),
+      verification_source: providerVerificationSource,
     },
     category: text(service.serviceType, 40),
     location: {
@@ -133,6 +151,18 @@ function jsonLdServiceOffer(service: Record<string, unknown>, origin: Origin, ha
       window_hours: properties.get("cancellation_window_hours"),
       fee: properties.get("cancellation_fee"),
     },
+    stay_nights: properties.has("stay_nights_min") || properties.has("stay_nights_max") ? {
+      min: properties.get("stay_nights_min"),
+      max: properties.get("stay_nights_max"),
+    } : undefined,
+    professional: properties.has("professional_roles") ? {
+      roles: professionalRoles,
+      service_area: professionalServiceArea,
+      credentials: professionalCredentials,
+      equipment: professionalEquipment,
+      portfolio: professionalPortfolio,
+      quote_mode: properties.get("professional_quote_mode"),
+    } : undefined,
     itinerary_eligible: properties.get("itinerary_eligible"),
     available: availability.includes("instock") || availability.includes("limitedavailability"),
   }, origin, fetchedAt);
@@ -141,9 +171,28 @@ function jsonLdServiceOffer(service: Record<string, unknown>, origin: Origin, ha
   provenance.provider = singleSourceEvidence("json-ld");
   provenance.location = singleSourceEvidence("json-ld");
   provenance.duration = singleSourceEvidence("json-ld");
+  provenance.priceBasis = singleSourceEvidence("json-ld");
   provenance.scheduling = singleSourceEvidence("json-ld");
   provenance.cancellation = singleSourceEvidence("json-ld");
-  provenance.verification.singleSourceFields = ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"];
+  if (normalized.service?.stayNights) provenance.stay = singleSourceEvidence("json-ld");
+  if (normalized.service?.professional) {
+    provenance.credentials = singleSourceEvidence("json-ld");
+    provenance.serviceArea = singleSourceEvidence("json-ld");
+    provenance.equipment = singleSourceEvidence("json-ld");
+    provenance.portfolio = singleSourceEvidence("json-ld");
+  }
+  provenance.verification.singleSourceFields = [
+    "pricing",
+    "availability",
+    "provider",
+    "location",
+    "duration",
+    "priceBasis",
+    "scheduling",
+    "cancellation",
+    ...(normalized.service?.stayNights ? ["stay" as const] : []),
+    ...(normalized.service?.professional ? ["credentials" as const, "serviceArea" as const, "equipment" as const, "portfolio" as const] : []),
+  ];
   return finalizeOffer({
     ...normalized,
     source: { adapter: "json-ld", live: true, fetchedAt, untrusted: true },
@@ -351,6 +400,17 @@ function offerFacts(offer: Offer): string {
       `Price basis: ${offer.service.priceBasis}`,
       `Schedule timezone: ${offer.service.scheduling.timezone}`,
       `Cancellation: ${offer.service.cancellation.refundable ? `${offer.service.cancellation.windowHours} hour window` : "not refundable"}`,
+      ...(offer.service.stayNights ? [`Stay: ${offer.service.stayNights.min} to ${offer.service.stayNights.max} nights`] : []),
+      ...(offer.service.professional ? [
+        `Provider identity: ${offer.service.provider.id}`,
+        `Provider verification source: ${offer.service.provider.verificationSource?.label} (${offer.service.provider.verificationSource?.url})`,
+        `Roles: ${offer.service.professional.roles.join(", ")}`,
+        `Service area: ${offer.service.professional.serviceArea.label} (${offer.service.professional.serviceArea.regions.join(", ")})`,
+        `Credentials: ${offer.service.professional.credentials.map((credential) => `${credential.label}: ${credential.status} via ${credential.verificationSource.label}`).join("; ") || "none required"}`,
+        `Equipment: ${offer.service.professional.equipment.join(", ") || "not published"}`,
+        `Portfolio: ${offer.service.professional.portfolio.map((item) => `${item.title}: ${item.verification}`).join("; ")}`,
+        `Quote mode: ${offer.service.professional.quoteMode}`,
+      ] : []),
     ] : []),
     ...(offer.description ? ["", offer.description] : []),
     ...(variants.length ? ["", "Variants:", ...variants.map((item) => `- ${item}`)] : []),

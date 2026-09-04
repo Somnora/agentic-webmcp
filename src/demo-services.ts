@@ -9,8 +9,13 @@ export type DemoService = {
   handle: string;
   title: string;
   description: string;
-  provider: { display_name: string; verification: "controlled-demo" };
-  category: "activity" | "wellness" | "home-service";
+  provider: {
+    id?: string;
+    display_name: string;
+    verification: "controlled-demo";
+    verification_source?: { label: string; url: string; checked_at: string };
+  };
+  category: "activity" | "wellness" | "home-service" | "lodging" | "dining" | "transport" | "professional-service";
   location: {
     city: string;
     region: string;
@@ -20,11 +25,32 @@ export type DemoService = {
   duration_minutes: number;
   price: string;
   currency_code: "USD";
-  price_basis: "fixed" | "hourly" | "per-person" | "estimate";
+  price_basis: "fixed" | "hourly" | "per-person" | "per-night" | "per-day" | "estimate";
   party_size: { min: number; max: number };
   scheduling: { timezone: string; windows: DemoServiceWindow[] };
   cancellation: { refundable: boolean; window_hours: number | null; fee: string | null };
+  stay_nights?: { min: number; max: number };
   itinerary_eligible: boolean;
+  professional?: {
+    roles: string[];
+    service_area: { label: string; regions: string[]; travel_radius_miles: number | null };
+    credentials: Array<{
+      id: string;
+      label: string;
+      status: "controlled-verified" | "provider-attested" | "unverified" | "not-required";
+      issuer: string | null;
+      verification_source: { label: string; url: string; checked_at: string };
+      expires_at: string | null;
+    }>;
+    equipment: string[];
+    portfolio: Array<{
+      title: string;
+      category: string;
+      url: string;
+      verification: "controlled-demo" | "provider-attested";
+    }>;
+    quote_mode: "published-rate" | "estimate-only";
+  };
   available: boolean;
 };
 
@@ -200,6 +226,457 @@ export const DEMO_SERVICES: readonly DemoService[] = Object.freeze([
     },
     cancellation: { refundable: true, window_hours: 24, fee: "0.00" },
     itinerary_eligible: false,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-waikiki-courtyard-studio",
+    handle: "waikiki-courtyard-studio",
+    title: "Waikiki Courtyard Studio",
+    description: "A practical Oahu lodging base near walkable local food and bus routes, with a compact kitchenette, shaded courtyard, and a quiet-hours policy.",
+    provider: { display_name: "Courtyard Atlas Rooms", verification: "controlled-demo" },
+    category: "lodging",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 1440,
+    price: "155.00",
+    currency_code: "USD",
+    price_basis: "per-night",
+    party_size: { min: 1, max: 2 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Monday", start_local: "15:00", end_local: "21:00" },
+        { weekday: "Tuesday", start_local: "15:00", end_local: "21:00" },
+        { weekday: "Wednesday", start_local: "15:00", end_local: "21:00" },
+        { weekday: "Thursday", start_local: "15:00", end_local: "21:00" },
+        { weekday: "Friday", start_local: "15:00", end_local: "21:00" },
+        { weekday: "Saturday", start_local: "15:00", end_local: "21:00" },
+        { weekday: "Sunday", start_local: "15:00", end_local: "21:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 72, fee: "155.00" },
+    stay_nights: { min: 2, max: 7 },
+    itinerary_eligible: false,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-ko-olina-garden-rooms",
+    handle: "ko-olina-garden-rooms",
+    title: "Ko Olina Garden Rooms",
+    description: "A small Oahu lodging property shaped around quiet mornings near the water, garden paths, private balconies, and a calm residential scale.",
+    provider: { display_name: "Garden Current Lodging", verification: "controlled-demo" },
+    category: "lodging",
+    location: { city: "Kapolei", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 1440,
+    price: "210.00",
+    currency_code: "USD",
+    price_basis: "per-night",
+    party_size: { min: 1, max: 4 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Monday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Tuesday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Wednesday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Thursday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Friday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Saturday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Sunday", start_local: "15:00", end_local: "20:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 120, fee: "210.00" },
+    stay_nights: { min: 3, max: 7 },
+    itinerary_eligible: false,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-north-shore-cottage-stay",
+    handle: "north-shore-cottage-stay",
+    title: "North Shore Cottage Stay",
+    description: "A private Oahu cottage near Haleiwa for coastal photography, early shoreline walks, and a slower small-scale North Shore rhythm.",
+    provider: { display_name: "Shoreline Field House", verification: "controlled-demo" },
+    category: "lodging",
+    location: { city: "Haleiwa", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 1440,
+    price: "285.00",
+    currency_code: "USD",
+    price_basis: "per-night",
+    party_size: { min: 1, max: 4 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Monday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Tuesday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Wednesday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Thursday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Friday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Saturday", start_local: "15:00", end_local: "20:00" },
+        { weekday: "Sunday", start_local: "15:00", end_local: "20:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 168, fee: "285.00" },
+    stay_nights: { min: 2, max: 7 },
+    itinerary_eligible: false,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-shared-airport-transfer",
+    handle: "oahu-shared-airport-transfer",
+    title: "Oahu Round-Trip Shared Airport Transfer",
+    description: "A fixed-price arrival and departure transfer package between Honolulu airport and one Oahu lodging address for up to four travelers.",
+    provider: { display_name: "Island Arrival Cooperative", verification: "controlled-demo" },
+    category: "transport",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 120,
+    price: "96.00",
+    currency_code: "USD",
+    price_basis: "fixed",
+    party_size: { min: 1, max: 4 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Monday", start_local: "06:00", end_local: "22:00" },
+        { weekday: "Tuesday", start_local: "06:00", end_local: "22:00" },
+        { weekday: "Wednesday", start_local: "06:00", end_local: "22:00" },
+        { weekday: "Thursday", start_local: "06:00", end_local: "22:00" },
+        { weekday: "Friday", start_local: "06:00", end_local: "22:00" },
+        { weekday: "Saturday", start_local: "06:00", end_local: "22:00" },
+        { weekday: "Sunday", start_local: "06:00", end_local: "22:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 24, fee: "0.00" },
+    itinerary_eligible: false,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-compact-car",
+    handle: "oahu-compact-car",
+    title: "Oahu Compact Car",
+    description: "A compact car base rate for independent Oahu exploring. Fuel, parking, taxes, optional coverage, and date-specific inventory are not included.",
+    provider: { display_name: "Circle Island Mobility", verification: "controlled-demo" },
+    category: "transport",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 1440,
+    price: "78.00",
+    currency_code: "USD",
+    price_basis: "per-day",
+    party_size: { min: 1, max: 4 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Monday", start_local: "07:00", end_local: "20:00" },
+        { weekday: "Tuesday", start_local: "07:00", end_local: "20:00" },
+        { weekday: "Wednesday", start_local: "07:00", end_local: "20:00" },
+        { weekday: "Thursday", start_local: "07:00", end_local: "20:00" },
+        { weekday: "Friday", start_local: "07:00", end_local: "20:00" },
+        { weekday: "Saturday", start_local: "07:00", end_local: "20:00" },
+        { weekday: "Sunday", start_local: "07:00", end_local: "20:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 48, fee: "78.00" },
+    itinerary_eligible: false,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-honolulu-garden-supper",
+    handle: "honolulu-garden-supper",
+    title: "Honolulu Garden Supper",
+    description: "A calm courtyard dinner with plant-forward plates, local island ingredients, and an unhurried shared-table service.",
+    provider: { display_name: "Garden Lantern Table", verification: "controlled-demo" },
+    category: "dining",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 90,
+    price: "52.00",
+    currency_code: "USD",
+    price_basis: "per-person",
+    party_size: { min: 1, max: 6 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Thursday", start_local: "17:30", end_local: "21:00" },
+        { weekday: "Friday", start_local: "17:30", end_local: "21:00" },
+        { weekday: "Saturday", start_local: "17:30", end_local: "21:00" },
+        { weekday: "Sunday", start_local: "17:30", end_local: "21:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 12, fee: "20.00" },
+    itinerary_eligible: true,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-haleiwa-harbor-table",
+    handle: "haleiwa-harbor-table",
+    title: "Haleiwa Harbor Table",
+    description: "A North Shore dinner built around local seafood, vegetable tasting plates, and a relaxed harbor-side evening near Haleiwa.",
+    provider: { display_name: "Harbor Table Collective", verification: "controlled-demo" },
+    category: "dining",
+    location: { city: "Haleiwa", region: "Oahu, Hawaii", country_code: "US", venue: "provider-location" },
+    duration_minutes: 90,
+    price: "68.00",
+    currency_code: "USD",
+    price_basis: "per-person",
+    party_size: { min: 1, max: 6 },
+    scheduling: {
+      timezone: "Pacific/Honolulu",
+      windows: [
+        { weekday: "Friday", start_local: "17:00", end_local: "21:00" },
+        { weekday: "Saturday", start_local: "17:00", end_local: "21:00" },
+        { weekday: "Sunday", start_local: "17:00", end_local: "21:00" },
+      ],
+    },
+    cancellation: { refundable: true, window_hours: 12, fee: "25.00" },
+    itinerary_eligible: true,
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-residential-electrician",
+    handle: "oahu-residential-electrician",
+    title: "Oahu Residential Electrician",
+    description: "A controlled professional-service fixture for residential electrical diagnostics, fixture replacement, and small project work on Oahu.",
+    provider: {
+      id: "provider-kai-line-electric",
+      display_name: "Kai Line Electric",
+      verification: "controlled-demo",
+      verification_source: { label: "Ribband controlled provider register", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-residential-electrician", checked_at: "2026-09-03T18:00:00.000Z" },
+    },
+    category: "professional-service",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "customer-location" },
+    duration_minutes: 480,
+    price: "120.00",
+    currency_code: "USD",
+    price_basis: "hourly",
+    party_size: { min: 1, max: 1 },
+    scheduling: { timezone: "Pacific/Honolulu", windows: [
+      { weekday: "Tuesday", start_local: "08:00", end_local: "17:00" },
+      { weekday: "Thursday", start_local: "08:00", end_local: "17:00" },
+      { weekday: "Saturday", start_local: "08:00", end_local: "17:00" },
+    ] },
+    cancellation: { refundable: true, window_hours: 48, fee: "0.00" },
+    itinerary_eligible: false,
+    professional: {
+      roles: ["licensed electrician", "residential electrician"],
+      service_area: { label: "Oahu islandwide", regions: ["Oahu, Hawaii"], travel_radius_miles: 35 },
+      credentials: [{
+        id: "credential-kai-electrical-license",
+        label: "state electrical license",
+        status: "controlled-verified",
+        issuer: "Ribband controlled credential register",
+        verification_source: { label: "Controlled electrical credential record", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-residential-electrician", checked_at: "2026-09-03T18:00:00.000Z" },
+        expires_at: "2027-08-31T23:59:59.000Z",
+      }],
+      equipment: ["electrical diagnostic meter", "ladder", "fixture installation tools"],
+      portfolio: [{ title: "Residential lighting and diagnostics sample", category: "residential electrical", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-residential-electrician#portfolio", verification: "controlled-demo" }],
+      quote_mode: "published-rate",
+    },
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-finish-carpenter",
+    handle: "oahu-finish-carpenter",
+    title: "Oahu Finish Carpenter",
+    description: "A controlled professional-service fixture for trim, shelving, built-ins, and finish carpentry on small Oahu home projects.",
+    provider: {
+      id: "provider-grain-and-line",
+      display_name: "Grain and Line Carpentry",
+      verification: "controlled-demo",
+      verification_source: { label: "Ribband controlled provider register", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-finish-carpenter", checked_at: "2026-09-03T18:00:00.000Z" },
+    },
+    category: "professional-service",
+    location: { city: "Kaneohe", region: "Oahu, Hawaii", country_code: "US", venue: "customer-location" },
+    duration_minutes: 480,
+    price: "95.00",
+    currency_code: "USD",
+    price_basis: "hourly",
+    party_size: { min: 1, max: 1 },
+    scheduling: { timezone: "Pacific/Honolulu", windows: [
+      { weekday: "Wednesday", start_local: "08:00", end_local: "17:00" },
+      { weekday: "Friday", start_local: "08:00", end_local: "17:00" },
+      { weekday: "Saturday", start_local: "08:00", end_local: "17:00" },
+    ] },
+    cancellation: { refundable: true, window_hours: 48, fee: "0.00" },
+    itinerary_eligible: false,
+    professional: {
+      roles: ["finish carpenter", "carpenter"],
+      service_area: { label: "Windward and Honolulu Oahu", regions: ["Oahu, Hawaii"], travel_radius_miles: 28 },
+      credentials: [{
+        id: "credential-grain-liability",
+        label: "general liability coverage",
+        status: "controlled-verified",
+        issuer: "Ribband controlled credential register",
+        verification_source: { label: "Controlled coverage record", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-finish-carpenter", checked_at: "2026-09-03T18:00:00.000Z" },
+        expires_at: "2027-06-30T23:59:59.000Z",
+      }],
+      equipment: ["finish nailer", "track saw", "dust extraction"],
+      portfolio: [{ title: "Built-in shelving sample", category: "finish carpentry", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-finish-carpenter#portfolio", verification: "controlled-demo" }],
+      quote_mode: "published-rate",
+    },
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-paint-finish-lead",
+    handle: "oahu-paint-finish-lead",
+    title: "Oahu Paint and Finish Lead",
+    description: "A controlled professional-service fixture for surface preparation, interior paint, and finish coordination on Oahu.",
+    provider: {
+      id: "provider-palm-finish-studio",
+      display_name: "Palm Finish Studio",
+      verification: "controlled-demo",
+      verification_source: { label: "Ribband controlled provider register", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-paint-finish-lead", checked_at: "2026-09-03T18:00:00.000Z" },
+    },
+    category: "professional-service",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "customer-location" },
+    duration_minutes: 480,
+    price: "88.00",
+    currency_code: "USD",
+    price_basis: "hourly",
+    party_size: { min: 1, max: 1 },
+    scheduling: { timezone: "Pacific/Honolulu", windows: [
+      { weekday: "Monday", start_local: "08:00", end_local: "16:00" },
+      { weekday: "Thursday", start_local: "08:00", end_local: "16:00" },
+      { weekday: "Saturday", start_local: "08:00", end_local: "16:00" },
+    ] },
+    cancellation: { refundable: true, window_hours: 48, fee: "0.00" },
+    itinerary_eligible: false,
+    professional: {
+      roles: ["paint and finish lead", "painter"],
+      service_area: { label: "Honolulu and Windward Oahu", regions: ["Oahu, Hawaii"], travel_radius_miles: 25 },
+      credentials: [{
+        id: "credential-palm-lead-safe",
+        label: "lead-safe work practices",
+        status: "controlled-verified",
+        issuer: "Ribband controlled credential register",
+        verification_source: { label: "Controlled work-practices record", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-paint-finish-lead", checked_at: "2026-09-03T18:00:00.000Z" },
+        expires_at: "2027-05-31T23:59:59.000Z",
+      }],
+      equipment: ["airless sprayer", "dust containment", "surface preparation tools"],
+      portfolio: [{ title: "Interior finish sample", category: "paint and finish", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-paint-finish-lead#portfolio", verification: "controlled-demo" }],
+      quote_mode: "published-rate",
+    },
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-gaffer-lighting-technician",
+    handle: "oahu-gaffer-lighting-technician",
+    title: "Oahu Gaffer and Lighting Technician",
+    description: "A controlled creative professional fixture for small production lighting plans, fixture operation, and on-set electrical coordination.",
+    provider: {
+      id: "provider-lantern-current-lighting",
+      display_name: "Lantern Current Lighting",
+      verification: "controlled-demo",
+      verification_source: { label: "Ribband controlled provider register", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-gaffer-lighting-technician", checked_at: "2026-09-03T18:00:00.000Z" },
+    },
+    category: "professional-service",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "customer-location" },
+    duration_minutes: 480,
+    price: "110.00",
+    currency_code: "USD",
+    price_basis: "hourly",
+    party_size: { min: 1, max: 1 },
+    scheduling: { timezone: "Pacific/Honolulu", windows: [
+      { weekday: "Friday", start_local: "07:00", end_local: "19:00" },
+      { weekday: "Saturday", start_local: "07:00", end_local: "19:00" },
+      { weekday: "Sunday", start_local: "07:00", end_local: "19:00" },
+    ] },
+    cancellation: { refundable: true, window_hours: 72, fee: "110.00" },
+    itinerary_eligible: false,
+    professional: {
+      roles: ["gaffer", "lighting technician"],
+      service_area: { label: "Oahu production locations", regions: ["Oahu, Hawaii"], travel_radius_miles: 40 },
+      credentials: [{
+        id: "credential-lantern-electrical-safety",
+        label: "electrical safety certification",
+        status: "controlled-verified",
+        issuer: "Ribband controlled credential register",
+        verification_source: { label: "Controlled electrical-safety record", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-gaffer-lighting-technician", checked_at: "2026-09-03T18:00:00.000Z" },
+        expires_at: "2027-07-31T23:59:59.000Z",
+      }],
+      equipment: ["led lighting kit", "wireless dimming", "power distribution kit"],
+      portfolio: [{ title: "Small interview lighting sample", category: "production lighting", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-gaffer-lighting-technician#portfolio", verification: "controlled-demo" }],
+      quote_mode: "published-rate",
+    },
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-location-sound-mixer",
+    handle: "oahu-location-sound-mixer",
+    title: "Oahu Location Sound Mixer",
+    description: "A controlled creative professional fixture for interview, documentary, and small narrative location sound recording.",
+    provider: {
+      id: "provider-trade-wind-sound",
+      display_name: "Trade Wind Location Sound",
+      verification: "controlled-demo",
+      verification_source: { label: "Ribband controlled provider register", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-location-sound-mixer", checked_at: "2026-09-03T18:00:00.000Z" },
+    },
+    category: "professional-service",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "customer-location" },
+    duration_minutes: 480,
+    price: "125.00",
+    currency_code: "USD",
+    price_basis: "hourly",
+    party_size: { min: 1, max: 1 },
+    scheduling: { timezone: "Pacific/Honolulu", windows: [
+      { weekday: "Thursday", start_local: "07:00", end_local: "19:00" },
+      { weekday: "Saturday", start_local: "07:00", end_local: "19:00" },
+      { weekday: "Sunday", start_local: "07:00", end_local: "19:00" },
+    ] },
+    cancellation: { refundable: true, window_hours: 72, fee: "125.00" },
+    itinerary_eligible: false,
+    professional: {
+      roles: ["location sound mixer", "sound mixer"],
+      service_area: { label: "Oahu production locations", regions: ["Oahu, Hawaii"], travel_radius_miles: 40 },
+      credentials: [{
+        id: "credential-trade-wind-set-safety",
+        label: "set safety orientation",
+        status: "controlled-verified",
+        issuer: "Ribband controlled credential register",
+        verification_source: { label: "Controlled set-safety record", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-location-sound-mixer", checked_at: "2026-09-03T18:00:00.000Z" },
+        expires_at: "2027-07-31T23:59:59.000Z",
+      }],
+      equipment: ["field recorder", "wireless lavalier kit", "boom microphone"],
+      portfolio: [{ title: "Documentary interview sound sample", category: "location sound", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-location-sound-mixer#portfolio", verification: "controlled-demo" }],
+      quote_mode: "published-rate",
+    },
+    available: true,
+  } satisfies DemoService),
+  Object.freeze({
+    id: "service-oahu-production-designer",
+    handle: "oahu-production-designer",
+    title: "Oahu Production Designer",
+    description: "A controlled creative professional fixture for a compact production design package covering visual direction, sourcing notes, and one on-set day.",
+    provider: {
+      id: "provider-field-and-form-design",
+      display_name: "Field and Form Design",
+      verification: "controlled-demo",
+      verification_source: { label: "Ribband controlled provider register", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-production-designer", checked_at: "2026-09-03T18:00:00.000Z" },
+    },
+    category: "professional-service",
+    location: { city: "Honolulu", region: "Oahu, Hawaii", country_code: "US", venue: "customer-location" },
+    duration_minutes: 480,
+    price: "850.00",
+    currency_code: "USD",
+    price_basis: "fixed",
+    party_size: { min: 1, max: 1 },
+    scheduling: { timezone: "Pacific/Honolulu", windows: [
+      { weekday: "Wednesday", start_local: "08:00", end_local: "18:00" },
+      { weekday: "Friday", start_local: "08:00", end_local: "18:00" },
+      { weekday: "Saturday", start_local: "08:00", end_local: "18:00" },
+    ] },
+    cancellation: { refundable: true, window_hours: 72, fee: "200.00" },
+    itinerary_eligible: false,
+    professional: {
+      roles: ["production designer", "art department lead"],
+      service_area: { label: "Oahu production locations", regions: ["Oahu, Hawaii"], travel_radius_miles: 35 },
+      credentials: [{
+        id: "credential-field-form-set-safety",
+        label: "set safety orientation",
+        status: "controlled-verified",
+        issuer: "Ribband controlled credential register",
+        verification_source: { label: "Controlled set-safety record", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-production-designer", checked_at: "2026-09-03T18:00:00.000Z" },
+        expires_at: "2027-07-31T23:59:59.000Z",
+      }],
+      equipment: ["visual reference deck", "sourcing workbook", "set dressing kit"],
+      portfolio: [{ title: "Compact narrative design sample", category: "production design", url: "https://agentic-webmcp-origin.somnora.workers.dev/services/oahu-production-designer#portfolio", verification: "controlled-demo" }],
+      quote_mode: "published-rate",
+    },
     available: true,
   } satisfies DemoService),
 ]);

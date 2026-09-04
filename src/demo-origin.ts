@@ -107,7 +107,7 @@ function serviceJsonLd(service: DemoService, canonicalUrl: string): string {
     name: service.title,
     description: service.description,
     serviceType: service.category,
-    provider: { "@type": "Organization", name: service.provider.display_name },
+    provider: { "@type": "Organization", ...(service.provider.id ? { identifier: service.provider.id } : {}), name: service.provider.display_name },
     areaServed: {
       "@type": "City",
       name: service.location.city,
@@ -117,6 +117,8 @@ function serviceJsonLd(service: DemoService, canonicalUrl: string): string {
     url: `${canonicalUrl}/services/${service.handle}`,
     additionalProperty: [
       { "@type": "PropertyValue", name: "provider_verification", value: service.provider.verification },
+      ...(service.provider.id ? [{ "@type": "PropertyValue", name: "provider_id", value: service.provider.id }] : []),
+      ...(service.provider.verification_source ? [{ "@type": "PropertyValue", name: "provider_verification_source", value: JSON.stringify(service.provider.verification_source) }] : []),
       { "@type": "PropertyValue", name: "location_city", value: service.location.city },
       { "@type": "PropertyValue", name: "location_region", value: service.location.region },
       { "@type": "PropertyValue", name: "location_country_code", value: service.location.country_code },
@@ -131,6 +133,18 @@ function serviceJsonLd(service: DemoService, canonicalUrl: string): string {
       { "@type": "PropertyValue", name: "cancellation_window_hours", value: service.cancellation.window_hours },
       { "@type": "PropertyValue", name: "cancellation_fee", value: service.cancellation.fee },
       { "@type": "PropertyValue", name: "itinerary_eligible", value: service.itinerary_eligible },
+      ...(service.stay_nights ? [
+        { "@type": "PropertyValue", name: "stay_nights_min", value: service.stay_nights.min },
+        { "@type": "PropertyValue", name: "stay_nights_max", value: service.stay_nights.max },
+      ] : []),
+      ...(service.professional ? [
+        { "@type": "PropertyValue", name: "professional_roles", value: JSON.stringify(service.professional.roles) },
+        { "@type": "PropertyValue", name: "professional_service_area", value: JSON.stringify(service.professional.service_area) },
+        { "@type": "PropertyValue", name: "professional_credentials", value: JSON.stringify(service.professional.credentials) },
+        { "@type": "PropertyValue", name: "professional_equipment", value: JSON.stringify(service.professional.equipment) },
+        { "@type": "PropertyValue", name: "professional_portfolio", value: JSON.stringify(service.professional.portfolio) },
+        { "@type": "PropertyValue", name: "professional_quote_mode", value: service.professional.quote_mode },
+      ] : []),
     ],
     offers: {
       "@type": "Offer",
@@ -150,6 +164,17 @@ function servicePage(service: DemoService, canonicalUrl: string): Response {
   const cancellation = service.cancellation.refundable
     ? `Refundable until ${service.cancellation.window_hours} hours before the activity${service.cancellation.fee && service.cancellation.fee !== "0.00" ? `, then a ${escapeHtml(service.cancellation.fee)} USD fee may apply` : ""}.`
     : "Not refundable.";
+  const professional = service.professional ? `
+    <h2>Professional evidence</h2>
+    <ul>
+      <li>Provider identity: ${escapeHtml(service.provider.id ?? "not supplied")}, ${escapeHtml(service.provider.verification_source?.label ?? "not supplied")}</li>
+      <li>Roles: ${service.professional.roles.map(escapeHtml).join(", ")}</li>
+      <li>Service area: ${escapeHtml(service.professional.service_area.label)}. Regions: ${service.professional.service_area.regions.map(escapeHtml).join(", ")}. Travel radius: ${service.professional.service_area.travel_radius_miles ?? "not published"} miles.</li>
+      <li>Credentials: ${service.professional.credentials.map((credential) => `${escapeHtml(credential.label)} (${escapeHtml(credential.status)}, ${escapeHtml(credential.issuer ?? "no issuer")})`).join("; ") || "None required"}</li>
+      <li>Equipment: ${service.professional.equipment.map(escapeHtml).join(", ") || "Not published"}</li>
+      <li>Portfolio evidence: ${service.professional.portfolio.map((item) => `${escapeHtml(item.title)} (${escapeHtml(item.verification)})`).join("; ")}</li>
+      <li>Quote mode: ${escapeHtml(service.professional.quote_mode)}</li>
+    </ul>` : "";
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -172,11 +197,13 @@ function servicePage(service: DemoService, canonicalUrl: string): Response {
       <li>Duration: ${service.duration_minutes} minutes</li>
       <li>Published price: ${escapeHtml(service.price)} ${service.currency_code} ${escapeHtml(service.price_basis)}</li>
       <li>Party size: ${service.party_size.min} to ${service.party_size.max}</li>
+      ${service.stay_nights ? `<li>Stay length: ${service.stay_nights.min} to ${service.stay_nights.max} nights</li>` : ""}
       <li>Cancellation: ${cancellation}</li>
     </ul>
     <h2>Published scheduling windows</h2>
     <p>Timezone: ${escapeHtml(service.scheduling.timezone)}</p>
     <ul>${windows}</ul>
+    ${professional}
     <p>Canonical handle: <code>${escapeHtml(service.handle)}</code></p>
     <p>This is an original controlled fixture. It is decision support only and does not create a booking, contact a provider, or take payment.</p>
   </main>

@@ -14,13 +14,23 @@ import { runOriginConformance } from "./conformance";
 import { classifyError, fixedError, type ErrorCode } from "./errors";
 import { interpolatePage } from "./interpolate";
 import { createActivityItinerary } from "./itinerary";
+import { validateDecisionContextRequest } from "./decision-brief";
+import { decisionStrategy, orchestrateDecisionResult, validateRevisionReference } from "./decision-orchestrator";
 import { DEFAULT_ORIGIN_ID, ORIGIN_MANIFEST_VERSION, getOrigin, inspectOrigin, publicOrigin, runtimeOrigins, type Origin } from "./origins";
+import { createPersonalizedDatePlans } from "./personalized-date";
+import { createPersonalizedVacationPackages } from "./personalized-vacation";
+import { giftBudgetInput, giftRecommendationIntent, personalizeGiftResult } from "./personalized-gift";
+import { createPersonalizedStaffingPlans } from "./personalized-staffing";
+import { proposeProfileUpdate } from "./profile-updates";
 import { findBestOptions } from "./recommendations";
 import { createDiagnosticSink, normalizeFailureReason, type DiagnosticSink } from "./reliability";
 import { observedFetcher, type Fetcher } from "./upstream";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const MAX_JSON_BODY_BYTES = 4096;
+const MAX_PERSONALIZED_DECISION_BODY_BYTES = 8192;
+const MAX_VACATION_DECISION_BODY_BYTES = 12288;
+const MAX_ORCHESTRATED_DECISION_BODY_BYTES = 16384;
 
 class UnsupportedMediaTypeError extends Error {}
 
@@ -96,12 +106,12 @@ async function cachedJson(
   return response;
 }
 
-async function readBoundedJson(request: Request): Promise<Record<string, unknown>> {
+async function readBoundedJson(request: Request, maximumBytes = MAX_JSON_BODY_BYTES): Promise<Record<string, unknown>> {
   if (!(request.headers.get("Content-Type") ?? "").toLocaleLowerCase().startsWith("application/json")) {
     throw new UnsupportedMediaTypeError("Content-Type must be application/json.");
   }
   const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (declared > MAX_JSON_BODY_BYTES) throw new RangeError("Request body is too large.");
+  if (declared > maximumBytes) throw new RangeError("Request body is too large.");
   if (!request.body) return {};
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -110,7 +120,7 @@ async function readBoundedJson(request: Request): Promise<Record<string, unknown
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > MAX_JSON_BODY_BYTES) {
+    if (size > maximumBytes) {
       await reader.cancel();
       throw new RangeError("Request body is too large.");
     }
@@ -201,6 +211,19 @@ function bodyOrigin(url: URL, body: Record<string, unknown>): Origin {
     throw new RangeError("Request origin does not match the selected origin.");
   }
   return getOrigin(bodyId || queryId);
+}
+
+function strategyOrigin(url: URL, body: Record<string, unknown>, expectedOriginId: string): Origin {
+  const queryId = url.searchParams.get("originId")?.trim().toLocaleLowerCase();
+  const bodyId = optionalString(body, "originId")?.trim().toLocaleLowerCase();
+  if (queryId && bodyId && queryId !== bodyId) {
+    throw new RangeError("Request origin does not match the selected origin.");
+  }
+  const origin = getOrigin(bodyId || queryId || expectedOriginId);
+  if (origin.id !== expectedOriginId) {
+    throw new RangeError(`This decision strategy requires the ${expectedOriginId} evidence origin.`);
+  }
+  return origin;
 }
 
 function cartInput(body: Record<string, unknown>, origin: Origin): CartInput {
@@ -381,17 +404,101 @@ async function routeRequest(
         const origin = bodyOrigin(url, body);
         if (origin.vertical !== "marketplace") throw new RangeError("Evidence ranking is currently available for marketplace Offers only.");
         const originFetcher = fetcherForOrigin(env, origin, reliability);
-        return jsonResponse(await findBestOptions(
+        const context = body.decisionContext === undefined ? null : validateDecisionContextRequest(body.decisionContext);
+        const intent = context ? giftRecommendationIntent(context, body) : body;
+        const budget = context
+          ? giftBudgetInput(context, optionalScalar(body, "maxDeliveredPrice"))
+          : optionalScalar(body, "maxDeliveredPrice");
+        const result = await findBestOptions(
           stringField(body, "query"),
           optionalScalar(body, "maxResults"),
-          optionalScalar(body, "maxDeliveredPrice"),
+          budget,
           origin,
           originFetcher,
           runtimeCatalogEnv,
-          body,
-        ));
+          intent,
+        );
+        return jsonResponse(context ? personalizeGiftResult(result, context) : result);
       }
       return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+    }
+
+    if (url.pathname === "/api/decision-briefs/validate") {
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const body = await readBoundedJson(request);
+      const context = validateDecisionContextRequest(body);
+      return jsonResponse({
+        context,
+        handling: {
+          persistence: "request-only",
+          cache: "no-store",
+          selectedFactCount: context.selectedFacts.length,
+        },
+      });
+    }
+
+    if (url.pathname === "/api/decisions/plan") {
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const body = await readBoundedJson(request, MAX_ORCHESTRATED_DECISION_BODY_BYTES);
+      const context = validateDecisionContextRequest(body.decisionContext);
+      const strategy = decisionStrategy(context.brief.vertical);
+      const revisionOf = validateRevisionReference(body.revisionOf);
+      const origin = strategyOrigin(url, body, strategy.originId);
+      const originFetcher = fetcherForOrigin(env, origin, reliability);
+
+      if (strategy.vertical === "gift") {
+        const recommendationResult = await findBestOptions(
+          optionalString(body, "query") ?? context.brief.goal,
+          optionalScalar(body, "maxResults") ?? "3",
+          giftBudgetInput(context, optionalScalar(body, "maxDeliveredPrice")),
+          origin,
+          originFetcher,
+          runtimeCatalogEnv,
+          giftRecommendationIntent(context, body),
+        );
+        const result = personalizeGiftResult(recommendationResult, context);
+        return jsonResponse(orchestrateDecisionResult(context, result, {
+          originId: origin.id,
+          source: recommendationResult.source,
+          live: recommendationResult.live,
+          offerCount: recommendationResult.offers.length,
+        }, revisionOf));
+      }
+
+      const catalog = await searchProducts("", 24, origin, originFetcher, runtimeCatalogEnv);
+      const allowedCategories = strategy.vertical === "date"
+        ? new Set(["activity", "wellness"])
+        : strategy.vertical === "staffing"
+          ? new Set(["professional-service"])
+          : new Set(["lodging", "transport", "dining", "activity", "wellness"]);
+      const candidates = catalog.offers.filter((offer) => (
+        offer.service
+        && allowedCategories.has(offer.service.category)
+        && (strategy.vertical !== "date" || offer.service.itineraryEligible)
+      ));
+      const projections = await Promise.all(candidates.map((offer) => (
+        interpolatePage(origin, `${origin.offerPathPrefix}/${offer.handle}`, originFetcher, runtimeCatalogEnv)
+      )));
+      const offers = projections.map((projection) => projection.offer);
+      const warnings = projections.flatMap((projection) => projection.warning ? [projection.warning] : []);
+      const warning = warnings.length ? warnings.join(" ").slice(0, 500) : undefined;
+      const result = strategy.vertical === "date"
+        ? { ...createPersonalizedDatePlans(context, offers), ...(warning ? { warning } : {}) }
+        : strategy.vertical === "staffing"
+          ? { ...createPersonalizedStaffingPlans(context, offers), ...(warning ? { warning } : {}) }
+          : { ...createPersonalizedVacationPackages(context, offers), ...(warning ? { warning } : {}) };
+      return jsonResponse(orchestrateDecisionResult(context, result, {
+        originId: origin.id,
+        source: projections[0]?.source ?? catalog.source,
+        live: projections.length > 0 && projections.every((projection) => projection.live && projection.pageLive),
+        offerCount: offers.length,
+      }, revisionOf));
+    }
+
+    if (url.pathname === "/api/profile-updates/propose") {
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const body = await readBoundedJson(request);
+      return jsonResponse(proposeProfileUpdate(body));
     }
 
     if (url.pathname.startsWith("/api/products/")) {
@@ -489,6 +596,59 @@ async function routeRequest(
         offers,
         ...(warnings.length ? { warning: warnings.join(" ").slice(0, 500) } : {}),
         itinerary,
+      });
+    }
+
+    if (url.pathname === "/api/date-plans") {
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const body = await readBoundedJson(request, MAX_PERSONALIZED_DECISION_BODY_BYTES);
+      const origin = bodyOrigin(url, body);
+      if (origin.vertical !== "services") throw new RangeError("Personalized date planning requires a services origin.");
+      const context = validateDecisionContextRequest(body.decisionContext);
+      if (context.brief.vertical !== "date") throw new RangeError("Personalized date planning requires a date decision brief.");
+      const originFetcher = fetcherForOrigin(env, origin, reliability);
+      const catalog = await searchProducts("", 8, origin, originFetcher, runtimeCatalogEnv);
+      const candidates = catalog.offers.filter((offer) => offer.service?.itineraryEligible);
+      const projections = await Promise.all(candidates.map((offer) => (
+        interpolatePage(origin, `${origin.offerPathPrefix}/${offer.handle}`, originFetcher, runtimeCatalogEnv)
+      )));
+      const offers = projections.map((projection) => projection.offer);
+      const result = createPersonalizedDatePlans(context, offers);
+      const warnings = projections.flatMap((projection) => projection.warning ? [projection.warning] : []);
+      return jsonResponse({
+        origin: publicOrigin(origin),
+        source: projections[0]?.source ?? catalog.source,
+        live: projections.length > 0 && projections.every((projection) => projection.live && projection.pageLive),
+        offers,
+        ...result,
+        ...(warnings.length ? { sourceWarning: warnings.join(" ").slice(0, 500) } : {}),
+      });
+    }
+
+    if (url.pathname === "/api/vacation-packages") {
+      if (request.method !== "POST") return fixedErrorResponse("Method not allowed.", "METHOD_NOT_ALLOWED", 405);
+      const body = await readBoundedJson(request, MAX_VACATION_DECISION_BODY_BYTES);
+      const origin = bodyOrigin(url, body);
+      if (origin.vertical !== "services") throw new RangeError("Personalized vacation planning requires a services origin.");
+      const context = validateDecisionContextRequest(body.decisionContext);
+      if (context.brief.vertical !== "vacation") throw new RangeError("Personalized vacation planning requires a vacation decision brief.");
+      const originFetcher = fetcherForOrigin(env, origin, reliability);
+      const catalog = await searchProducts("", 24, origin, originFetcher, runtimeCatalogEnv);
+      const vacationCategories = new Set(["lodging", "transport", "dining", "activity", "wellness"]);
+      const candidates = catalog.offers.filter((offer) => offer.service && vacationCategories.has(offer.service.category));
+      const projections = await Promise.all(candidates.map((offer) => (
+        interpolatePage(origin, `${origin.offerPathPrefix}/${offer.handle}`, originFetcher, runtimeCatalogEnv)
+      )));
+      const offers = projections.map((projection) => projection.offer);
+      const result = createPersonalizedVacationPackages(context, offers);
+      const warnings = projections.flatMap((projection) => projection.warning ? [projection.warning] : []);
+      return jsonResponse({
+        origin: publicOrigin(origin),
+        source: projections[0]?.source ?? catalog.source,
+        live: projections.length > 0 && projections.every((projection) => projection.live && projection.pageLive),
+        offers,
+        ...result,
+        ...(warnings.length ? { sourceWarning: warnings.join(" ").slice(0, 500) } : {}),
       });
     }
 

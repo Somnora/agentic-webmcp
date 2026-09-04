@@ -20,8 +20,14 @@ export type ReconciledEvidenceField =
   | "provider"
   | "location"
   | "duration"
+  | "priceBasis"
   | "scheduling"
-  | "cancellation";
+  | "cancellation"
+  | "stay"
+  | "credentials"
+  | "serviceArea"
+  | "equipment"
+  | "portfolio";
 
 export type EvidenceVerification = {
   state: EvidenceState;
@@ -46,8 +52,14 @@ export type OfferProvenance = {
   provider?: EvidenceClaim;
   location?: EvidenceClaim;
   duration?: EvidenceClaim;
+  priceBasis?: EvidenceClaim;
   scheduling?: EvidenceClaim;
   cancellation?: EvidenceClaim;
+  stay?: EvidenceClaim;
+  credentials?: EvidenceClaim;
+  serviceArea?: EvidenceClaim;
+  equipment?: EvidenceClaim;
+  portfolio?: EvidenceClaim;
   verification: EvidenceVerification;
 };
 
@@ -96,15 +108,52 @@ export type MarketplaceEvidence = {
   deliveredPrice: Money;
 };
 
-export type ServiceCategory = "activity" | "wellness" | "home-service";
+export type ServiceCategory = "activity" | "wellness" | "home-service" | "lodging" | "dining" | "transport" | "professional-service";
 export type ServiceVenue = "provider-location" | "customer-location" | "outdoor" | "remote";
-export type ServicePriceBasis = "fixed" | "hourly" | "per-person" | "estimate";
+export type ServicePriceBasis = "fixed" | "hourly" | "per-person" | "per-night" | "per-day" | "estimate";
+
+export type ProviderCredentialStatus = "controlled-verified" | "provider-attested" | "unverified" | "not-required";
+
+export type ProviderVerificationSource = {
+  label: string;
+  url: string;
+  checkedAt: string;
+};
+
+export type ProviderCredential = {
+  id: string;
+  label: string;
+  status: ProviderCredentialStatus;
+  issuer: string | null;
+  verificationSource: ProviderVerificationSource;
+  expiresAt: string | null;
+};
+
+export type ProfessionalServiceEvidence = {
+  roles: string[];
+  serviceArea: {
+    label: string;
+    regions: string[];
+    travelRadiusMiles: number | null;
+  };
+  credentials: ProviderCredential[];
+  equipment: string[];
+  portfolio: Array<{
+    title: string;
+    category: string;
+    url: string;
+    verification: "controlled-demo" | "provider-attested";
+  }>;
+  quoteMode: "published-rate" | "estimate-only";
+};
 
 export type ServiceEvidence = {
   category: ServiceCategory;
   provider: {
+    id?: string;
     displayName: string;
     verification: "controlled-demo" | "operator-attested";
+    verificationSource?: ProviderVerificationSource;
   };
   location: {
     city: string;
@@ -124,7 +173,9 @@ export type ServiceEvidence = {
     windowHours: number | null;
     fee: Money | null;
   };
+  stayNights?: { min: number; max: number };
   itineraryEligible: boolean;
+  professional?: ProfessionalServiceEvidence;
 };
 
 export type HandoffReason =
@@ -258,8 +309,14 @@ function evidenceValue(offer: Offer, field: ReconciledEvidenceField): unknown {
   if (field === "provider") return offer.service?.provider;
   if (field === "location") return offer.service?.location;
   if (field === "duration") return offer.service?.durationMinutes;
+  if (field === "priceBasis") return offer.service?.priceBasis;
   if (field === "scheduling") return offer.service?.scheduling;
-  return offer.service?.cancellation;
+  if (field === "cancellation") return offer.service?.cancellation;
+  if (field === "credentials") return offer.service?.professional?.credentials;
+  if (field === "serviceArea") return offer.service?.professional?.serviceArea;
+  if (field === "equipment") return offer.service?.professional?.equipment;
+  if (field === "portfolio") return offer.service?.professional?.portfolio;
+  return offer.service?.stayNights;
 }
 
 function sameEvidence(left: unknown, right: unknown): boolean {
@@ -277,8 +334,10 @@ export function reconcileOfferEvidence(primary: Offer, page: Offer, checkedAt = 
     throw new RangeError("Evidence sources must describe the same origin and product handle.");
   }
   const fields: ReconciledEvidenceField[] = primary.service || page.service
-    ? ["pricing", "availability", "provider", "location", "duration", "scheduling", "cancellation"]
+    ? ["pricing", "availability", "provider", "location", "duration", "priceBasis", "scheduling", "cancellation"]
     : ["pricing", "availability", "condition", "shipping", "returns"];
+  if (primary.service?.stayNights || page.service?.stayNights) fields.push("stay");
+  if (primary.service?.professional || page.service?.professional) fields.push("credentials", "serviceArea", "equipment", "portfolio");
   const provenance: OfferProvenance = {
     ...primary.provenance,
     title: { ...primary.provenance.title, sources: [...primary.provenance.title.sources] },
@@ -293,8 +352,14 @@ export function reconcileOfferEvidence(primary: Offer, page: Offer, checkedAt = 
     ...(primary.provenance.provider ? { provider: { ...primary.provenance.provider, sources: [...primary.provenance.provider.sources] } } : {}),
     ...(primary.provenance.location ? { location: { ...primary.provenance.location, sources: [...primary.provenance.location.sources] } } : {}),
     ...(primary.provenance.duration ? { duration: { ...primary.provenance.duration, sources: [...primary.provenance.duration.sources] } } : {}),
+    ...(primary.provenance.priceBasis ? { priceBasis: { ...primary.provenance.priceBasis, sources: [...primary.provenance.priceBasis.sources] } } : {}),
     ...(primary.provenance.scheduling ? { scheduling: { ...primary.provenance.scheduling, sources: [...primary.provenance.scheduling.sources] } } : {}),
     ...(primary.provenance.cancellation ? { cancellation: { ...primary.provenance.cancellation, sources: [...primary.provenance.cancellation.sources] } } : {}),
+    ...(primary.provenance.stay ? { stay: { ...primary.provenance.stay, sources: [...primary.provenance.stay.sources] } } : {}),
+    ...(primary.provenance.credentials ? { credentials: { ...primary.provenance.credentials, sources: [...primary.provenance.credentials.sources] } } : {}),
+    ...(primary.provenance.serviceArea ? { serviceArea: { ...primary.provenance.serviceArea, sources: [...primary.provenance.serviceArea.sources] } } : {}),
+    ...(primary.provenance.equipment ? { equipment: { ...primary.provenance.equipment, sources: [...primary.provenance.equipment.sources] } } : {}),
+    ...(primary.provenance.portfolio ? { portfolio: { ...primary.provenance.portfolio, sources: [...primary.provenance.portfolio.sources] } } : {}),
     verification: { ...primary.provenance.verification, sources: [...primary.provenance.verification.sources], verifiedFields: [], singleSourceFields: [], conflictFields: [] },
   };
   const verifiedFields: ReconciledEvidenceField[] = [];
