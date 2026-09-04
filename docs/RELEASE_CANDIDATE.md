@@ -1,8 +1,8 @@
-# Personalized decision release candidate
+# Personalized decision release
 
-Status: prepared locally on `codex/personalized-decisions`; not pushed or deployed.
+Status: approved for publication during the September 3 deadline extension and deployed to the public Challenge URL.
 
-This release candidate connects Ribband's original evidence workspace to one discoverable personalized decision agent. The homepage links to `/decide`, where one read-only `plan_decision` WebMCP tool routes an explicit gift, date, vacation, or staffing request through a fixed deterministic strategy and a shared `DecisionEnvelope`.
+This release connects Ribband's original evidence workspace to one discoverable personalized decision agent. The homepage links to `/decide`, where one read-only `plan_decision` WebMCP tool routes an explicit gift, date, vacation, or staffing request through a fixed deterministic strategy and a shared `DecisionEnvelope`.
 
 ## What is in the candidate
 
@@ -50,7 +50,7 @@ The browser acceptance matrix must also confirm:
 
 ## Release boundary
 
-At the start of this pass, the public app reported commit `4e58faf66adb4161e34055771abfdae7e7a37314`, and `/decide` returned 404. The personalized candidate therefore remains local until a new commit is explicitly approved for deployment.
+Before publication, the public app reported commit `4e58faf66adb4161e34055771abfdae7e7a37314`, and `/decide` returned 404. The pre-extension repository state is preserved by the `challenge-submission-pre-extension` tag. The current `/health` response is the source of truth for the published commit and Worker version.
 
 Before any deployment:
 

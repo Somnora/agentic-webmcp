@@ -1,6 +1,6 @@
 # Judge guide
 
-The public Challenge URL currently presents the submitted ten-tool evidence workspace described below. A local post-submission release candidate adds a discoverable `/decide` workspace with one `plan_decision` tool for gift, date, vacation, and staffing strategies. It has not replaced the submitted build or been deployed. See [Personalized decision release candidate](RELEASE_CANDIDATE.md) for its exact test flow and claim boundary.
+The public Challenge URL presents the original ten-tool evidence workspace described below and now links to `/decide`, a unified personalized workspace with one `plan_decision` tool for gift, date, vacation, and staffing strategies. See [Personalized decision release](RELEASE_CANDIDATE.md) for its exact test flow and claim boundary.
 
 ## What to verify
 

@@ -1,6 +1,6 @@
 # Devpost submission copy
 
-This file preserves the submitted Challenge story. The expanded personalized decision release candidate is documented separately in [RELEASE_CANDIDATE.md](RELEASE_CANDIDATE.md) and must not be described as live until its deployment is explicitly approved and verified.
+This file preserves the original Challenge story and adds the deadline-extension release story below. The expanded personalized decision experience is live and documented separately in [RELEASE_CANDIDATE.md](RELEASE_CANDIDATE.md).
 
 ## Project title
 
@@ -81,7 +81,7 @@ The default origin is a first-party controlled public demonstration marketplace 
 
 The optional services scope uses seven original controlled fixtures on the same first-party hostname under a disjoint `/services/*` allowlist. Five Oahu experiences create a coherent destination set, while Tangier and a non-itinerary home service demonstrate destination and eligibility conflicts. It demonstrates data shape, provenance, page conversion, budget-aware scheduling, and itinerary planning. It does not claim real provider inventory, measured travel time, bookings, messages, or payment.
 
-## Post-submission release-candidate story
+## Deadline-extension release story
 
 Ribband now carries the same evidence-first, human-controlled model into four personalized decisions. A person can give as little as a goal and budget or add recipient interests, two-person preferences, prior activities, visited places, fond memories, exploration style, project roles, credentials, equipment, and exclusions. One explicit vertical routes the request through a deterministic gift, date, vacation, or staffing strategy and returns a shared envelope that exposes the exact context projection, source state, tradeoffs, price range, revision linkage, and available next actions.
 

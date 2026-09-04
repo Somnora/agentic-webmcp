@@ -84,7 +84,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${baseUrl}/presenter.js`);
       const script = await response.text();
-      if (response.status !== 200 || !script.includes("REHEARSAL_STEPS") || !script.includes("human_approval_button") || !script.includes("Guided demo complete")) {
+      if (response.status !== 200 || !script.includes("loadRehearsalSteps") || !script.includes('fetcher("/demo-sequence.json"') || !script.includes("human_approval_button") || !script.includes("Guided demo complete")) {
         throw new Error("recording presenter unavailable");
       }
     },

@@ -424,7 +424,7 @@ window.addEventListener("DOMContentLoaded", () => {
         "--run-all-compositor-stages-before-draw",
         "--dump-dom",
         tempFile,
-      ], { encoding: "utf8" });
+      ], { encoding: "utf8", timeout: 10_000 });
       const match = domOutput.match(/<div id="test-output">(\{.*?\})<\/div>/);
       expect(match).toBeTruthy();
       const result = JSON.parse(match[1]);
@@ -433,5 +433,5 @@ window.addEventListener("DOMContentLoaded", () => {
     } finally {
       try { unlinkSync(tempFile); } catch {}
     }
-  });
+  }, 12_000);
 });
