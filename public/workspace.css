@@ -27,8 +27,8 @@ input:focus, select:focus { border-color: var(--forest); box-shadow: 0 0 0 3px r
 label { color: #4e5954; font-size: 0.76rem; font-weight: 700; }
 
 .alpha-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 82px; padding: 12px 40px; border-bottom: 1px solid var(--line); background: rgba(244, 242, 236, 0.86); backdrop-filter: blur(15px); }
-.alpha-brand { display: block; width: 154px; height: 54px; overflow: hidden; }
-.alpha-brand img { width: 154px; height: auto; transform: translateY(-13px); }
+.alpha-brand { display: block; flex: 0 0 auto; width: 112px; }
+.alpha-brand img { display: block; width: 100%; height: auto; }
 .alpha-status { display: grid; justify-items: end; gap: 3px; }
 .alpha-status span { color: var(--forest-dark); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .alpha-status small { color: var(--muted); font-size: 0.62rem; }
