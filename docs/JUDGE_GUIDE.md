@@ -1,5 +1,7 @@
 # Judge guide
 
+The public Challenge URL currently presents the submitted ten-tool evidence workspace described below. A local post-submission release candidate adds a discoverable `/decide` workspace with one `plan_decision` tool for gift, date, vacation, and staffing strategies. It has not replaced the submitted build or been deployed. See [Personalized decision release candidate](RELEASE_CANDIDATE.md) for its exact test flow and claim boundary.
+
 ## What to verify
 
 Ribband turns allowlisted public product pages into structured, source-visible decisions. The default origin is a controlled public guitar marketplace served over real HTTPS. It is clearly labeled demonstration data and does not impersonate eBay or another merchant.

@@ -24,6 +24,7 @@ describe("Ribband public identity", () => {
     }
     expect(pngDimensions(readBytes("public/ribband-symbol.png"))).toEqual({ width: 512, height: 512 });
     expect(pngDimensions(readBytes("public/ribband-lockup.png"))).toEqual({ width: 980, height: 520 });
+    expect(read("public/index.html")).toContain('href="/decide"');
   });
 
   it("brands exported evidence without changing the ten-tool contract", () => {

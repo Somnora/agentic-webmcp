@@ -64,7 +64,7 @@ const AVOID_FACT_KINDS = new Set<ProfileFact["kind"]>([
 const SUPPORTED_CONSTRAINT_KINDS = new Set(["must-have", "avoid", "existing-item"]);
 const STOP_WORDS = new Set(["and", "for", "from", "into", "near", "that", "the", "their", "they", "this", "with"]);
 
-function compactJoin(values: readonly string[], maximum: number): string | null {
+function compactJoin(values: readonly string[], maximum: number, separator = " "): string | null {
   let output = "";
   const seen = new Set<string>();
   for (const value of values) {
@@ -72,7 +72,7 @@ function compactJoin(values: readonly string[], maximum: number): string | null 
     const key = normalized.toLocaleLowerCase();
     if (!normalized || seen.has(key)) continue;
     seen.add(key);
-    const candidate = output ? `${output} ${normalized}` : normalized;
+    const candidate = output ? `${output}${separator}${normalized}` : normalized;
     if (candidate.length <= maximum) {
       output = candidate;
       continue;
@@ -124,7 +124,7 @@ export function giftRecommendationIntent(
   const avoidFacts = context.selectedFacts.filter((fact) => AVOID_FACT_KINDS.has(fact.kind));
   const tasteContext = compactJoin([explicit.tasteContext ?? "", ...textValues(tasteFacts)], 120);
   const mustHave = compactJoin([explicit.mustHave ?? "", ...constraintValues(context, "must-have")], 80);
-  const avoid = compactJoin([explicit.avoid ?? "", ...textValues(avoidFacts), ...constraintValues(context, "avoid")], 80);
+  const avoid = compactJoin([explicit.avoid ?? "", ...textValues(avoidFacts), ...constraintValues(context, "avoid")], 80, ", ");
   return validateRecommendationIntent({
     ...explicit,
     shoppingFor: intent === "self-treat" ? "self" : "gift",

@@ -1,5 +1,7 @@
 # Devpost submission copy
 
+This file preserves the submitted Challenge story. The expanded personalized decision release candidate is documented separately in [RELEASE_CANDIDATE.md](RELEASE_CANDIDATE.md) and must not be described as live until its deployment is explicitly approved and verified.
+
 ## Project title
 
 Ribband
@@ -78,3 +80,11 @@ With operator permission, the same protocol can support additional real origins,
 The default origin is a first-party controlled public demonstration marketplace with original guitar listings. Its HTTPS responses and interpolation are live, but the listings are not presented as eBay or another third-party merchant. The secondary Shopify development store is operator-authorized but remains research-only while Shopify password protection blocks public inventory. The app does not place orders or handle payment.
 
 The optional services scope uses seven original controlled fixtures on the same first-party hostname under a disjoint `/services/*` allowlist. Five Oahu experiences create a coherent destination set, while Tangier and a non-itinerary home service demonstrate destination and eligibility conflicts. It demonstrates data shape, provenance, page conversion, budget-aware scheduling, and itinerary planning. It does not claim real provider inventory, measured travel time, bookings, messages, or payment.
+
+## Post-submission release-candidate story
+
+Ribband now carries the same evidence-first, human-controlled model into four personalized decisions. A person can give as little as a goal and budget or add recipient interests, two-person preferences, prior activities, visited places, fond memories, exploration style, project roles, credentials, equipment, and exclusions. One explicit vertical routes the request through a deterministic gift, date, vacation, or staffing strategy and returns a shared envelope that exposes the exact context projection, source state, tradeoffs, price range, revision linkage, and available next actions.
+
+The controlled services directory now contains twenty fixtures: 5 activities, 1 wellness service, 1 home service, 3 lodging Offers, 2 dining Offers, 2 transportation Offers, and 6 professional services. Vacation packages combine lodging, transportation, dining, and activities within a planning range. Staffing combines provider identity, credential status, service area, published scheduling, equipment, portfolio evidence, and quote mode while failing closed on missing roles or unverified geography.
+
+The outcome loop remains consent-first. Date and vacation outcomes can create a tentative memory proposal, but the Worker stores nothing. The person must review the exact text and scope before saving it on-device, must select it again before later use, and can correct or delete it. Provider source opening also requires a visible destination and transmitted-information review. Ribband still has no agent-side contact, quote request, contract, booking, purchase, checkout, or payment action.

@@ -71,6 +71,10 @@ main { max-width: 1440px; margin: 0 auto; padding: 0 40px 72px; }
 .hero h1 { max-width: 820px; margin: 13px 0 17px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.6rem, 5vw, 4.8rem); font-weight: 500; line-height: 0.98; letter-spacing: -0.045em; }
 .hero h1 span { color: var(--forest); }
 .hero p { max-width: 820px; margin: 0; color: var(--muted); font-size: 1rem; line-height: 1.68; }
+.hero-next { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.hero-next a { flex: 0 0 auto; padding: 10px 14px; color: #fff; border: 1px solid var(--forest); border-radius: 9px; background: var(--forest); font-size: 0.74rem; font-weight: 760; text-decoration: none; }
+.hero-next a:hover { background: var(--forest-dark); }
+.hero-next span { max-width: 500px; color: var(--muted); font-size: 0.69rem; line-height: 1.45; }
 .tool-strip { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 22px; }
 .tool-strip code { padding: 5px 8px; color: #52605a; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.5); font-size: 0.65rem; }
 
@@ -353,6 +357,8 @@ body.presenter-waiting .presenter-cursor path { fill: #7fa28f; }
   .status-cluster { max-width: 150px; text-align: right; font-size: 0.66rem; }
   .hero { padding: 46px 0 30px; }
   .hero h1 br { display: none; }
+  .hero-next { display: grid; }
+  .hero-next a { justify-self: start; }
   .workspace { border-radius: 13px; }
   .catalog-panel, .agent-panel { padding: 20px; }
   .decision-row, .search-row, .itinerary-inputs, .intent-selects, .intent-constraints, .refinement-choices, .product-grid, .projection-grid, .why-grid, .result-facts, .itinerary-summary { grid-template-columns: 1fr; }

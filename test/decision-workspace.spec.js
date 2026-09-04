@@ -1,5 +1,7 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { normalizeApprovedMemoryFact, projectApprovedMemoryFact } from "../public/decision-memory.js";
 import { adaptStaffingResult, isControlledServicesHttpsUrl } from "../public/staffing-view-model.js";
@@ -12,6 +14,20 @@ import { createPersonalizedStaffingPlans } from "../src/personalized-staffing";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
+function chromeExecutable() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ];
+  return candidates.find((candidate) => candidate && existsSync(candidate)) ?? null;
+}
+
+const CHROME_PATH = chromeExecutable();
+
 describe("unified decision workspace", () => {
   it("ships one visible intake across gift, date, vacation, and staffing", () => {
     const page = read("public/decide.html");
@@ -23,7 +39,7 @@ describe("unified decision workspace", () => {
     expect(page).toContain('id="staffing-fields"');
     expect(page).toContain('id="decision-context-list"');
     expect(page).toContain('id="decision-revision"');
-    expect(page).toContain("Staffing verified");
+    expect(page).toContain("Staffing planner");
     expect(page).toContain("Only a separately reviewed memory can be stored on this device");
   });
 
@@ -120,7 +136,8 @@ describe("unified decision workspace", () => {
     expect(page).toContain('id="gift-occasion"');
     expect(page).toContain('id="gift-deadline"');
     expect(page).toContain('id="gift-existing-items"');
-    expect(runtime).toContain("subjectId: { type: \"string\", maxLength: 64 }");
+    expect(runtime).toContain('subjectId: { type: "string", enum: ["profile-recipient", "profile-self"] }');
+    expect(runtime).toContain('| needs attention.');
     expect(runtime).toContain("intent: { type: \"string\", enum: [\"gift\", \"self-treat\"] }");
     expect(runtime).toContain("existingItems: { type: \"array\"");
     expect(runtime).toContain("occasionDeadline");
@@ -137,6 +154,17 @@ describe("unified decision workspace", () => {
     expect(runtime).toContain('explorationMode: { type: "string", enum: ["balanced", "comfort-seeking", "novelty-seeking"] }');
     expect(runtime).toContain("elements.vacationExplorationMode");
     expect(runtime).toContain("Exploration mode: ${explorationMode}");
+    expect(runtime).toContain('value: explorationMode, weight: "high", source: "current-request"');
+  });
+
+  it("replaces optional WebMCP input instead of inheriting hidden form state", () => {
+    const runtime = read("public/decide.js");
+    expect(runtime).toContain('elements.giftExistingItems.value = values(input.existingItems).join(", ")');
+    expect(runtime).toContain('elements.giftDeadline.value = clean(input.occasionDeadline, 10)');
+    expect(runtime).toContain('elements.staffingRoles.value = values(input.roles).join(", ")');
+    expect(runtime).toContain('elements.staffingCredentials.value = values(input.credentials).join(", ")');
+    expect(runtime).toContain('elements.staffingEquipment.value = values(input.equipment).join(", ")');
+    expect(runtime).toContain('subjectId: { type: "string", enum: ["profile-recipient", "profile-self"] }');
   });
 
   it("adapts staffing API contract from real engine result and enforces authoritative boundaries", async () => {
@@ -346,7 +374,7 @@ describe("unified decision workspace", () => {
     expect(runtime).toContain('openLink.rel = "noopener noreferrer"');
   });
 
-  it("enforces that the provider source disclosure and link are invisible before review", () => {
+  it.skipIf(!CHROME_PATH)("enforces that the provider source disclosure and link are invisible before review", () => {
     const css = read("public/workspace.css");
     const runtime = read("public/decide.js");
 
@@ -362,11 +390,11 @@ describe("unified decision workspace", () => {
     expect(runtime).toContain("confirmPanel.append(panelHeader, panelDestination, panelDisclosure, panelActions);");
 
     // In Chrome, verify computed visibility: .source-review-panel[hidden] must compute to display: none
-    const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    const workspaceCssUrl = new URL("../public/workspace.css", import.meta.url).href;
     const testHtml = `<!doctype html>
 <html>
 <head>
-<link rel="stylesheet" href="file:///Users/jamesmcshane/APP_PROJECTS/Agentic/agentic-webmcp/public/workspace.css">
+<link rel="stylesheet" href="${workspaceCssUrl}">
 </head>
 <body>
 <div class="source-review-container">
@@ -387,10 +415,10 @@ window.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>`;
-    const tempFile = `/tmp/test-visibility-${Date.now()}.html`;
+    const tempFile = join(tmpdir(), `test-visibility-${Date.now()}.html`);
     writeFileSync(tempFile, testHtml);
     try {
-      const domOutput = execFileSync(chromePath, [
+      const domOutput = execFileSync(CHROME_PATH, [
         "--headless=new",
         "--virtual-time-budget=2000",
         "--run-all-compositor-stages-before-draw",
@@ -407,4 +435,3 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-

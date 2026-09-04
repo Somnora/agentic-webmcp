@@ -16,6 +16,8 @@ The live suite validates the origin manifest, per-Offer freshness and handoff po
 
 With the local app running, `npm run check:origin -- catalog-lab` performs the onboarding conformance contract against the runtime. It checks authorization, exact host and paths, redirects, byte limits, adapters, provenance, freshness, and fallback isolation.
 
+With both local Workers running, `npm run verify:rc` performs the release-candidate convergence contract. It checks the `/workspace`, `/date`, `/vacation`, and `/decide` surfaces; all four unified strategies; gift phrase exclusions; complete date and vacation tiers; eligible and ineligible staffing handoffs; and proposal-only outcome memory. Browser acceptance remains a separate gate because API success does not prove rendered disclosure order, responsive layout, IndexedDB consent, or WebMCP registration.
+
 Open `Origin diagnostics` after selecting an origin. Pass when the request correlation id matches the response header, the catalog and page adapter attempts show bounded timings, and any failure is one of the documented normalized reasons.
 
 ## Core behavioral evaluations

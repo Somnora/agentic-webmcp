@@ -6,6 +6,8 @@ Ribband converts allowlisted product and service websites into a shared decision
 
 Live URL: [agentic-webmcp.somnora.workers.dev](https://agentic-webmcp.somnora.workers.dev/)
 
+The personalized decision release candidate is currently local on `codex/personalized-decisions`. The homepage now leads into one unified gift, date, vacation, and staffing workspace, but the live URL still represents the submitted Challenge build until deployment is explicitly approved. See the [release-candidate gates](docs/RELEASE_CANDIDATE.md).
+
 The name nods to the Blue Riband, the historic distinction associated with speed records on Atlantic passenger crossings. Ribband brings that idea to surfing the web: move quickly across authorized sources, keep the evidence, and leave the final decision with the person. The deliberate double `b` distinguishes the product name from its maritime reference.
 
 The `/health` response and page footer expose the deployed Git commit and Cloudflare Worker version so reviewers can match the live app to this repository.
@@ -47,9 +49,9 @@ The services directory contains twenty original fixtures in `services-lab`: 5 ac
 
 The itinerary planner proposes local times only when a service fits the selected dates, published weekday windows, party size, budget, pace, and day hours. Relaxed, balanced, and full pace policies set explicit daily capacity and conservative same-city or cross-city transition buffers. The output separates scheduled activities from conflicts, preserves every canonical source, and records the plan in the downloadable dossier. Proposed times are not reservations, transition buffers are not measured travel times, and Ribband does not contact a provider or take payment.
 
-The post-submission `/vacation` proof uses request-only memories, past trips, preferences, dates, party size, and budget to build value, balanced, and signature packages from those controlled Offers. Every package includes lodging, transportation, dining, activities, category totals, contingency, unknown costs, and source evidence. This local branch has not been deployed to the live Challenge URL or added to the submitted Devpost entry.
+The release-candidate `/vacation` planner uses request-only memories, past trips, preferences, dates, party size, and budget to build value, balanced, and signature packages from those controlled Offers. Every package includes lodging, transportation, dining, activities, category totals, contingency, unknown costs, and source evidence. This local branch has not been deployed to the live Challenge URL or added to the submitted Devpost entry.
 
-The post-submission `/decide` proof is the unified decision orchestrator. One read-only `plan_decision` WebMCP tool and one bounded `POST /api/decisions/plan` endpoint accept the shared `DecisionContext`, dispatch by an explicit gift, date, vacation, or staffing vertical, and return one envelope containing the strategy, evidence origin, exact context projection, options, action boundary, and revision linkage. A revision resubmits the complete visible context and points to the prior page-memory decision id. The Worker stores neither request. Staffing plans verified provider crews using controlled provider Offers with typed credentials, quote accounting, and planning travel radii. Opening a provider source requires explicit, visible two-step human review with transmitted-information disclosures, and automated provider contact, quote requests, booking, contracts, and payments remain strictly unavailable. This local branch has not been deployed to the live Challenge URL or added to the submitted Devpost entry.
+The release-candidate `/decide` workspace is the unified decision orchestrator. One read-only `plan_decision` WebMCP tool and one bounded `POST /api/decisions/plan` endpoint accept the shared `DecisionContext`, dispatch by an explicit gift, date, vacation, or staffing vertical, and return one envelope containing the strategy, evidence origin, exact context projection, options, action boundary, and revision linkage. A revision resubmits the complete visible context and points to the prior page-memory decision id. The Worker stores neither request. Staffing plans verified provider crews using controlled provider Offers with typed credentials, quote accounting, and planning travel radii. Opening a provider source requires explicit, visible two-step human review with transmitted-information disclosures, and automated provider contact, quote requests, booking, contracts, and payments remain strictly unavailable. This local branch has not been deployed to the live Challenge URL or added to the submitted Devpost entry.
 
 The same local `/decide` proof now closes one outcome loop. A user can choose a date or vacation option, report whether it was selected, completed, or not for them, and send a bounded reason to `POST /api/profile-updates/propose`. The Worker returns a tentative profile diff with `persistence: none`. Only the visible Approve and save on this device control can turn it into a confirmed IndexedDB fact. The user may edit, reject, correct, or delete that fact, and must explicitly select it before a later decision includes it. Gift-recipient outcomes remain decision-only. No WebMCP tool can write profile memory.
 
@@ -116,6 +118,12 @@ npm run verify
 ```
 
 `npm run verify` runs strict TypeScript, Vitest, and deployment dry runs for both Workers. It does not deploy.
+
+With both local Workers running, verify the four personalized strategies and their action boundaries:
+
+```bash
+npm run verify:rc
+```
 
 With the local Worker running, validate an authorized origin end to end:
 

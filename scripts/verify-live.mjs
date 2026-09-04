@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { releaseCandidateChecks } from "./release-candidate-checks.mjs";
 
 const baseUrl = (process.env.AGENTIC_WEBMCP_URL || "https://agentic-webmcp.somnora.workers.dev").replace(/\/$/, "");
 const originUrl = "https://agentic-webmcp-origin.somnora.workers.dev";
@@ -39,7 +40,7 @@ const checks = [
     run: async () => {
       const response = await fetch(`${originUrl}/health`);
       const body = await response.json();
-      if (response.status !== 200 || body.status !== "ok" || body.products !== 4 || body.services !== 7) throw new Error("controlled origin unavailable");
+      if (response.status !== 200 || body.status !== "ok" || body.products !== 4 || body.services !== 20) throw new Error("controlled origin unavailable");
     },
   },
   {
@@ -353,6 +354,7 @@ const checks = [
       if (body.code !== "PATH_NOT_ALLOWED" || body.retryable !== false) throw new Error("structured allowlist error missing");
     },
   },
+  ...releaseCandidateChecks(baseUrl),
 ];
 
 let failures = 0;

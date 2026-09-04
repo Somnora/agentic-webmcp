@@ -156,6 +156,15 @@ function queryTerms(query: string): string[] {
   return [...new Set(query.toLocaleLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length > 1 && !QUERY_STOP_WORDS.has(term) && !/^\d+$/.test(term)))];
 }
 
+function matchesAvoidance(haystack: string, avoid: string | null): boolean {
+  if (!avoid) return false;
+  return avoid
+    .split(/[,;]/)
+    .map((clause) => queryTerms(clause))
+    .filter((terms) => terms.length > 0)
+    .some((terms) => terms.every((term) => haystack.includes(term)));
+}
+
 function offerText(offer: Offer): string {
   const market = offer.marketplace;
   const returns = market?.returns.accepted
@@ -362,8 +371,7 @@ function factorScores(offer: Offer, query: string, budget: number | null, intent
   if (terms.length === 1 && queryMatch === 0) return null;
   const mustTerms = queryTerms(intent.mustHave ?? "");
   if (mustTerms.some((term) => !haystack.includes(term))) return null;
-  const avoidTerms = queryTerms(intent.avoid ?? "");
-  if (avoidTerms.some((term) => haystack.includes(term))) return null;
+  if (matchesAvoidance(haystack, intent.avoid)) return null;
   const tasteTerms = queryTerms(intent.tasteContext ?? "");
   const rawTasteMatch = matchRatio(haystack, tasteTerms);
   const tasteMatch = !tasteTerms.length ? 0.5 : rawTasteMatch >= 0.5 ? rawTasteMatch : 0;

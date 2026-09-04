@@ -28,6 +28,19 @@ describe("marketplace recommendations", () => {
     expect(rankOffers(offers, "electric guitar", 580).map((item) => item.handle)).toEqual(["mahogany-single-cut-electric"]);
   });
 
+  it("treats a multi-word avoidance as one exclusion instead of rejecting every shared product term", () => {
+    const offers = DEMO_PRODUCTS.map((product) => normalizeProductsJsonOffer(product, origin)!).filter(Boolean);
+    expect(rankOffers(offers, "guitar", 900, { avoid: "acoustic guitar" }).map((item) => item.handle)).toEqual([
+      "sunburst-s-style-electric",
+      "mahogany-single-cut-electric",
+      "offset-electric-ocean-blue",
+    ]);
+    expect(rankOffers(offers, "guitar", 900, { avoid: "acoustic guitar, final sale" }).map((item) => item.handle)).toEqual([
+      "sunburst-s-style-electric",
+      "mahogany-single-cut-electric",
+    ]);
+  });
+
   it("validates the delivered-price ceiling", () => {
     expect(validateBudget("900")).toBe(900);
     expect(validateBudget(null)).toBeNull();

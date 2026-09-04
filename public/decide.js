@@ -376,7 +376,7 @@ function buildVacation(now, token, amount) {
     { id: `${token}-trip-lodging`, kind: "lodging-style", label: "Lodging style", value: clean(elements.vacationLodging.value, 120), weight: "high", source: "current-request", factId: null },
     { id: `${token}-trip-dining`, kind: "dining", label: "Dining", value: clean(elements.vacationDining.value, 120), weight: "medium", source: "current-request", factId: null },
     { id: `${token}-trip-pace`, kind: "pace", label: "Pace", value: pace, weight: "high", source: "profile", factId: `${token}-vacation-pace` },
-    { id: `${token}-vacation-novelty`, kind: "novelty", label: `Exploration mode: ${explorationMode}`, value: explorationMode, source: "current-request", factId: null },
+    { id: `${token}-vacation-novelty`, kind: "novelty", label: `Exploration mode: ${explorationMode}`, value: explorationMode, weight: "high", source: "current-request", factId: null },
     ...memory.preferences,
   ];
   return {
@@ -951,7 +951,7 @@ function renderResult(payload) {
     : "Provider handoff is unavailable.";
 
   elements.summary.append(
-    textNode("strong", "", `${payload.optionCount} options from ${payload.strategy.id}`),
+    textNode("strong", "", `${payload.optionCount} ${payload.optionCount === 1 ? "option" : "options"} from ${payload.strategy.id}`),
     textNode("p", "", `${payload.evidence.live ? "Live" : "Fallback"} ${payload.evidence.source} evidence. Revision is available. ${payload.vertical === "gift" || payload.vertical === "staffing" ? `${payload.vertical === "gift" ? "Gift-recipient" : "Staffing crew"} memory remains decision-only.` : "A chosen outcome can become a reviewable memory proposal."} ${handoffNote}`),
   );
 }
@@ -1009,7 +1009,11 @@ async function runDecision({ signal } = {}, actor = "human") {
     currentDecision = payload;
     elements.revision.hidden = false;
     elements.submit.textContent = "Revise complete context";
-    elements.requestStatus.textContent = `${payload.optionCount} ${payload.vertical} options planned${payload.revisionOf ? " as a linked revision" : ""}.`;
+    const optionLabel = payload.optionCount === 1 ? "option" : "options";
+    const revisionLabel = payload.revisionOf ? " as a linked revision" : "";
+    elements.requestStatus.textContent = payload.status === "planned"
+      ? `${payload.optionCount} ${payload.vertical} ${optionLabel} planned${revisionLabel}.`
+      : `${payload.optionCount} ${payload.vertical} ${optionLabel} returned${revisionLabel} | needs attention.`;
     return {
       decisionId: payload.decisionId,
       revisionOf: payload.revisionOf,
@@ -1093,15 +1097,16 @@ async function approveActiveProposal() {
 
 function applyToolInput(input) {
   setVertical(input.vertical, true);
-  if (input.subjectId && elements.subject) elements.subject.value = input.subjectId;
   elements.goal.value = clean(input.goal, 180) || verticalDefaults[input.vertical].goal;
   elements.budget.value = input.maximumBudget;
   elements.avoid.value = values(input.avoid, 4).join(", ");
   if (input.vertical === "gift") {
-    if (input.intent && elements.giftIntent) elements.giftIntent.value = input.intent;
-    if (input.occasion && elements.giftOccasion) elements.giftOccasion.value = input.occasion;
-    if (input.occasionDeadline && elements.giftDeadline) elements.giftDeadline.value = input.occasionDeadline;
-    if (input.existingItems && elements.giftExistingItems) elements.giftExistingItems.value = values(input.existingItems).join(", ");
+    const intent = input.intent === "self-treat" ? "self-treat" : "gift";
+    if (elements.subject) elements.subject.value = intent === "self-treat" || input.subjectId === "profile-self" ? "profile-self" : "profile-recipient";
+    if (elements.giftIntent) elements.giftIntent.value = intent;
+    if (elements.giftOccasion) elements.giftOccasion.value = clean(input.occasion, 80) || "Birthday";
+    if (elements.giftDeadline) elements.giftDeadline.value = clean(input.occasionDeadline, 10);
+    if (elements.giftExistingItems) elements.giftExistingItems.value = values(input.existingItems).join(", ");
     elements.giftQuery.value = clean(input.query, 80) || "electric guitar";
     elements.giftInterests.value = values(input.primaryInterests).join(", ");
     elements.giftMemory.value = values(input.memorySignals, 3).join(", ");
@@ -1111,7 +1116,9 @@ function applyToolInput(input) {
     elements.dateYourInterests.value = values(input.primaryInterests).join(", ");
     elements.dateTheirInterests.value = values(input.secondaryInterests).join(", ");
     elements.datePrevious.value = values(input.previousActivities, 4).join(", ");
-    if (["calm and connected", "playful and active", "creative and curious"].includes(input.mood)) elements.dateMood.value = input.mood;
+    elements.dateMood.value = ["calm and connected", "playful and active", "creative and curious"].includes(input.mood)
+      ? input.mood
+      : "calm and connected";
   }
   if (input.vertical === "vacation") {
     elements.vacationArrival.value = clean(input.arrivalDate, 10) || "2026-10-09";
@@ -1122,18 +1129,22 @@ function applyToolInput(input) {
     elements.vacationMemories.value = values(input.memorySignals).join(", ");
     elements.vacationLodging.value = clean(input.lodgingStyle, 120) || "small quiet lodging near water";
     elements.vacationDining.value = clean(input.diningPreference, 120) || "local plant-forward food";
-    if (["one anchor activity per day", "balanced", "full days"].includes(input.pace)) elements.vacationPace.value = input.pace;
-    if (input.explorationMode && ["balanced", "comfort-seeking", "novelty-seeking"].includes(input.explorationMode) && elements.vacationExplorationMode) {
-      elements.vacationExplorationMode.value = input.explorationMode;
+    elements.vacationPace.value = ["one anchor activity per day", "balanced", "full days"].includes(input.pace)
+      ? input.pace
+      : "balanced";
+    if (elements.vacationExplorationMode) {
+      elements.vacationExplorationMode.value = ["balanced", "comfort-seeking", "novelty-seeking"].includes(input.explorationMode)
+        ? input.explorationMode
+        : "balanced";
     }
   }
   if (input.vertical === "staffing") {
-    if (input.location && elements.staffingLocation) elements.staffingLocation.value = clean(input.location, 120);
+    if (elements.staffingLocation) elements.staffingLocation.value = clean(input.location, 120) || "Honolulu";
     elements.staffingDate.value = clean(input.date, 10) || "2026-10-17";
     elements.staffingHours.value = input.hours || 8;
-    if (input.roles) elements.staffingRoles.value = values(input.roles).join(", ");
-    if (input.credentials) elements.staffingCredentials.value = values(input.credentials).join(", ");
-    if (input.equipment) elements.staffingEquipment.value = values(input.equipment).join(", ");
+    elements.staffingRoles.value = values(input.roles).join(", ");
+    elements.staffingCredentials.value = values(input.credentials).join(", ");
+    elements.staffingEquipment.value = values(input.equipment).join(", ");
   }
 }
 
@@ -1186,7 +1197,7 @@ async function registerWebMcpTool() {
       type: "object",
       properties: {
         vertical: { type: "string", enum: ["gift", "date", "vacation", "staffing"] },
-        subjectId: { type: "string", maxLength: 64 },
+        subjectId: { type: "string", enum: ["profile-recipient", "profile-self"] },
         intent: { type: "string", enum: ["gift", "self-treat"] },
         occasion: { type: "string", maxLength: 80 },
         occasionDeadline: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
